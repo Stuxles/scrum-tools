@@ -7,8 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName,
-         escHtml, copyToClipboard } from '../utils/helpers.js';
+import { getSavedName, saveName, copyToClipboard } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
 import { renderResults }            from './render-results.js';
@@ -224,7 +223,7 @@ export function initRoomPage(socket, urlRoomId) {
       hideSMControls();
     }
 
-    renderParticipants(participantsList, room, isMaster, socket, escHtml);
+    renderParticipants(participantsList, room, isMaster, socket);
 
     const votingCtx = {
       votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,

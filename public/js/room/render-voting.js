@@ -19,7 +19,9 @@ export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, current
     btn.setAttribute('aria-label',   `Stem ${val}`);
     btn.setAttribute('role',         'radio');
     btn.setAttribute('aria-checked', String(myVote === val));
-    btn.innerHTML = `<span>${val}</span>`;
+    const span = document.createElement('span');
+    span.textContent = val;
+    btn.appendChild(span);
 
     if (revealed) {
       btn.classList.add('disabled');

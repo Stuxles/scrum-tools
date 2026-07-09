@@ -38,8 +38,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use('/api', apiRouter);
 
-// Health check
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+// Health check (delegates to apiRouter)
+app.get('/health', (req, res, next) => { req.url = '/health'; apiRouter(req, res, next); });
 
 // 404 catch-all
 app.use((req, res) => {

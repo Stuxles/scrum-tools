@@ -9,18 +9,16 @@ import { initThemeToggle }  from './theme.js';
 import { initIndexPage }    from './pages/index-page.js';
 import { initRoomPage }     from './room/room-page.js';
 
-// ── Shared socket connection ──────────────────────────────────────────────────
-// socket.io is still loaded as a traditional <script> tag so `io` is global.
-// eslint-disable-next-line no-undef
-const socket = io({ transports: ['websocket', 'polling'] });
-
-// ── URL params ────────────────────────────────────────────────────────────────
-const urlParams  = new URLSearchParams(window.location.search);
-const urlRoomId  = (urlParams.get('id') || '').toUpperCase();
-const isRoomPage = window.location.pathname.includes('room.html');
-
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // socket.io is loaded globally via <script> tag in HTML
+  // eslint-disable-next-line no-undef
+  const socket = io({ transports: ['websocket', 'polling'] });
+
+  const urlParams  = new URLSearchParams(window.location.search);
+  const urlRoomId  = (urlParams.get('id') || '').toUpperCase();
+  const isRoomPage = window.location.pathname.includes('room.html');
+
   initThemeToggle();
 
   if (isRoomPage) {

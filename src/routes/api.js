@@ -38,4 +38,7 @@ router.get('/rooms/:id/qr', async (req, res) => {
   }
 });
 
+// ─── Health check ─────────────────────────────────────────────────────────────
+router.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
 export default router;

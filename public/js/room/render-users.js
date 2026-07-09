@@ -1,3 +1,5 @@
+import { escHtml } from '../utils/helpers.js';
+
 /**
  * Participants list renderer.
  *
@@ -5,9 +7,8 @@
  * @param {object}                            room
  * @param {boolean}                           isMaster
  * @param {import('socket.io-client').Socket} socket
- * @param {Function}                          escHtml
  */
-export function renderParticipants(participantsList, room, isMaster, socket, escHtml) {
+export function renderParticipants(participantsList, room, isMaster, socket) {
   participantsList.innerHTML = '';
 
   for (const p of room.participants) {
