@@ -753,7 +753,16 @@ label.field-label {
 .vote-card[data-val="❓"] span,
 .vote-card[data-val="♾️"] span { font-size: 1.5rem; }
 
-/* ── Vote indicator ──────────────────────────────────────────── */
+/* ── Vote indicator & Deck Wrapper ───────────────────────────── */
+#deck-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  margin-top: 24px;
+}
+
 .vote-status-bar {
   display: flex;
   align-items: center;
@@ -764,6 +773,7 @@ label.field-label {
   border: 1px solid var(--glass-border);
   font-size: 0.875rem;
   color: var(--text-300);
+  margin-bottom: 4px;
 }
 .vote-status-bar.voted-state {
   border-color: rgba(52,211,153,0.3);
