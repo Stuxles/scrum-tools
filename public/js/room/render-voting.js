@@ -39,6 +39,20 @@ export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, current
 }
 
 /**
+ * Selects a specific card inside the given card deck and deselects all others.
+ * @param {HTMLElement} cardDeck
+ * @param {string} val
+ */
+export function selectVoteCard(cardDeck, val) {
+  if (!cardDeck) return;
+  cardDeck.querySelectorAll('.vote-card').forEach(c => {
+    const isChosen = c.dataset.val === String(val);
+    c.classList.toggle('selected', isChosen);
+    c.setAttribute('aria-checked', String(isChosen));
+  });
+}
+
+/**
  * Renders the voting phase view.
  *
  * @param {object}  ctx

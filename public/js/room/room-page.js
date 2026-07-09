@@ -10,7 +10,7 @@ import { toast }                    from '../utils/toast.js';
 import { getSavedName, saveName,
          escHtml, copyToClipboard } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
-import { renderVoting }             from './render-voting.js';
+import { renderVoting, selectVoteCard } from './render-voting.js';
 import { renderResults }            from './render-results.js';
 import { renderParticipants }       from './render-users.js';
 import { initQrModule }             from './qr-module.js';
@@ -232,15 +232,7 @@ export function initRoomPage(socket, urlRoomId) {
       socket, currentRoom,
       onVote: (val) => {
         myVote = val;
-        document.querySelectorAll('.vote-card').forEach(c => {
-          c.classList.remove('selected');
-          c.setAttribute('aria-checked', 'false');
-        });
-        const chosen = document.querySelector(`.vote-card[data-val="${val}"]`);
-        if (chosen) {
-          chosen.classList.add('selected');
-          chosen.setAttribute('aria-checked', 'true');
-        }
+        selectVoteCard(cardDeck, val);
         voteStatusBar.className    = 'vote-status-bar voted-state';
         voteStatusText.textContent = `Je hebt "${val}" gekozen ✓`;
       },
@@ -284,7 +276,12 @@ export function initRoomPage(socket, urlRoomId) {
   socket.on('became-master', () => {
     isMaster = true;
     toast('Je bent nu de Scrum Master 👑', 'info');
-    if (currentRoom) { showSMControls(); qr.loadQR(); }
+    if (currentRoom) {
+      currentRoom.masterId = socket.id;
+      currentRoom.participants.forEach(p => { p.isMaster = (p.id === socket.id); });
+      applyRoomState(currentRoom);
+      qr.loadQR();
+    }
   });
 
   socket.on('kicked', () => {
@@ -294,7 +291,7 @@ export function initRoomPage(socket, urlRoomId) {
 
   socket.on('error',      ({ message }) => toast(message, 'error'));
   socket.on('disconnect', ()            => toast('Verbinding verbroken — opnieuw verbinden…', 'error'));
-  socket.on('reconnect',  ()            => {
+  socket.io.on('reconnect', ()          => {
     toast('Opnieuw verbonden!', 'success');
     if (currentRoom) socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem' });
   });

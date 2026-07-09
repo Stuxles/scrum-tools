@@ -65,10 +65,8 @@ export function handleJoinRoom(socket, { roomId, name }) {
     delete room.disconnectTimer;
   }
 
-  // Assign master: no master yet, creator rejoining by name, or previous master gone
-  if (!room.masterId
-      || (room.masterName && name.toLowerCase() === room.masterName.toLowerCase())
-      || !room.participants[room.masterId]) {
+  // Assign master: only when room has no master or current master is disconnected
+  if (!room.masterId || !room.participants[room.masterId]) {
     room.masterId   = socket.id;
     room.masterName = name;
   }
