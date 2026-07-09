@@ -10,21 +10,26 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const CORS_ORIGIN = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*';
+const io = new Server(server, { cors: { origin: CORS_ORIGIN, methods: ['GET', 'POST'] } });
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_URL = (process.env.PUBLIC_URL || detectLocalIP()).replace(/\/$/, '');
 
 function detectLocalIP() {
   const ifaces = os.networkInterfaces();
+  const candidates = [];
   for (const name of Object.keys(ifaces)) {
+    const lower = name.toLowerCase();
+    const isVirtual = lower.includes('docker') || lower.includes('veth') || lower.includes('br-') || lower.includes('vmnet') || lower.includes('vbox') || lower.includes('hyper-v') || lower.includes('tailscale');
     for (const iface of ifaces[name]) {
       if (iface.family === 'IPv4' && !iface.internal) {
-        return `http://${iface.address}:${PORT}`;
+        if (!isVirtual) return `http://${iface.address}:${PORT}`;
+        candidates.push(`http://${iface.address}:${PORT}`);
       }
     }
   }
-  return `http://localhost:${PORT}`;
+  return candidates.length > 0 ? candidates[0] : `http://localhost:${PORT}`;
 }
 
 // ─── Deck Definitions ────────────────────────────────────────────────────────
@@ -48,7 +53,7 @@ function generateRoomId() {
  * Serialize room state for clients.
  * Votes are hidden unless the room is revealed.
  */
-function sanitizeRoom(room) {
+function sanitizeRoom(room, viewerSocketId = null) {
   return {
     id:          room.id,
     name:        room.name,
@@ -60,10 +65,21 @@ function sanitizeRoom(room) {
       id:       p.id,
       name:     p.name,
       hasVoted: p.hasVoted,
-      vote:     room.revealed ? p.vote : null,
+      vote:     (room.revealed || (viewerSocketId && p.id === viewerSocketId)) ? p.vote : null,
       isMaster: p.id === room.masterId,
     })),
   };
+}
+
+function broadcastRoomState(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+  for (const p of Object.values(room.participants)) {
+    const socket = io.sockets.sockets.get(p.id);
+    if (socket) {
+      socket.emit('room-state', { room: sanitizeRoom(room, p.id) });
+    }
+  }
 }
 
 function scheduleRoomCleanup(roomId) {
@@ -90,12 +106,21 @@ app.get('/api/rooms/:id/qr', async (req, res) => {
   const room = rooms[req.params.id];
   if (!room) return res.status(404).json({ error: 'Room niet gevonden' });
 
-  const url = `${PUBLIC_URL}/room.html?id=${room.id}`;
+  // Dynamisch de baseUrl bepalen uit de frontend query, reverse proxy headers, of fallback op PUBLIC_URL
+  const baseUrl = req.query.baseUrl
+    || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.headers.host || PUBLIC_URL}`;
+  
+  const url = `${baseUrl.replace(/\/$/, '')}/room.html?id=${room.id}`;
+  const theme = req.query.theme || 'dark';
+  const color = theme === 'light'
+    ? { dark: '#0f172a', light: '#ffffff' }
+    : { dark: '#a78bfa', light: '#0d0d1a' };
+
   try {
     const qr = await QRCode.toDataURL(url, {
       width: 280,
       margin: 2,
-      color: { dark: '#a78bfa', light: '#0d0d1a' },
+      color,
     });
     res.json({ qr, url });
   } catch (err) {
@@ -106,9 +131,33 @@ app.get('/api/rooms/:id/qr', async (req, res) => {
 // Health check (useful for Docker)
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
+// ─── 404 Catch-All ────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io/')) {
+    return res.status(404).json({ error: 'Route niet gevonden' });
+  }
+  res.redirect('/');
+});
+
 // ─── Socket.IO ────────────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log(`[+] ${socket.id}`);
+
+  // Rate limiter per socket connection (max 35 events/sec)
+  let eventCount = 0;
+  let lastReset = Date.now();
+  socket.use((packet, next) => {
+    const now = Date.now();
+    if (now - lastReset > 1000) {
+      eventCount = 0;
+      lastReset = now;
+    }
+    if (++eventCount > 35) {
+      socket.emit('error', { message: 'Te veel acties achter elkaar. Wacht een seconde.' });
+      return; // Drop packet
+    }
+    next();
+  });
 
   // ── Create Room ──────────────────────────────────────────────────────────
   socket.on('create-room', ({ name, deckType, customCards, roomName }) => {
@@ -126,7 +175,14 @@ io.on('connection', (socket) => {
     }
 
     let roomId;
-    do { roomId = generateRoomId(); } while (rooms[roomId]);
+    let attempts = 0;
+    do {
+      roomId = generateRoomId();
+      if (++attempts > 100) {
+        socket.emit('error', { message: 'Kon geen unieke room-code genereren. Server zit vol.' });
+        return;
+      }
+    } while (rooms[roomId]);
 
     rooms[roomId] = {
       id: roomId,
@@ -159,9 +215,15 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // If room has no master yet (just created), this joiner becomes master
-    if (!room.masterId) {
+    if (room.disconnectTimer) {
+      clearTimeout(room.disconnectTimer);
+      delete room.disconnectTimer;
+    }
+
+    // If room has no master yet, OR if their name matches masterName (the creator rejoining after refresh/disconnect)
+    if (!room.masterId || (room.masterName && name.toLowerCase() === room.masterName.toLowerCase()) || !room.participants[room.masterId]) {
       room.masterId = socket.id;
+      room.masterName = name;
     }
 
     // Allow rejoin (e.g. page refresh)
@@ -174,8 +236,8 @@ io.on('connection', (socket) => {
     socket.join(roomId);
 
     const isMaster = room.masterId === socket.id;
-    socket.emit('room-joined', { room: sanitizeRoom(room), isMaster });
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    socket.emit('room-joined', { room: sanitizeRoom(room, socket.id), isMaster });
+    broadcastRoomState(roomId);
 
     console.log(`[join] ${name} → ${roomId}`);
   });
@@ -189,7 +251,7 @@ io.on('connection', (socket) => {
     room.participants[socket.id].vote     = String(vote);
     room.participants[socket.id].hasVoted = true;
 
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    broadcastRoomState(roomId);
   });
 
   // ── Reveal (SM only) ─────────────────────────────────────────────────────
@@ -198,7 +260,7 @@ io.on('connection', (socket) => {
     if (!room || room.masterId !== socket.id) return;
 
     room.revealed = true;
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    broadcastRoomState(roomId);
   });
 
   // ── Reset (SM only) ──────────────────────────────────────────────────────
@@ -212,7 +274,7 @@ io.on('connection', (socket) => {
       p.hasVoted = false;
     }
 
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    broadcastRoomState(roomId);
   });
 
   // ── Change Deck (SM only) ────────────────────────────────────────────────
@@ -235,7 +297,7 @@ io.on('connection', (socket) => {
     room.revealed = false;
     for (const p of Object.values(room.participants)) { p.vote = null; p.hasVoted = false; }
 
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    broadcastRoomState(roomId);
   });
 
   // ── Update Name ──────────────────────────────────────────────────────────
@@ -246,8 +308,13 @@ io.on('connection', (socket) => {
     name = (name || '').trim().slice(0, 40);
     if (!name) return;
 
+    // Als de gebruiker die zijn naam aanpast de SM is, update dan ook masterName
+    if (room.masterId === socket.id) {
+      room.masterName = name;
+    }
+
     room.participants[socket.id].name = name;
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    broadcastRoomState(roomId);
   });
 
   // ── Kick User (SM only) ──────────────────────────────────────────────────
@@ -259,7 +326,7 @@ io.on('connection', (socket) => {
     if (target) { target.emit('kicked', {}); target.leave(roomId); }
     delete room.participants[targetId];
 
-    io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+    broadcastRoomState(roomId);
   });
 
   // ── Disconnect ───────────────────────────────────────────────────────────
@@ -274,7 +341,12 @@ io.on('connection', (socket) => {
 
       const remaining = Object.keys(room.participants);
       if (remaining.length === 0) {
-        delete rooms[roomId];
+        room.disconnectTimer = setTimeout(() => {
+          if (rooms[roomId] && Object.keys(rooms[roomId].participants).length === 0) {
+            delete rooms[roomId];
+            console.log(`[cleanup] Room ${roomId} verwijderd na leegloop.`);
+          }
+        }, 15000);
         continue;
       }
 
@@ -283,7 +355,7 @@ io.on('connection', (socket) => {
         io.to(remaining[0]).emit('became-master', {});
       }
 
-      io.to(roomId).emit('room-state', { room: sanitizeRoom(room) });
+      broadcastRoomState(roomId);
     }
   });
 });
@@ -292,5 +364,6 @@ io.on('connection', (socket) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🃏  Scrum Poker Collab`);
   console.log(`    Lokaal :  http://localhost:${PORT}`);
-  console.log(`    Netwerk:  ${PUBLIC_URL}\n`);
+  console.log(`    Netwerk:  ${PUBLIC_URL}`);
+  console.log(`    (Tip: Stel PUBLIC_URL in via env-variabele voor reverse proxies of Docker bridge)\n`);
 });

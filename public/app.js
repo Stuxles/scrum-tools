@@ -26,6 +26,14 @@ function toast(msg, type = 'info', duration = 3000) {
 function getSavedName() { return localStorage.getItem(LS_NAME) || ''; }
 function saveName(n)    { if (n) localStorage.setItem(LS_NAME, n); }
 
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 //  INDEX PAGE
 // ════════════════════════════════════════════════════════════════════════════════
@@ -95,6 +103,13 @@ function initIndexPage() {
     createBtn.disabled = true;
     createBtn.textContent = 'Aanmaken…';
     socket.emit('create-room', { name, deckType, customCards: custom, roomName });
+    setTimeout(() => {
+      if (createBtn.disabled) {
+        createBtn.disabled = false;
+        createBtn.textContent = '✦ Maak Room aan';
+        toast('De server reageert niet of is offline.', 'error');
+      }
+    }, 10000);
   });
 
   // Join room
@@ -109,6 +124,13 @@ function initIndexPage() {
     joinBtn.disabled = true;
     joinBtn.textContent = 'Verbinden…';
     socket.emit('join-room', { roomId: code, name });
+    setTimeout(() => {
+      if (joinBtn.disabled) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = '→ Meedoen';
+        toast('De server reageert niet of is offline.', 'error');
+      }
+    }, 10000);
   }
 
   joinBtn.addEventListener('click', doJoin);
@@ -321,7 +343,7 @@ function initRoomPage() {
     }
 
     // SM visibility
-    if (isMaster) showSMControls();
+    if (isMaster) showSMControls(); else hideSMControls();
 
     // Deck info
     const deckLabels = {
@@ -330,8 +352,10 @@ function initRoomPage() {
       tshirt:    'T-Shirt',
       custom:    'Aangepast',
     };
-    smCurrentDeck.textContent = deckLabels[room.deckType] || room.deckType;
-    deckModalType.value = room.deckType;
+    if (isMaster) {
+      smCurrentDeck.textContent = deckLabels[room.deckType] || room.deckType;
+      deckModalType.value = room.deckType;
+    }
 
     // Participants list
     renderParticipants(room);
@@ -351,7 +375,7 @@ function initRoomPage() {
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
       smProgressFill.style.width = `${pct}%`;
       smProgressText.textContent = `${voted} / ${total} gestemd`;
-      smRevealBtn.disabled   = (total === 0 || (voted === 0 && !room.revealed));
+      smRevealBtn.disabled     = (voted === 0 && !room.revealed);
       mobileRevealBtn.disabled = smRevealBtn.disabled;
     }
   }
@@ -416,13 +440,16 @@ function initRoomPage() {
   }
 
   // ── Voting Phase ───────────────────────────────────────────────────────────
-  // -- Voting Phase -----------------------------------------------------------
   function renderVoting(room) {
     votingPhase.classList.remove('hidden');
     resultsPhase.classList.add('hidden');
 
     const me = room.participants.find(p => p.id === socket.id);
-    myVote = me ? me.vote : null;
+    if (me && me.vote !== null && me.vote !== undefined) {
+      myVote = me.vote;
+    } else if (!me || !me.hasVoted) {
+      myVote = null;
+    }
 
     const presenterBanner = document.getElementById('presenter-banner');
     const deckWrapper     = document.getElementById('deck-wrapper');
@@ -615,9 +642,18 @@ function initRoomPage() {
   // ── SM Controls ────────────────────────────────────────────────────────────
   function showSMControls() {
     smPanel.classList.remove('hidden');
-    headerDeckBtn.classList.remove('hidden');
     mobileSMBar.classList.remove('hidden');
+    headerQrBtn.classList.add('hidden');    // SM heeft QR al in de zijbalk of in de mobiele balk
+    headerDeckBtn.classList.add('hidden');  // SM heeft Deck al in de zijbalk of in de mobiele balk
     document.body.classList.add('is-presenter');
+  }
+
+  function hideSMControls() {
+    smPanel.classList.add('hidden');
+    mobileSMBar.classList.add('hidden');
+    headerQrBtn.classList.remove('hidden'); // Gewone deelnemer heeft wel de QR knop in de header nodig
+    headerDeckBtn.classList.add('hidden');
+    document.body.classList.remove('is-presenter');
   }
 
   // Reveal
@@ -651,17 +687,27 @@ function initRoomPage() {
   async function copyLink() {
     if (!qrUrl) { toast('Link nog niet beschikbaar', 'error'); return; }
     try {
-      await navigator.clipboard.writeText(qrUrl);
-      toast('Link gekopieerd! 📋', 'success');
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(qrUrl);
+        toast('Link gekopieerd! 📋', 'success');
+        return;
+      }
+      throw new Error('Fallback');
     } catch {
-      // fallback
+      // Modern fallback
       const ta = document.createElement('textarea');
       ta.value = qrUrl;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
       document.body.appendChild(ta);
       ta.select();
-      document.execCommand('copy');
+      try {
+        document.execCommand('copy');
+        toast('Link gekopieerd! 📋', 'success');
+      } catch (err) {
+        prompt('Kopieer deze link handmatig:', qrUrl);
+      }
       ta.remove();
-      toast('Link gekopieerd! 📋', 'success');
     }
   }
 
@@ -671,8 +717,28 @@ function initRoomPage() {
   // Room code copy
   headerRoomCode.addEventListener('click', async () => {
     const code = urlRoomId;
-    try { await navigator.clipboard.writeText(code); } catch { /**/ }
-    toast(`Code "${code}" gekopieerd!`, 'success');
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+        toast(`Code "${code}" gekopieerd!`, 'success');
+        return;
+      }
+      throw new Error('Fallback');
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        toast(`Code "${code}" gekopieerd!`, 'success');
+      } catch (e) {
+        prompt('Kopieer deze code handmatig:', code);
+      }
+      ta.remove();
+    }
   });
 
   // ── Deck change modal ──────────────────────────────────────────────────────
@@ -733,7 +799,9 @@ function initRoomPage() {
   // ── Load QR ────────────────────────────────────────────────────────────────
   async function loadQR() {
     try {
-      const res  = await fetch(`/api/rooms/${urlRoomId}/qr`);
+      const baseUrl = encodeURIComponent(window.location.origin);
+      const theme   = document.documentElement.getAttribute('data-theme') || 'dark';
+      const res  = await fetch(`/api/rooms/${urlRoomId}/qr?baseUrl=${baseUrl}&theme=${theme}`);
       const data = await res.json();
       qrUrl = data.url;
 
@@ -745,15 +813,7 @@ function initRoomPage() {
       smQrPlaceholder.textContent = 'QR niet beschikbaar';
     }
   }
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  window._reloadQR = loadQR;
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────────
@@ -773,6 +833,7 @@ function initThemeToggle() {
     document.documentElement.setAttribute('data-theme', t);
     localStorage.setItem('scrumpoker_theme', t);
     updateIcon(t);
+    if (window._reloadQR && isMaster) window._reloadQR();
   });
 }
 

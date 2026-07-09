@@ -1095,6 +1095,11 @@ label.field-label {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Standaard verborgen op desktop (>1024px) omdat de sm-panel zijbalk alle knoppen al heeft */
+.mobile-sm-bar {
+  display: none !important;
+}
+
 /* ════════════════════════════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════════════════════════════ */
@@ -1105,17 +1110,16 @@ label.field-label {
   .sm-panel {
     display: none;
   }
-  .sm-panel.mobile-visible {
-    display: flex;
+  .mobile-sm-bar:not(.hidden) {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    border: none;
+    padding: 12px 16px;
+    background: rgba(13,13,26,0.95);
     border-top: 1px solid var(--glass-border);
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
-    z-index: 100;
-    max-height: 80vh;
-    background: var(--bg-raised);
     backdrop-filter: blur(20px);
+    display: flex !important;
+    gap: 10px;
+    z-index: 50;
   }
 }
 
@@ -1145,18 +1149,6 @@ label.field-label {
   .stat-value { font-size: 1.4rem; }
 
   .sm-panel { display: none; }
-
-  .mobile-sm-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    padding: 12px 16px;
-    background: rgba(13,13,26,0.95);
-    border-top: 1px solid var(--glass-border);
-    backdrop-filter: blur(20px);
-    display: flex;
-    gap: 10px;
-    z-index: 50;
-  }
 }
 
 /* ── Custom scrollbar ────────────────────────────────────────── */
