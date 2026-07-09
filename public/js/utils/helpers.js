@@ -55,3 +55,41 @@ export async function copyToClipboard(text, onSuccess, onFallback) {
     ta.remove();
   }
 }
+
+/**
+ * Screen Wake Lock API management.
+ * Prevents mobile devices from going to sleep during active planning sessions.
+ */
+let wakeLock = null;
+
+export async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      if (wakeLock === null && document.visibilityState === 'visible') {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null;
+        });
+      }
+    } catch (err) {
+      // Wake lock request failed (e.g. low battery mode or tab not active)
+    }
+  }
+}
+
+export function releaseWakeLock() {
+  if (wakeLock !== null) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && window._isInScrumRoom) {
+      requestWakeLock();
+    } else if (document.visibilityState === 'hidden') {
+      releaseWakeLock();
+    }
+  });
+}

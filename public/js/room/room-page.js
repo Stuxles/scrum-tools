@@ -7,7 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, copyToClipboard } from '../utils/helpers.js';
+import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
@@ -278,6 +278,8 @@ export function initRoomPage(socket, urlRoomId) {
     roomUi.classList.remove('hidden');
     applyRoomState(room);
     if (isM) qr.loadQR();
+    window._isInScrumRoom = true;
+    requestWakeLock();
   });
 
   socket.on('room-state',   ({ room }) => applyRoomState(room));
