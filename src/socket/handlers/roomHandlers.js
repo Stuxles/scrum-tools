@@ -92,8 +92,15 @@ export function handleVote(socket, { roomId, vote }) {
   if (!room || !room.participants[socket.id]) return;
   if (room.revealed) return;
 
-  const voteStr = String(vote ?? '').trim().slice(0, 20);
-  if (!voteStr || !room.deck.includes(voteStr)) return;
+  if (vote === null || vote === '' || vote === undefined) {
+    room.participants[socket.id].vote     = null;
+    room.participants[socket.id].hasVoted = false;
+    broadcastRoomState(roomId);
+    return;
+  }
+
+  const voteStr = String(vote).trim().slice(0, 20);
+  if (!room.deck.includes(voteStr)) return;
 
   room.participants[socket.id].vote     = voteStr;
   room.participants[socket.id].hasVoted = true;

@@ -121,7 +121,9 @@ export function initRoomPage(socket, urlRoomId) {
   }
 
   smRevealBtn.addEventListener('click', () => {
-    if (!currentRoom) return;
+    if (!currentRoom || currentRoom.revealed) return;
+    smRevealBtn.disabled     = true;
+    mobileRevealBtn.disabled = true;
     socket.emit('reveal', { roomId: currentRoom.id });
   });
   mobileRevealBtn.addEventListener('click', () => smRevealBtn.click());
@@ -235,8 +237,13 @@ export function initRoomPage(socket, urlRoomId) {
       onVote: (val) => {
         myVote = val;
         selectVoteCard(cardDeck, val);
-        voteStatusBar.className    = 'vote-status-bar voted-state';
-        voteStatusText.textContent = t('vote-status-picked', { card: `"${val}"` });
+        if (val != null) {
+          voteStatusBar.className    = 'vote-status-bar voted-state';
+          voteStatusText.textContent = t('vote-status-picked', { card: `"${val}"` });
+        } else {
+          voteStatusBar.className    = 'vote-status-bar';
+          voteStatusText.textContent = t('vote-status-text-init');
+        }
       },
     };
 
@@ -259,7 +266,7 @@ export function initRoomPage(socket, urlRoomId) {
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
       smProgressFill.style.width = `${pct}%`;
       smProgressText.textContent = t('progress-text', { voted, total });
-      smRevealBtn.disabled       = (voted === 0 && !room.revealed);
+      smRevealBtn.disabled       = room.revealed || voted === 0;
       mobileRevealBtn.disabled   = smRevealBtn.disabled;
     }
   }

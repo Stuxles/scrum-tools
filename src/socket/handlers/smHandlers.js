@@ -5,7 +5,7 @@ import { broadcastRoomState } from '../../utils/broadcast.js';
 /** @param {import('socket.io').Socket} socket */
 export function handleReveal(socket, { roomId }) {
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id) return;
+  if (!room || room.masterId !== socket.id || room.revealed) return;
 
   room.revealed = true;
   broadcastRoomState(roomId);

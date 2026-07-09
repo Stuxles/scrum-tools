@@ -34,8 +34,10 @@ export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, current
 
     btn.addEventListener('click', () => {
       if (revealed || !currentRoom) return;
-      socket.emit('vote', { roomId: currentRoom.id, vote: val });
-      onVote(val);
+      const isAlreadySelected = btn.classList.contains('selected');
+      const nextVal = isAlreadySelected ? null : val;
+      socket.emit('vote', { roomId: currentRoom.id, vote: nextVal });
+      onVote(nextVal);
     });
 
     cardDeck.appendChild(btn);
@@ -45,12 +47,12 @@ export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, current
 /**
  * Selects a specific card inside the given card deck and deselects all others.
  * @param {HTMLElement} cardDeck
- * @param {string} val
+ * @param {string|null} val
  */
 export function selectVoteCard(cardDeck, val) {
   if (!cardDeck) return;
   cardDeck.querySelectorAll('.vote-card').forEach(c => {
-    const isChosen = c.dataset.val === String(val);
+    const isChosen = val !== null && val !== undefined && c.dataset.val === String(val);
     c.classList.toggle('selected', isChosen);
     c.setAttribute('aria-checked', String(isChosen));
   });
