@@ -1095,7 +1095,7 @@ label.field-label {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Standaard verborgen op desktop (>1024px) omdat de sm-panel zijbalk alle knoppen al heeft */
+/* Hidden on desktop (>1024px) by default because the sm-panel sidebar already has all buttons */
 .mobile-sm-bar {
   display: none !important;
 }

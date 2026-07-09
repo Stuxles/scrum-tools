@@ -1,13 +1,13 @@
 /**
  * Scrum Poker Collab — Server entrypoint
  *
- * Verantwoordelijkheden:
- *   - Express app opstarten (static files, JSON body, API routes)
- *   - Socket.IO server initialiseren
- *   - HTTP server starten en IP loggen
+ * Responsibilities:
+ *   - Start Express app (static files, JSON body, API routes)
+ *   - Initialize Socket.IO server
+ *   - Start HTTP server and log IP addresses
  *
- * Alle andere logica zit in src/:
- *   src/config.js                        — poort, CORS, deck-definities
+ * All other logic resides in src/:
+ *   src/config.js                        — port, CORS, deck definitions
  *   src/store/rooms.js                   — in-memory rooms + sanitizeRoom
  *   src/utils/broadcast.js               — broadcastRoomState, scheduleRoomCleanup
  *   src/utils/roomId.js                  — generateRoomId

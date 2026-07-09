@@ -1,6 +1,6 @@
 /**
- * Gecentraliseerde configuratie.
- * Alle env-variabelen en deck-definities op één plek.
+ * Centralized configuration.
+ * All environment variables and deck definitions in one place.
  */
 
 import os from 'os';
