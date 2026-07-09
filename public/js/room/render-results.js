@@ -1,4 +1,5 @@
 import { escHtml } from '../utils/helpers.js';
+import { t }       from '../utils/i18n.js';
 
 /**
  * Results phase renderer — cards grid and statistics panel.
@@ -17,7 +18,7 @@ export function renderResults(ctx, room) {
   const nonMaster = room.participants.filter(p => !p.isMaster);
   const voters    = nonMaster.filter(p => p.hasVoted);
 
-  resultsSubtitle.textContent = `${voters.length} van ${nonMaster.length} deelnemers stemden`;
+  resultsSubtitle.textContent = t('progress-text', { voted: voters.length, total: nonMaster.length });
 
   // ── Cards grid ────────────────────────────────────────────────────────────
   resultsCardsGrid.innerHTML = '';
@@ -67,12 +68,12 @@ function renderStats(container, room) {
     html += `
       <div class="stat-item">
         <div class="stat-value">${avg % 1 === 0 ? avg : avg.toFixed(1)}</div>
-        <div class="stat-label">Gemiddelde</div>
+        <div class="stat-label">${t('stat-average')}</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item">
         <div class="stat-value">${median % 1 === 0 ? median : median.toFixed(1)}</div>
-        <div class="stat-label">Mediaan</div>
+        <div class="stat-label">${t('stat-median')}</div>
       </div>
     `;
     if (nonNum.length > 0) html += `<div class="stat-divider"></div>`;
@@ -85,7 +86,7 @@ function renderStats(container, room) {
     html += `
       <div class="stat-item">
         <div class="stat-value" style="font-size:1.2rem;">${display}</div>
-        <div class="stat-label">Overig</div>
+        <div class="stat-label">${t('stat-other')}</div>
       </div>
     `;
   }
@@ -110,7 +111,7 @@ function renderStats(container, room) {
 
     html += `
       <div class="vote-distribution">
-        <div class="vote-distribution-label">Verdeling</div>
+        <div class="vote-distribution-label">${t('stat-distribution')}</div>
         <div class="dist-bars">${bars}</div>
       </div>
     `;

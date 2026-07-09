@@ -1286,8 +1286,8 @@ label.field-label {
 [data-theme="light"] .sm-section-title { color: #9ca3af; }
 [data-theme="light"] .phase-subtitle { color: #9ca3af; }
 
-/* ── Theme toggle button ─────────────────────────────────────── */
-.theme-toggle {
+/* ── Theme & Language toggle buttons ─────────────────────────── */
+.theme-toggle, .lang-toggle {
   width: 36px;
   height: 36px;
   border-radius: var(--r-full);
@@ -1302,7 +1302,12 @@ label.field-label {
   transition: all 0.2s;
   flex-shrink: 0;
 }
-.theme-toggle:hover { background: var(--glass-hover); color: var(--text-100); }
+.theme-toggle:hover, .lang-toggle:hover { background: var(--glass-hover); color: var(--text-100); }
+.lang-toggle {
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
+}
 
 /* ════════════════════════════════════════════════════════════════
    PRESENTER MODE  —  Larger result cards on the shared screen

@@ -24,7 +24,8 @@
 
   <!-- Toast -->
   <div id="toast-container" role="alert" aria-live="polite"></div>
-  <button class="theme-toggle" id="theme-toggle" title="Wissel thema (light/dark)" aria-label="Wissel thema" style="position:fixed;top:16px;right:16px;z-index:100;">
+  <button class="lang-toggle" id="lang-toggle" title="Taal: Nederlands (Klik voor Engels)" aria-label="Wissel taal" style="position:fixed;top:16px;right:60px;z-index:100;">NL</button>
+  <button class="theme-toggle" id="theme-toggle" title="Wissel thema (light/dark)" data-i18n-title="theme-toggle-title" aria-label="Wissel thema" style="position:fixed;top:16px;right:16px;z-index:100;">
     <span id="theme-icon">☀️</span>
   </button>
 
@@ -32,7 +33,7 @@
   <header class="hero">
     <div class="hero-logo" aria-hidden="true">♠</div>
     <h1 class="hero-title">Scrum Poker Collab</h1>
-    <p class="hero-subtitle">Maak een sessie aan of join via link of QR-code.<br>Stem samen, reveal tegelijk.</p>
+    <p class="hero-subtitle" data-i18n="hero-subtitle">Maak een sessie aan of join via link of QR-code.<br>Stem samen, reveal tegelijk.</p>
   </header>
 
   <!-- Main Card -->
@@ -44,14 +45,16 @@
                 id="create-tab"
                 role="tab"
                 aria-selected="true"
-                aria-controls="create-panel">
+                aria-controls="create-panel"
+                data-i18n="tab-create">
           ✦ Maak Room
         </button>
         <button class="tab-btn"
                 id="join-tab"
                 role="tab"
                 aria-selected="false"
-                aria-controls="join-panel">
+                aria-controls="join-panel"
+                data-i18n="tab-join">
           → Join Room
         </button>
       </div>
@@ -60,7 +63,7 @@
       <div id="create-panel" class="tab-panel" role="tabpanel" aria-labelledby="create-tab">
 
         <div class="field">
-          <label class="field-label" for="create-name">Jouw naam</label>
+          <label class="field-label" for="create-name" data-i18n="label-name">Jouw naam</label>
           <input class="input input-lg"
                  id="create-name"
                  type="text"
@@ -80,26 +83,26 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="deck-type">Kaartdek</label>
+          <label class="field-label" for="deck-type" data-i18n="label-deck">Kaartdek</label>
           <select class="input" id="deck-type">
-            <option value="standard">Standaard — 0 1 2 3 4 5 6 8 12 16 24 32 40 ♾️ ❓ ☕</option>
-            <option value="fibonacci">Fibonacci — 0 1 2 3 5 8 13 21 34 55 89 ❓ ☕</option>
-            <option value="tshirt">T-Shirt — XS S M L XL XXL ❓ ☕</option>
-            <option value="custom">Aangepast…</option>
+            <option value="standard" data-i18n="deck-standard">Standaard — 0 1 2 3 4 5 6 8 12 16 24 32 40 ♾️ ❓ ☕</option>
+            <option value="fibonacci" data-i18n="deck-fibonacci">Fibonacci — 0 1 2 3 5 8 13 21 34 55 89 ❓ ☕</option>
+            <option value="tshirt" data-i18n="deck-tshirt">T-Shirt — XS S M L XL XXL ❓ ☕</option>
+            <option value="custom" data-i18n="deck-custom">Aangepast…</option>
           </select>
         </div>
 
         <div class="field custom-cards-field hidden" id="custom-cards-field">
-          <label class="field-label" for="custom-cards">Kaarten (komma-gescheiden)</label>
+          <label class="field-label" for="custom-cards" data-i18n="label-custom-cards">Kaarten (komma-gescheiden)</label>
           <input class="input"
                  id="custom-cards"
                  type="text"
-                 placeholder="1, 2, 4, 8, 16, ❓" />
-          <p style="font-size:0.78rem;color:var(--text-500);margin-top:6px;">Voer minimaal 2 waarden in, gescheiden door komma's.</p>
+                 placeholder="1, 2, 4, 8, 16, ❓"
+                 data-i18n-placeholder="placeholder-custom-cards" />
         </div>
 
         <div class="field" style="margin-top:24px;">
-          <button class="btn btn-primary btn-lg btn-full" id="create-room-btn">
+          <button class="btn btn-primary btn-lg btn-full" id="create-room-btn" data-i18n="btn-create">
             ✦ Maak Room aan
           </button>
         </div>
@@ -109,7 +112,7 @@
       <div id="join-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="join-tab">
 
         <div class="field">
-          <label class="field-label" for="join-name">Jouw naam</label>
+          <label class="field-label" for="join-name" data-i18n="label-name">Jouw naam</label>
           <input class="input input-lg"
                  id="join-name"
                  type="text"
@@ -120,18 +123,19 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="join-code">Room code</label>
+          <label class="field-label" for="join-code" data-i18n="label-room-code">Room code</label>
           <input class="input input-lg"
                  id="join-code"
                  type="text"
                  placeholder="ABC123"
+                 data-i18n-placeholder="placeholder-code"
                  maxlength="6"
                  autocomplete="off"
                  style="letter-spacing:0.12em;font-family:'Courier New',monospace;text-transform:uppercase;" />
         </div>
 
         <div class="field" style="margin-top:24px;">
-          <button class="btn btn-primary btn-lg btn-full" id="join-room-btn">
+          <button class="btn btn-primary btn-lg btn-full" id="join-room-btn" data-i18n="btn-join">
             → Meedoen
           </button>
         </div>

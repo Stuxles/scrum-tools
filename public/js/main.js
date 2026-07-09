@@ -6,6 +6,7 @@
  */
 
 import { initThemeToggle }  from './theme.js';
+import { initI18n }         from './utils/i18n.js';
 import { initIndexPage }    from './pages/index-page.js';
 import { initRoomPage }     from './room/room-page.js';
 
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const urlRoomId  = (urlParams.get('id') || '').toUpperCase();
   const isRoomPage = window.location.pathname.includes('room.html');
 
+  initI18n();
   initThemeToggle();
 
   if (isRoomPage) {

@@ -28,11 +28,11 @@
   <div id="join-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="join-modal-title">
     <div class="modal-box">
       <div style="font-size:2.5rem;text-align:center;margin-bottom:12px">🃏</div>
-      <h2 class="modal-title" id="join-modal-title" style="text-align:center;">Join de Room</h2>
+      <h2 class="modal-title" id="join-modal-title" style="text-align:center;" data-i18n="join-modal-title">Join de Room</h2>
       <p class="modal-subtitle" id="join-modal-room" style="text-align:center;"></p>
 
       <div class="field">
-        <label class="field-label" for="modal-name">Jouw naam</label>
+        <label class="field-label" for="modal-name" data-i18n="label-name">Jouw naam</label>
         <input class="input input-lg"
                id="modal-name"
                type="text"
@@ -43,8 +43,8 @@
       </div>
 
       <div class="modal-actions" style="flex-direction:column;">
-        <button class="btn btn-primary btn-lg btn-full" id="modal-join-btn">🃏 Meedoen</button>
-        <a href="/" class="btn btn-secondary btn-full" style="justify-content:center;text-decoration:none;">← Terug naar home</a>
+        <button class="btn btn-primary btn-lg btn-full" id="modal-join-btn" data-i18n="modal-join-btn">🃏 Meedoen</button>
+        <a href="/" class="btn btn-secondary btn-full" style="justify-content:center;text-decoration:none;" data-i18n="modal-back-btn">← Terug naar home</a>
       </div>
     </div>
   </div>
@@ -52,17 +52,17 @@
   <!-- ──────────────── NAME EDIT MODAL ──────────────── -->
   <div id="name-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="name-modal-title">
     <div class="modal-box">
-      <h2 class="modal-title" id="name-modal-title">Naam aanpassen</h2>
-      <p class="modal-subtitle">Je nieuwe naam wordt direct zichtbaar voor iedereen in de room.</p>
+      <h2 class="modal-title" id="name-modal-title" data-i18n="name-modal-title">Naam aanpassen</h2>
+      <p class="modal-subtitle" data-i18n="name-modal-subtitle">Je nieuwe naam wordt direct zichtbaar voor iedereen in de room.</p>
 
       <div class="field">
-        <label class="field-label" for="name-modal-input">Nieuwe naam</label>
+        <label class="field-label" for="name-modal-input" data-i18n="name-modal-label">Nieuwe naam</label>
         <input class="input input-lg" id="name-modal-input" type="text" maxlength="40" autocomplete="nickname" />
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" id="name-modal-save" style="flex:1;">Opslaan</button>
-        <button class="btn btn-secondary" id="name-modal-cancel">Annuleer</button>
+        <button class="btn btn-primary" id="name-modal-save" style="flex:1;" data-i18n="name-modal-save">Opslaan</button>
+        <button class="btn btn-secondary" id="name-modal-cancel" data-i18n="name-modal-cancel">Annuleer</button>
       </div>
     </div>
   </div>
@@ -70,8 +70,8 @@
   <!-- ──────────────── QR MODAL ──────────────── -->
   <div id="qr-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
     <div class="modal-box" style="max-width:360px;">
-      <h2 class="modal-title" id="qr-modal-title" style="text-align:center;">Uitnodigen</h2>
-      <p class="modal-subtitle" style="text-align:center;">Scan de QR-code of deel de link.</p>
+      <h2 class="modal-title" id="qr-modal-title" style="text-align:center;" data-i18n="qr-modal-title">Uitnodigen</h2>
+      <p class="modal-subtitle" style="text-align:center;" data-i18n="qr-modal-subtitle">Scan de QR-code of deel de link.</p>
 
       <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin:20px 0;">
         <img id="qr-modal-img" src="" alt="QR Code voor de room" style="width:200px;height:200px;border-radius:12px;display:block;" />
@@ -79,8 +79,8 @@
       </div>
 
       <div class="modal-actions" style="flex-direction:column;">
-        <button class="btn btn-primary btn-full" id="qr-copy-btn">📋 Kopieer link</button>
-        <button class="btn btn-secondary btn-full" id="qr-close-btn">Sluiten</button>
+        <button class="btn btn-primary btn-full" id="qr-copy-btn" data-i18n="qr-copy-btn">📋 Kopieer link</button>
+        <button class="btn btn-secondary btn-full" id="qr-close-btn" data-i18n="qr-close-btn">Sluiten</button>
       </div>
     </div>
   </div>
@@ -88,27 +88,27 @@
   <!-- ──────────────── DECK EDIT MODAL (SM) ──────────────── -->
   <div id="deck-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deck-modal-title">
     <div class="modal-box">
-      <h2 class="modal-title" id="deck-modal-title">Kaartdek wijzigen</h2>
-      <p class="modal-subtitle">Het huidige deck wordt vervangen en alle stemmen worden gereset.</p>
+      <h2 class="modal-title" id="deck-modal-title" data-i18n="deck-modal-title">Kaartdek wijzigen</h2>
+      <p class="modal-subtitle" data-i18n="deck-modal-subtitle">Het huidige deck wordt vervangen en alle stemmen worden gereset.</p>
 
       <div class="field">
-        <label class="field-label" for="deck-modal-type">Dek type</label>
+        <label class="field-label" for="deck-modal-type" data-i18n="deck-modal-label">Dek type</label>
         <select class="input" id="deck-modal-type">
-          <option value="standard">Standaard — 0 1 2 3 4 5 6 8 12 16 24 32 40 ♾️ ❓ ☕</option>
-          <option value="fibonacci">Fibonacci — 0 1 2 3 5 8 13 21 34 55 89 ❓ ☕</option>
-          <option value="tshirt">T-Shirt — XS S M L XL XXL ❓ ☕</option>
-          <option value="custom">Aangepast…</option>
+          <option value="standard" data-i18n="deck-standard">Standaard — 0 1 2 3 4 5 6 8 12 16 24 32 40 ♾️ ❓ ☕</option>
+          <option value="fibonacci" data-i18n="deck-fibonacci">Fibonacci — 0 1 2 3 5 8 13 21 34 55 89 ❓ ☕</option>
+          <option value="tshirt" data-i18n="deck-tshirt">T-Shirt — XS S M L XL XXL ❓ ☕</option>
+          <option value="custom" data-i18n="deck-custom">Aangepast…</option>
         </select>
       </div>
 
       <div class="field hidden" id="deck-modal-custom-field">
-        <label class="field-label" for="deck-modal-custom">Kaarten (komma-gescheiden)</label>
-        <input class="input" id="deck-modal-custom" type="text" placeholder="1, 2, 4, 8, 16, ?" />
+        <label class="field-label" for="deck-modal-custom" data-i18n="deck-modal-custom-label">Kaarten (komma-gescheiden)</label>
+        <input class="input" id="deck-modal-custom" type="text" placeholder="1, 2, 4, 8, 16, ?" data-i18n-placeholder="placeholder-custom-cards" />
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" id="deck-modal-save" style="flex:1;">Toepassen</button>
-        <button class="btn btn-secondary" id="deck-modal-cancel">Annuleer</button>
+        <button class="btn btn-primary" id="deck-modal-save" style="flex:1;" data-i18n="deck-modal-save">Toepassen</button>
+        <button class="btn btn-secondary" id="deck-modal-cancel" data-i18n="deck-modal-cancel">Annuleer</button>
       </div>
     </div>
   </div>
@@ -142,21 +142,22 @@
           <span id="header-online-count">0</span>
         </div>
 
-        <button class="btn btn-secondary btn-icon" id="header-qr-btn" title="QR-code tonen / link delen" aria-label="Link delen">
+        <button class="btn btn-secondary btn-icon" id="header-qr-btn" title="QR-code tonen / link delen" data-i18n-title="qr-btn-title" aria-label="Link delen">
           🔗
         </button>
 
         <!-- SM only -->
-        <button class="btn btn-secondary btn-icon hidden" id="header-deck-btn" title="Kaartdek wijzigen" aria-label="Kaartdek wijzigen">
+        <button class="btn btn-secondary btn-icon hidden" id="header-deck-btn" title="Kaartdek wijzigen" data-i18n-title="deck-btn-title" aria-label="Kaartdek wijzigen">
           🎴
         </button>
 
-        <button class="my-name-btn" id="header-name-btn" aria-label="Naam aanpassen">
+        <button class="my-name-btn" id="header-name-btn" title="Naam aanpassen" data-i18n-title="name-btn-title" aria-label="Naam aanpassen">
           <span aria-hidden="true">✏️</span>
           <span class="my-name-text" id="header-my-name">—</span>
         </button>
 
-        <button class="theme-toggle" id="theme-toggle" title="Wissel thema (light/dark)" aria-label="Wissel thema">
+        <button class="lang-toggle" id="lang-toggle" title="Taal: Nederlands (Klik voor Engels)" aria-label="Wissel taal">NL</button>
+        <button class="theme-toggle" id="theme-toggle" title="Wissel thema (light/dark)" data-i18n-title="theme-toggle-title" aria-label="Wissel thema">
           <span id="theme-icon">☀️</span>
         </button>
       </div>
@@ -168,7 +169,7 @@
       <!-- LEFT: Participants -->
       <aside class="participants-panel" aria-label="Deelnemers">
         <div class="panel-header">
-          <h2 class="panel-title">Deelnemers</h2>
+          <h2 class="panel-title" data-i18n="panel-title-participants">Deelnemers</h2>
         </div>
         <ul class="participants-list" id="participants-list" role="list"></ul>
       </aside>
@@ -179,16 +180,16 @@
         <!-- VOTING PHASE -->
         <div id="voting-phase">
           <div style="text-align:center;">
-            <h2 class="phase-title" id="voting-phase-title">Kies je schatting</h2>
-            <p class="phase-subtitle" id="voting-phase-subtitle">Selecteer een kaart. Je stem is pas zichtbaar na de reveal.</p>
+            <h2 class="phase-title" id="voting-phase-title" data-i18n="voting-phase-title">Kies je schatting</h2>
+            <p class="phase-subtitle" id="voting-phase-subtitle" data-i18n="voting-phase-subtitle">Selecteer een kaart. Je stem is pas zichtbaar na de reveal.</p>
           </div>
 
           <!-- Presenter banner: shown for SM on the shared screen instead of the card deck -->
           <div id="presenter-banner" class="presenter-banner hidden" role="status" aria-live="polite">
             <div class="presenter-banner-icon" aria-hidden="true">🖥️</div>
             <div>
-              <strong>Presenter-scherm</strong>
-              <p>Kaarten zijn hier verborgen. Stem mee via je telefoon door de QR-code te scannen.</p>
+              <strong data-i18n="presenter-banner-title">Presenter-scherm</strong>
+              <p data-i18n="presenter-banner-text">Kaarten zijn hier verborgen. Stem mee via je telefoon door de QR-code te scannen.</p>
             </div>
           </div>
 
@@ -196,7 +197,7 @@
           <div id="deck-wrapper">
             <div id="vote-status-bar" class="vote-status-bar" role="status">
               <span aria-hidden="true">🃏</span>
-              <span id="vote-status-text">Nog niet gestemd</span>
+              <span id="vote-status-text" data-i18n="vote-status-text-init">Nog niet gestemd</span>
             </div>
 
             <div class="card-deck" id="card-deck" role="group" aria-label="Kaartendek"></div>
@@ -206,7 +207,7 @@
         <!-- RESULTS PHASE -->
         <div id="results-phase" class="results-section hidden">
           <div style="text-align:center;">
-            <h2 class="phase-title">🎉 Resultaten</h2>
+            <h2 class="phase-title" data-i18n="results-phase-title">🎉 Resultaten</h2>
             <p class="phase-subtitle" id="results-subtitle"></p>
           </div>
 
@@ -224,7 +225,7 @@
 
         <!-- Vote progress -->
         <div>
-          <p class="sm-section-title">Voortgang</p>
+          <p class="sm-section-title" data-i18n="sm-section-progress">Voortgang</p>
           <div class="vote-progress">
             <div class="vote-progress-track">
               <div class="vote-progress-fill" id="sm-progress-fill" style="width:0%"></div>
@@ -235,12 +236,12 @@
 
         <!-- Actions -->
         <div>
-          <p class="sm-section-title">Acties</p>
+          <p class="sm-section-title" data-i18n="sm-section-actions">Acties</p>
           <div class="sm-actions">
-            <button class="reveal-btn" id="sm-reveal-btn" aria-label="Stemmen onthullen">
+            <button class="reveal-btn" id="sm-reveal-btn" aria-label="Stemmen onthullen" data-i18n="sm-reveal-btn">
               🃏 Reveal
             </button>
-            <button class="btn btn-secondary btn-full" id="sm-reset-btn" aria-label="Nieuwe ronde starten">
+            <button class="btn btn-secondary btn-full" id="sm-reset-btn" aria-label="Nieuwe ronde starten" data-i18n="sm-reset-btn">
               🔄 Nieuwe ronde
             </button>
           </div>
@@ -248,19 +249,19 @@
 
         <!-- Deck -->
         <div class="deck-selector-section">
-          <p class="sm-section-title">Kaartdek</p>
+          <p class="sm-section-title" data-i18n="sm-section-deck">Kaartdek</p>
           <div id="sm-current-deck" style="font-size:0.82rem;color:var(--text-500);margin-bottom:8px;">Standaard</div>
-          <button class="btn btn-secondary btn-full" id="sm-change-deck-btn">🎴 Wijzig deck</button>
+          <button class="btn btn-secondary btn-full" id="sm-change-deck-btn" data-i18n="sm-change-deck-btn">🎴 Wijzig deck</button>
         </div>
 
         <!-- QR -->
         <div>
-          <p class="sm-section-title">Uitnodigen</p>
+          <p class="sm-section-title" data-i18n="sm-section-invite">Uitnodigen</p>
           <div class="qr-section">
-            <div class="qr-placeholder" id="qr-placeholder">Laden…</div>
+            <div class="qr-placeholder" id="qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
             <img class="qr-image hidden" id="sm-qr-img" src="" alt="QR Code" />
             <p class="qr-room-url" id="sm-qr-url"></p>
-            <button class="btn btn-secondary btn-full" id="sm-copy-link-btn">📋 Kopieer link</button>
+            <button class="btn btn-secondary btn-full" id="sm-copy-link-btn" data-i18n="sm-copy-link-btn">📋 Kopieer link</button>
           </div>
         </div>
 
@@ -269,8 +270,8 @@
 
     <!-- Mobile SM bar (bottom strip, only SM on mobile) -->
     <div id="mobile-sm-bar" class="mobile-sm-bar hidden">
-      <button class="btn btn-primary" id="mobile-reveal-btn" style="flex:1;">🃏 Reveal</button>
-      <button class="btn btn-secondary" id="mobile-reset-btn" style="flex:1;">🔄 Reset</button>
+      <button class="btn btn-primary" id="mobile-reveal-btn" style="flex:1;" data-i18n="sm-reveal-btn">🃏 Reveal</button>
+      <button class="btn btn-secondary" id="mobile-reset-btn" style="flex:1;" data-i18n="sm-reset-btn">🔄 Reset</button>
       <button class="btn btn-secondary btn-icon" id="mobile-qr-btn">🔗</button>
       <button class="btn btn-secondary btn-icon" id="mobile-deck-btn">🎴</button>
     </div>
