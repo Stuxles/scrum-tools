@@ -13,7 +13,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
   deckType = DECKS[deckType] ? deckType : 'standard';
 
   const deck = deckType === 'custom'
-    ? (customCards || []).map(s => String(s).trim()).filter(Boolean).slice(0, 30)
+    ? (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30)
     : DECKS[deckType];
 
   if (deckType === 'custom' && deck.length < 2) {
@@ -92,7 +92,10 @@ export function handleVote(socket, { roomId, vote }) {
   if (!room || !room.participants[socket.id]) return;
   if (room.revealed) return;
 
-  room.participants[socket.id].vote     = String(vote);
+  const voteStr = String(vote ?? '').trim().slice(0, 20);
+  if (!voteStr || !room.deck.includes(voteStr)) return;
+
+  room.participants[socket.id].vote     = voteStr;
   room.participants[socket.id].hasVoted = true;
   broadcastRoomState(roomId);
 }

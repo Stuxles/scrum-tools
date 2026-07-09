@@ -30,7 +30,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
   if (!room || room.masterId !== socket.id) return;
 
   if (deckType === 'custom') {
-    const cards = (customCards || []).map(s => String(s).trim()).filter(Boolean);
+    const cards = (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30);
     if (cards.length < 2) {
       socket.emit('error', { message: 'Voer minimaal 2 kaarten in.' });
       return;

@@ -3,7 +3,7 @@
  * Needs a reference to the Socket.IO server (`io`) to be injected.
  */
 
-import { rooms, sanitizeRoom } from '../store/rooms.js';
+import { rooms, sanitizeRoom, deleteRoom } from '../store/rooms.js';
 
 /** @type {import('socket.io').Server} */
 let _io;
@@ -33,14 +33,24 @@ export function broadcastRoomState(roomId) {
 
 /**
  * Schedule automatic cleanup of a room after 24 hours.
+ * Stores timer on `room.cleanupTimer` to avoid memory leaks if room is deleted earlier.
  *
  * @param {string} roomId
  */
 export function scheduleRoomCleanup(roomId) {
-  setTimeout(() => {
-    if (rooms[roomId]) {
-      delete rooms[roomId];
-      console.log(`[cleanup] Room ${roomId} verwijderd na 24u.`);
+  const room = rooms[roomId];
+  if (!room) return;
+  if (room.cleanupTimer) clearTimeout(room.cleanupTimer);
+
+  room.cleanupTimer = setTimeout(() => {
+    const r = rooms[roomId];
+    if (!r) return;
+    if (Object.keys(r.participants).length > 0) {
+      console.log(`[cleanup] Room ${roomId} nog in gebruik na 24u, verlengd met 1u.`);
+      scheduleRoomCleanup(roomId);
+      return;
     }
+    deleteRoom(roomId);
+    console.log(`[cleanup] Room ${roomId} verwijderd na 24u inactiviteit.`);
   }, 24 * 60 * 60 * 1000);
 }

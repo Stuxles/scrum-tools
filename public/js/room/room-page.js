@@ -16,8 +16,7 @@ import { initQrModule }             from './qr-module.js';
 
 export function initRoomPage(socket, urlRoomId) {
   if (!urlRoomId) {
-    toast('Geen room-ID gevonden in de URL.', 'error');
-    setTimeout(() => { window.location.href = '/'; }, 2000);
+    window.location.replace('/');
     return;
   }
 
@@ -292,7 +291,7 @@ export function initRoomPage(socket, urlRoomId) {
   socket.on('disconnect', ()            => toast('Verbinding verbroken — opnieuw verbinden…', 'error'));
   socket.io.on('reconnect', ()          => {
     toast('Opnieuw verbonden!', 'success');
-    if (currentRoom) socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem' });
+    if (currentRoom && urlRoomId) socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem' });
   });
 
   // ── Join flow ─────────────────────────────────────────────────────────────

@@ -4,13 +4,26 @@
  * @typedef {{ id: string, name: string, masterId: string|null, masterName: string,
  *             deckType: string, deck: string[], revealed: boolean,
  *             participants: Record<string,Participant>, createdAt: number,
- *             disconnectTimer?: ReturnType<typeof setTimeout> }} Room
+ *             disconnectTimer?: ReturnType<typeof setTimeout>,
+ *             cleanupTimer?: ReturnType<typeof setTimeout> }} Room
  *
  * @typedef {{ id: string, name: string, vote: string|null, hasVoted: boolean }} Participant
  */
 
 /** @type {Record<string, Room>} */
 export const rooms = {};
+
+/**
+ * Delete a room and clear any pending timers to avoid memory/timer leaks.
+ * @param {string} roomId
+ */
+export function deleteRoom(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+  if (room.cleanupTimer)    clearTimeout(room.cleanupTimer);
+  if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
+  delete rooms[roomId];
+}
 
 /**
  * Serialize room state for a specific client.

@@ -1,3 +1,5 @@
+import { escHtml } from '../utils/helpers.js';
+
 /**
  * Results phase renderer — cards grid and statistics panel.
  *
@@ -79,7 +81,7 @@ function renderStats(container, room) {
   if (nonNum.length > 0) {
     const counts  = {};
     for (const v of nonNum) counts[v] = (counts[v] || 0) + 1;
-    const display = Object.entries(counts).map(([v, c]) => `${v}×${c}`).join(' ');
+    const display = Object.entries(counts).map(([v, c]) => `${escHtml(v)}×${c}`).join(' ');
     html += `
       <div class="stat-item">
         <div class="stat-value" style="font-size:1.2rem;">${display}</div>
@@ -100,7 +102,7 @@ function renderStats(container, room) {
         const pct = Math.round((c / maxCount) * 100);
         return `
           <div class="dist-row">
-            <span class="dist-val">${v}</span>
+            <span class="dist-val">${escHtml(v)}</span>
             <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${pct}%"></div></div>
             <span class="dist-count">${c}×</span>
           </div>`;

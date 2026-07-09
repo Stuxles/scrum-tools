@@ -1,4 +1,4 @@
-import { rooms }            from '../../store/rooms.js';
+import { rooms, deleteRoom }  from '../../store/rooms.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 
 /**
@@ -34,10 +34,11 @@ export function handleDisconnect(io, socket) {
     const remaining = Object.keys(room.participants);
 
     if (remaining.length === 0) {
+      if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
       // Grace period: give the creator 15 s to reconnect before wiping the room
       room.disconnectTimer = setTimeout(() => {
         if (rooms[roomId] && Object.keys(rooms[roomId].participants).length === 0) {
-          delete rooms[roomId];
+          deleteRoom(roomId);
           console.log(`[cleanup] Room ${roomId} verwijderd na leegloop.`);
         }
       }, 15_000);
