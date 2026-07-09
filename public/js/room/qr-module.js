@@ -9,6 +9,7 @@
 
 import { toast }           from '../utils/toast.js';
 import { copyToClipboard } from '../utils/helpers.js';
+import { t }               from '../utils/i18n.js';
 
 export function initQrModule(els, _socket, roomId) {
   const {
@@ -39,7 +40,7 @@ export function initQrModule(els, _socket, roomId) {
 
   // ── Share modal ───────────────────────────────────────────────────────────
   function openQrModal() {
-    if (!qrUrl) { toast('QR code nog niet geladen…', 'info'); return; }
+    if (!qrUrl) { toast(t('toast-qr-loading'), 'info'); return; }
     qrModalImg.src       = smQrImg.src;
     qrModalUrl.textContent = qrUrl;
     qrModal.classList.remove('hidden');
@@ -47,17 +48,27 @@ export function initQrModule(els, _socket, roomId) {
 
   const closeQrModal = () => qrModal.classList.add('hidden');
 
+  function toggleQrModal() {
+    if (qrModal.classList.contains('hidden')) {
+      openQrModal();
+    } else {
+      closeQrModal();
+    }
+  }
+
   headerQrBtn.addEventListener('click', openQrModal);
   mobileQrBtn.addEventListener('click', openQrModal);
+  smQrImg.addEventListener('click',     toggleQrModal);
+  qrModalImg.addEventListener('click',  closeQrModal);
   qrCloseBtn.addEventListener('click',  closeQrModal);
   qrModal.addEventListener('click', e => { if (e.target === qrModal) closeQrModal(); });
 
   // ── Copy link ─────────────────────────────────────────────────────────────
   function copyLink() {
-    if (!qrUrl) { toast('Link nog niet beschikbaar', 'error'); return; }
+    if (!qrUrl) { toast(t('toast-link-not-ready'), 'error'); return; }
     copyToClipboard(
       qrUrl,
-      () => toast('Link gekopieerd! 📋', 'success'),
+      () => toast(t('toast-link-copied'), 'success'),
     );
   }
 

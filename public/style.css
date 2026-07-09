@@ -1040,6 +1040,11 @@ label.field-label {
   height: 160px;
   border-radius: var(--r-md);
   display: block;
+  cursor: pointer;
+  transition: transform var(--t-fast);
+}
+.qr-image:hover {
+  transform: scale(1.04);
 }
 .qr-room-url {
   font-size: 0.72rem;

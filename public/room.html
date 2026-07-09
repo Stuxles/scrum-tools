@@ -74,7 +74,7 @@
       <p class="modal-subtitle" style="text-align:center;" data-i18n="qr-modal-subtitle">Scan de QR-code of deel de link.</p>
 
       <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin:20px 0;">
-        <img id="qr-modal-img" src="" alt="QR Code voor de room" style="width:200px;height:200px;border-radius:12px;display:block;" />
+        <img id="qr-modal-img" src="" alt="QR Code voor de room" title="Klik op de QR-code om te sluiten" data-i18n-title="qr-modal-img-title" style="width:240px;height:240px;border-radius:12px;display:block;cursor:pointer;" />
         <p id="qr-modal-url" style="font-size:0.78rem;color:var(--text-500);text-align:center;word-break:break-all;"></p>
       </div>
 
@@ -259,7 +259,7 @@
           <p class="sm-section-title" data-i18n="sm-section-invite">Uitnodigen</p>
           <div class="qr-section">
             <div class="qr-placeholder" id="qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
-            <img class="qr-image hidden" id="sm-qr-img" src="" alt="QR Code" />
+            <img class="qr-image hidden" id="sm-qr-img" src="" alt="QR Code" title="Klik om te vergroten" data-i18n-title="sm-qr-img-title" />
             <p class="qr-room-url" id="sm-qr-url"></p>
             <button class="btn btn-secondary btn-full" id="sm-copy-link-btn" data-i18n="sm-copy-link-btn">📋 Kopieer link</button>
           </div>
