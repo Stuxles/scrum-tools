@@ -49,15 +49,12 @@ export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, current
 export function renderVoting(ctx, room, isMaster, myVote) {
   const {
     votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,
-    voteStatusBar, voteStatusText, cardDeck,
+    voteStatusBar, voteStatusText, cardDeck, presenterBanner, deckWrapper,
     socket, currentRoom, onVote,
   } = ctx;
 
   votingPhase.classList.remove('hidden');
   resultsPhase.classList.add('hidden');
-
-  const presenterBanner = document.getElementById('presenter-banner');
-  const deckWrapper     = document.getElementById('deck-wrapper');
 
   if (isMaster) {
     presenterBanner?.classList.remove('hidden');

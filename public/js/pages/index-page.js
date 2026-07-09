@@ -5,8 +5,8 @@
  * @param {string} urlRoomId  Pre-filled room code from URL (may be empty).
  */
 
-import { toast }                    from './utils/toast.js';
-import { getSavedName, saveName }   from './utils/helpers.js';
+import { toast }                    from '../utils/toast.js';
+import { getSavedName, saveName }   from '../utils/helpers.js';
 
 export function initIndexPage(socket, urlRoomId) {
   const createName     = document.getElementById('create-name');

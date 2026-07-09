@@ -45,6 +45,8 @@ export function initRoomPage(socket, urlRoomId) {
 
   const participantsList = document.getElementById('participants-list');
   const cardDeck         = document.getElementById('card-deck');
+  const presenterBanner  = document.getElementById('presenter-banner');
+  const deckWrapper      = document.getElementById('deck-wrapper');
 
   const votingPhase      = document.getElementById('voting-phase');
   const votingPhaseTitle = document.getElementById('voting-phase-title');
@@ -226,7 +228,7 @@ export function initRoomPage(socket, urlRoomId) {
 
     const votingCtx = {
       votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,
-      voteStatusBar, voteStatusText, cardDeck,
+      voteStatusBar, voteStatusText, cardDeck, presenterBanner, deckWrapper,
       socket, currentRoom,
       onVote: (val) => {
         myVote = val;

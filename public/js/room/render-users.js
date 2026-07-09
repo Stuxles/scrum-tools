@@ -15,7 +15,15 @@ export function renderParticipants(participantsList, room, isMaster, socket, esc
     li.className  = 'participant-item';
     li.dataset.id = p.id;
 
-    const initial  = (p.name || '?')[0].toUpperCase();
+    const initial = (p.name || '?')[0].toUpperCase();
+    li.innerHTML  = `
+      <div class="participant-avatar" aria-hidden="true">${initial}</div>
+      <div class="participant-info">
+        <div class="participant-name">${escHtml(p.name)}${p.id === socket.id ? ' <span style="color:var(--purple-300)">(jij)</span>' : ''}${p.isMaster ? ' 👑' : ''}</div>
+        <div class="participant-role">${p.isMaster ? 'Scrum Master' : 'Deelnemer'}</div>
+      </div>
+    `;
+
     const statusEl = document.createElement('div');
     statusEl.className = 'participant-status';
 
@@ -37,13 +45,6 @@ export function renderParticipants(participantsList, room, isMaster, socket, esc
       statusEl.title       = 'Nog niet gestemd';
     }
 
-    li.innerHTML = `
-      <div class="participant-avatar" aria-hidden="true">${initial}</div>
-      <div class="participant-info">
-        <div class="participant-name">${escHtml(p.name)}${p.id === socket.id ? ' <span style="color:var(--purple-300)">(jij)</span>' : ''}${p.isMaster ? ' 👑' : ''}</div>
-        <div class="participant-role">${p.isMaster ? 'Scrum Master' : 'Deelnemer'}</div>
-      </div>
-    `;
     li.appendChild(statusEl);
 
     if (isMaster && p.id !== socket.id) {
