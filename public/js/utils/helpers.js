@@ -88,6 +88,13 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window._isInScrumRoom) {
       requestWakeLock();
+      if (window._scrumSocket && window._scrumRoomId) {
+        if (window._scrumSocket.disconnected) {
+          window._scrumSocket.connect();
+        } else {
+          window._scrumSocket.emit('join-room', { roomId: window._scrumRoomId, name: getSavedName() || 'Anoniem' });
+        }
+      }
     } else if (document.visibilityState === 'hidden') {
       releaseWakeLock();
     }

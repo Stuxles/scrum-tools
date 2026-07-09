@@ -279,6 +279,8 @@ export function initRoomPage(socket, urlRoomId) {
     applyRoomState(room);
     if (isM) qr.loadQR();
     window._isInScrumRoom = true;
+    window._scrumSocket   = socket;
+    window._scrumRoomId   = urlRoomId;
     requestWakeLock();
   });
 
@@ -301,10 +303,12 @@ export function initRoomPage(socket, urlRoomId) {
   });
 
   socket.on('error',      ({ message }) => toast(message, 'error'));
-  socket.on('disconnect', ()            => toast('Verbinding verbroken — opnieuw verbinden…', 'error'));
-  socket.io.on('reconnect', ()          => {
-    toast('Opnieuw verbonden!', 'success');
-    if (currentRoom && urlRoomId) socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem' });
+  socket.on('disconnect', ()   => toast(t('toast-disconnect'), 'error'));
+  socket.io.on('reconnect', () => {
+    toast(t('toast-reconnected'), 'success');
+    if (urlRoomId) {
+      socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem' });
+    }
   });
 
   // ── Join flow ─────────────────────────────────────────────────────────────
@@ -335,6 +339,8 @@ export function initRoomPage(socket, urlRoomId) {
     name = (name || modalNameInput.value).trim();
     if (!name) { toast(t('toast-enter-name'), 'error'); modalNameInput.focus(); return; }
     saveName(name);
+    window._scrumSocket = socket;
+    window._scrumRoomId = urlRoomId;
     socket.emit('join-room', { roomId: urlRoomId, name });
   }
 
