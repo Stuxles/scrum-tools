@@ -21,6 +21,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY package*.json ./
 COPY server.js ./
 COPY public ./public
+COPY src ./src
 
 # Use default built-in non-privileged 'node' user (security & minimalism)
 USER node
