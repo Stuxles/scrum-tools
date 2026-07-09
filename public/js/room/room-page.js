@@ -9,6 +9,7 @@
 import { toast }                    from '../utils/toast.js';
 import { getSavedName, saveName, copyToClipboard } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
+import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
 import { renderResults }            from './render-results.js';
 import { renderParticipants }       from './render-users.js';
@@ -193,12 +194,15 @@ export function initRoomPage(socket, urlRoomId) {
   nameModal.addEventListener('click', e => { if (e.target === nameModal) nameModal.classList.add('hidden'); });
 
   // ── Apply room state ──────────────────────────────────────────────────────
-  const DECK_LABELS = {
-    standard:  'Standaard (0–40)',
-    fibonacci: 'Fibonacci',
-    tshirt:    'T-Shirt',
-    custom:    'Aangepast',
-  };
+  function getDeckLabel(type) {
+    const labels = {
+      standard:  t('deck-standard').split(' — ')[0],
+      fibonacci: t('deck-fibonacci').split(' — ')[0],
+      tshirt:    t('deck-tshirt').split(' — ')[0],
+      custom:    t('deck-custom').replace('…', ''),
+    };
+    return labels[type] || type;
+  }
 
   function applyRoomState(room) {
     currentRoom = room;
@@ -216,7 +220,7 @@ export function initRoomPage(socket, urlRoomId) {
 
     if (isMaster) {
       showSMControls();
-      smCurrentDeck.textContent = DECK_LABELS[room.deckType] || room.deckType;
+      smCurrentDeck.textContent = getDeckLabel(room.deckType);
       deckModalType.value       = room.deckType;
     } else {
       hideSMControls();
@@ -232,7 +236,7 @@ export function initRoomPage(socket, urlRoomId) {
         myVote = val;
         selectVoteCard(cardDeck, val);
         voteStatusBar.className    = 'vote-status-bar voted-state';
-        voteStatusText.textContent = `Je hebt "${val}" gekozen ✓`;
+        voteStatusText.textContent = t('vote-status-picked', { card: `"${val}"` });
       },
     };
 
@@ -254,7 +258,7 @@ export function initRoomPage(socket, urlRoomId) {
       const total  = voters.length;
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
       smProgressFill.style.width = `${pct}%`;
-      smProgressText.textContent = `${voted} / ${total} gestemd`;
+      smProgressText.textContent = t('progress-text', { voted, total });
       smRevealBtn.disabled       = (voted === 0 && !room.revealed);
       mobileRevealBtn.disabled   = smRevealBtn.disabled;
     }
@@ -320,11 +324,15 @@ export function initRoomPage(socket, urlRoomId) {
 
   function doJoinRoom(name) {
     name = (name || modalNameInput.value).trim();
-    if (!name) { toast('Voer je naam in', 'error'); modalNameInput.focus(); return; }
+    if (!name) { toast(t('toast-enter-name'), 'error'); modalNameInput.focus(); return; }
     saveName(name);
     socket.emit('join-room', { roomId: urlRoomId, name });
   }
 
   modalJoinBtn.addEventListener('click',    () => doJoinRoom());
   modalNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doJoinRoom(); });
+
+  window.addEventListener('lang-changed', () => {
+    if (currentRoom) applyRoomState(currentRoom);
+  });
 }

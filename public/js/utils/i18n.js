@@ -54,6 +54,9 @@ export const translations = {
     'panel-title-participants': 'Deelnemers',
     'voting-phase-title': 'Kies je schatting',
     'voting-phase-subtitle': 'Selecteer een kaart. Je stem is pas zichtbaar na de reveal.',
+    'voting-phase-waiting': 'Wachten op stemmen…',
+    'role-participant': 'Deelnemer',
+    'user-you': '(jij)',
     'presenter-banner-title': 'Presenter-scherm',
     'presenter-banner-text': 'Kaarten zijn hier verborgen. Stem mee via je telefoon door de QR-code te scannen.',
     'vote-status-text-init': 'Nog niet gestemd',
@@ -96,7 +99,7 @@ export const translations = {
     'stat-most-picked': 'Meest gekozen',
     'stat-consensus': 'Overeenstemming',
     'stat-total-votes': 'Stemmen',
-    'vote-status-picked': 'Je hebt {card} gekozen — Wachten op de rest…',
+    'vote-status-picked': 'Je hebt {card} gekozen ✓',
     'progress-text': '{voted} / {total} gestemd'
   },
   en: {
@@ -149,6 +152,9 @@ export const translations = {
     'panel-title-participants': 'Participants',
     'voting-phase-title': 'Pick your estimate',
     'voting-phase-subtitle': 'Select a card. Your vote will only be visible after the reveal.',
+    'voting-phase-waiting': 'Waiting for votes…',
+    'role-participant': 'Participant',
+    'user-you': '(you)',
     'presenter-banner-title': 'Presenter Screen',
     'presenter-banner-text': 'Cards are hidden on this screen. Vote using your mobile device by scanning the QR code.',
     'vote-status-text-init': 'No card selected',
@@ -191,7 +197,7 @@ export const translations = {
     'stat-most-picked': 'Most picked',
     'stat-consensus': 'Consensus',
     'stat-total-votes': 'Votes',
-    'vote-status-picked': 'You picked {card} — Waiting for others…',
+    'vote-status-picked': 'You picked {card} ✓',
     'progress-text': '{voted} / {total} voted'
   }
 };

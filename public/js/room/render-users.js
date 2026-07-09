@@ -1,4 +1,5 @@
 import { escHtml } from '../utils/helpers.js';
+import { t } from '../utils/i18n.js';
 
 /**
  * Participants list renderer.
@@ -20,8 +21,8 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     li.innerHTML  = `
       <div class="participant-avatar" aria-hidden="true">${initial}</div>
       <div class="participant-info">
-        <div class="participant-name">${escHtml(p.name)}${p.id === socket.id ? ' <span style="color:var(--purple-300)">(jij)</span>' : ''}${p.isMaster ? ' 👑' : ''}</div>
-        <div class="participant-role">${p.isMaster ? 'Scrum Master' : 'Deelnemer'}</div>
+        <div class="participant-name">${escHtml(p.name)}${p.id === socket.id ? ` <span style="color:var(--purple-300)">${t('user-you')}</span>` : ''}${p.isMaster ? ' 👑' : ''}</div>
+        <div class="participant-role">${p.isMaster ? 'Scrum Master' : t('role-participant')}</div>
       </div>
     `;
 
@@ -31,19 +32,19 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     if (p.isMaster) {
       statusEl.className  += ' presenter-mode';
       statusEl.textContent = '🖥️';
-      statusEl.title       = 'Presenter-scherm (stemt via telefoon)';
+      statusEl.title       = t('presenter-banner-title');
     } else if (room.revealed && p.hasVoted) {
       statusEl.className  += ' revealed-vote';
       statusEl.textContent = p.vote || '—';
-      statusEl.title       = `Stem: ${p.vote}`;
+      statusEl.title       = `Vote: ${p.vote}`;
     } else if (p.hasVoted) {
       statusEl.className  += ' voted';
       statusEl.textContent = '✓';
-      statusEl.title       = 'Gestemd';
+      statusEl.title       = 'Voted';
     } else {
       statusEl.className  += ' not-voted';
       statusEl.textContent = '…';
-      statusEl.title       = 'Nog niet gestemd';
+      statusEl.title       = t('vote-status-text-init');
     }
 
     li.appendChild(statusEl);

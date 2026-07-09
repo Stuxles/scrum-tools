@@ -1,3 +1,5 @@
+import { t } from '../utils/i18n.js';
+
 /**
  * Renders the voting card deck for participants.
  *
@@ -76,7 +78,7 @@ export function renderVoting(ctx, room, isMaster, myVote) {
     presenterBanner?.classList.remove('hidden');
     deckWrapper?.classList.add('hidden');
     voteStatusBar.classList.add('hidden');
-    votingPhaseTitle.textContent = 'Wachten op stemmen...';
+    votingPhaseTitle.textContent = t('voting-phase-waiting');
     votingPhaseSub.textContent   = '';
   } else {
     presenterBanner?.classList.add('hidden');
@@ -85,13 +87,13 @@ export function renderVoting(ctx, room, isMaster, myVote) {
 
     if (myVote) {
       voteStatusBar.className    = 'vote-status-bar voted-state';
-      voteStatusText.textContent = `Je hebt "${myVote}" gekozen ✓`;
+      voteStatusText.textContent = t('vote-status-picked', { card: `"${myVote}"` });
     } else {
       voteStatusBar.className    = 'vote-status-bar';
-      voteStatusText.textContent = 'Nog niet gestemd';
+      voteStatusText.textContent = t('vote-status-text-init');
     }
-    votingPhaseTitle.textContent = 'Kies je schatting';
-    votingPhaseSub.textContent   = 'Selecteer een kaart. Je stem is pas zichtbaar na de reveal.';
+    votingPhaseTitle.textContent = t('voting-phase-title');
+    votingPhaseSub.textContent   = t('voting-phase-subtitle');
 
     renderCardDeck(cardDeck, room.deck, myVote, room.revealed, socket, currentRoom, onVote);
   }
