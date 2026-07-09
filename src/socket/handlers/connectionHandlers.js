@@ -35,13 +35,13 @@ export function handleDisconnect(io, socket) {
 
     if (remaining.length === 0) {
       if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
-      // Grace period: give the creator 15 s to reconnect before wiping the room
+      // Grace period: give the creator 60 s to reconnect before wiping the room
       room.disconnectTimer = setTimeout(() => {
         if (rooms[roomId] && Object.keys(rooms[roomId].participants).length === 0) {
           deleteRoom(roomId);
           console.log(`[cleanup] Room ${roomId} verwijderd na leegloop.`);
         }
-      }, 15_000);
+      }, 60_000);
       continue;
     }
 
