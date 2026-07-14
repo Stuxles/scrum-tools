@@ -1,8 +1,8 @@
 /**
  * Centralized Application Configuration (Frontend & Backend Shared)
  *
- * Wijzig de naam hier (APP_NAME) om deze overal in de hele frontend
- * (paginatitels, header logo, homepagina hero) en backend te wijzigen.
+ * Change the name here (APP_NAME) to update it everywhere across the
+ * entire frontend (page titles, header logo, hero title) and backend.
  */
 
 export const APP_NAME = 'Scrum Poker';
