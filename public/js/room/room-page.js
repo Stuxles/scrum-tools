@@ -132,9 +132,9 @@ export function initRoomPage(socket, urlRoomId) {
     mobileSMBar.classList.add('hidden');
     headerQrBtn.classList.remove('hidden');
     headerDeckBtn.classList.add('hidden');
-    if (storyBanner) storyBanner.classList.add('hidden');
+    if (storyBanner) storyBanner.classList.remove('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.add('hidden');
-    if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
+    if (storyTitleDisplay) storyTitleDisplay.classList.remove('hidden');
     document.body.classList.remove('is-presenter');
   }
 

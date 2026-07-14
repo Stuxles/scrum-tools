@@ -787,7 +787,7 @@ label.field-label {
   color: var(--green);
 }
 
-/* -- Story / Issue Header Pill (Presenter Only) ------------------------------- */
+/* -- Story / Issue Header Pill (Visible on Desktop for Everyone, hidden on mobile <= 1100px) -- */
 .header-story-banner {
   display: flex;
   align-items: center;
