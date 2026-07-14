@@ -10,34 +10,33 @@ The diagram below illustrates the exact lifecycle of a room from initial creatio
 
 ```mermaid
 stateDiagram-v2
-    [*] --> RoomCreated: create-room / join-room
+    [*] --> RoomCreated : create-room or join-room
     
     state RoomCreated {
         [*] --> VotingPhase
-        VotingPhase --> VotingPhase: Voter picks/deselects card<br/>(p.vote = value, p.hasVoted = true/false)
-        VotingPhase --> VotingPhase: SM types Current Ticket<br/>(room.storyTitle updated)
-        VotingPhase --> RevealedPhase: SM clicks Reveal<br/>(room.revealed = true)
-        
-        RevealedPhase --> VotingPhase: SM clicks New Round / Reset<br/>(All p.vote & p.hasVoted cleared)
+        VotingPhase --> VotingPhase : Voter picks or deselects card
+        VotingPhase --> VotingPhase : SM types Current Ticket
+        VotingPhase --> RevealedPhase : SM clicks Reveal
+        RevealedPhase --> VotingPhase : SM clicks New Round
     }
 
-    RoomCreated --> GracePeriod15m: Last participant leaves room<br/>(remaining.length == 0)
+    RoomCreated --> GracePeriod15m : Last participant leaves room
     
     state GracePeriod15m {
-        [*] --> TimerRunning: setTimeout(deleteRoom, 15m)
-        TimerRunning --> RoomCreated: Rejoin within 15 minutes<br/>(clearTimeout & restore session)
-        TimerRunning --> RoomDeleted: 15 minutes of emptiness elapsed
+        [*] --> TimerRunning : setTimeout 15m
+        TimerRunning --> RoomCreated : Rejoin within 15 minutes
+        TimerRunning --> RoomDeleted : 15 minutes elapsed
     }
 
-    RoomCreated --> Check24hTimeout: 24 hours elapsed since creation
-    state Check24hTimeout {
-        [*] --> IsRoomEmpty?
-        IsRoomEmpty? --> RoomDeleted: Room is empty
-        IsRoomEmpty? --> Extend1h: Active participants still present<br/>(Extend timer by 1 hour)
-        Extend1h --> Check24hTimeout
+    RoomCreated --> Check24hState : 24 hours elapsed since creation
+    state Check24hState {
+        [*] --> OccupancyCheck
+        OccupancyCheck --> RoomDeleted : Room is empty
+        OccupancyCheck --> Extend1h : Active participants present
+        Extend1h --> OccupancyCheck : Recheck after 1 hour
     }
 
-    RoomDeleted --> [*]: deleteRoom(roomId)<br/>Clear all timers & delete from memory
+    RoomDeleted --> [*] : deleteRoom and clear timers
 ```
 
 ---

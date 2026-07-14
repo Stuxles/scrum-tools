@@ -11,22 +11,22 @@ The frontend relies entirely on **native ES Modules (`type="module"`)** and brow
 ```mermaid
 graph LR
     subgraph Core["Entrypoints"]
-        Main["public/js/main.js<br/>(Global Socket Init)"]
-        IndexPage["public/js/pages/index-page.js<br/>(Landing Controller)"]
-        RoomPage["public/js/room/room-page.js<br/>(Room Coordinator)"]
+        Main["public/js/main.js (Global Socket Init)"]
+        IndexPage["public/js/pages/index-page.js (Landing Controller)"]
+        RoomPage["public/js/room/room-page.js (Room Coordinator)"]
     end
 
     subgraph Renderers["Room View Renderers"]
-        RUsers["render-users.js<br/>• Sidebar Participants<br/>• Status Icons (👑, 🖥️, 👁️, ✓)<br/>• SM Kick Button"]
-        RVoting["render-voting.js<br/>• Card Deck Generation<br/>• Vote Deselection Logic<br/>• Spectator Notice Banner"]
-        RResults["render-results.js<br/>• Revealed Cards Grid<br/>• Auto Score Analysis<br/>• Average, Median & Bar Chart"]
+        RUsers["render-users.js (Sidebar Participants, Status Icons, SM Kick Button)"]
+        RVoting["render-voting.js (Card Deck Generation, Vote Deselection Logic, Spectator Notice)"]
+        RResults["render-results.js (Revealed Cards Grid, Auto Score Analysis, Average, Median, Bar Chart)"]
     end
 
     subgraph Utilities["Shared Utilities & State"]
-        I18n["utils/i18n.js<br/>• Bilingual EN/NL Dictionary<br/>• DOM Auto-Translator"]
-        Helpers["utils/helpers.js<br/>• escHtml (XSS Prevention)<br/>• LocalStorage Sync"]
-        Toast["utils/toast.js<br/>• Dynamic Alert Notifications"]
-        QR["room/qr-module.js<br/>• Full-Screen QR Modal"]
+        I18n["utils/i18n.js (Bilingual EN/NL Dictionary, DOM Auto-Translator)"]
+        Helpers["utils/helpers.js (escHtml XSS Prevention, LocalStorage Sync)"]
+        Toast["utils/toast.js (Dynamic Alert Notifications)"]
+        QR["room/qr-module.js (Full-Screen QR Modal)"]
     end
 
     RoomPage --> RUsers & RVoting & RResults & QR
@@ -41,16 +41,16 @@ A fundamental security principle in the backend is that **unrevealed votes must 
 
 ```mermaid
 flowchart TD
-    RawStore[("In-Memory Room Object<br/>room.participants = { id, name, vote: '13', isSpectator: false }")]
+    RawStore["In-Memory Room Object (room.participants = id, name, vote: 13, isSpectator: false)"]
     
     SanitizeCall["sanitizeRoom(room, viewerSocketId)"]
     RawStore --> SanitizeCall
 
-    CheckRevealed{"Is room.revealed == true<br/>OR<br/>p.id == viewerSocketId?"}
+    CheckRevealed{"Is room.revealed == true OR p.id == viewerSocketId?"}
     SanitizeCall --> CheckRevealed
 
-    CheckRevealed -->|YES| ShowVote["vote: p.vote (e.g., '13')"]
-    CheckRevealed -->|NO| MaskVote["vote: null<br/>(Only hasVoted: true/false is sent)"]
+    CheckRevealed -->|YES| ShowVote["vote: p.vote (e.g., 13)"]
+    CheckRevealed -->|NO| MaskVote["vote: null (Only hasVoted: true or false is sent)"]
 
     ShowVote & MaskVote --> ClientPacket["Sanitized Payload emitted to viewer socket"]
 ```

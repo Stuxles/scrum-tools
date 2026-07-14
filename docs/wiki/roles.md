@@ -27,12 +27,12 @@ To ensure accurate Agile story sizing, any participant marked as `isMaster: true
 
 ```mermaid
 flowchart LR
-    AllParticipants["All Room Participants<br/>room.participants"] --> FilterVoters["Filter: !p.isMaster && !p.isSpectator"]
+    AllParticipants["All Room Participants (room.participants)"] --> FilterVoters["Filter: !p.isMaster && !p.isSpectator"]
     
-    FilterVoters --> VotersPool["Active Voters Pool<br/>(Only true estimation participants)"]
+    FilterVoters --> VotersPool["Active Voters Pool (Estimation participants only)"]
     
-    VotersPool --> CalcProgress["Live Voting Progress Bar<br/>votedCount / VotersPool.length"]
-    VotersPool --> CalcStats["Post-Reveal Analytics<br/>Average, Median, Most Picked & Bar Chart"]
+    VotersPool --> CalcProgress["Live Voting Progress Bar (votedCount / total)"]
+    VotersPool --> CalcStats["Post-Reveal Analytics (Average, Median & Bar Chart)"]
 ```
 
 ### Code Implementation (`room-page.js` & `render-results.js`)

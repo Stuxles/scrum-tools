@@ -30,25 +30,25 @@ graph TD
         RenderVoting["render-voting.js (Deck & Spectator Notice)"]
         RenderResults["render-results.js (Grid & Stats Analysis)"]
         I18n["i18n.js (NL / EN Translations)"]
-        LocalStore[("localStorage<br/>(name, lang, isSpectator)")]
+        LocalStore["localStorage (name, lang, isSpectator)"]
     end
 
     subgraph Backend["Node.js / Express / Socket.IO Server"]
-        ServerEntry["server.js / src/socket/index.js<br/>(Rate Limiter: 35 req/s)"]
-        RoomHandlers["roomHandlers.js<br/>(create, join, vote, toggle-spectator)"]
-        SMHandlers["smHandlers.js<br/>(reveal, reset, change-deck, update-story)"]
-        ConnHandlers["connectionHandlers.js<br/>(kick-user, disconnect, 15m Grace Timer)"]
-        Broadcast["broadcast.js<br/>(broadcastRoomState, 24h Cleanup)"]
-        RoomsStore[("src/store/rooms.js<br/>In-Memory Rooms Dictionary<br/>& sanitizeRoom security layer")]
+        ServerEntry["server.js / src/socket/index.js (Rate Limiter: 35 req/s)"]
+        RoomHandlers["roomHandlers.js (create, join, vote, toggle-spectator)"]
+        SMHandlers["smHandlers.js (reveal, reset, change-deck, update-story)"]
+        ConnHandlers["connectionHandlers.js (kick-user, disconnect, 15m Grace Timer)"]
+        Broadcast["broadcast.js (broadcastRoomState, 24h Cleanup)"]
+        RoomsStore["src/store/rooms.js (In-Memory Rooms Dictionary & sanitizeRoom)"]
     end
 
-    Landing -->|REST API / Socket| ServerEntry
-    RoomUI -->|Socket Events| ServerEntry
+    Landing -->|"REST API / Socket"| ServerEntry
+    RoomUI -->|"Socket Events"| ServerEntry
     RoomUI --- RenderUsers & RenderVoting & RenderResults
     RoomUI -.- LocalStore & I18n
 
     ServerEntry --> RoomHandlers & SMHandlers & ConnHandlers
     RoomHandlers & SMHandlers & ConnHandlers --> RoomsStore
     RoomHandlers & SMHandlers & ConnHandlers --> Broadcast
-    Broadcast -->|room-state (sanitized per viewer)| RoomUI
+    Broadcast -->|"room-state (sanitized per viewer)"| RoomUI
 ```

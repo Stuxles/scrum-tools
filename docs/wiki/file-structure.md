@@ -71,18 +71,18 @@ scrum-poker-collab/
 graph TD
     subgraph Server["Backend Layer (Node.js / Socket.IO)"]
         S_Entry["server.js"] --> S_Socket["src/socket/index.js"]
-        S_Socket --> S_Handlers["Handlers (`roomHandlers.js`, `smHandlers.js`, `connectionHandlers.js`)"]
-        S_Handlers --> S_Store["Rooms Store (`src/store/rooms.js`)"]
-        S_Handlers --> S_Broadcast["Broadcast & Sanitize (`src/utils/broadcast.js`)"]
+        S_Socket --> S_Handlers["Handlers (roomHandlers.js, smHandlers.js, connectionHandlers.js)"]
+        S_Handlers --> S_Store["Rooms Store (src/store/rooms.js)"]
+        S_Handlers --> S_Broadcast["Broadcast & Sanitize (src/utils/broadcast.js)"]
     end
 
     subgraph Client["Frontend Layer (Vanilla ES Modules)"]
-        C_Index["index.html / pages/index-page.js"] --> C_SocketClient["Socket.IO Client (`main.js`)"]
+        C_Index["index.html / pages/index-page.js"] --> C_SocketClient["Socket.IO Client (main.js)"]
         C_Room["room.html / room/room-page.js"] --> C_SocketClient
-        C_Room --> C_Renderers["Renderers (`render-users.js`, `render-voting.js`, `render-results.js`, `qr-module.js`)"]
-        C_Renderers & C_Room --> C_Utils["Shared (`i18n.js`, `toast.js`, `helpers.js`, `theme.js`)"]
+        C_Room --> C_Renderers["Renderers (render-users.js, render-voting.js, render-results.js, qr-module.js)"]
+        C_Renderers & C_Room --> C_Utils["Shared (i18n.js, toast.js, helpers.js, theme.js)"]
     end
 
-    S_Broadcast ==>|WebSocket Events (`room-state`, `kicked`, `room-joined`)| C_SocketClient
-    C_SocketClient ==>|WebSocket Emits (`join-room`, `vote`, `reveal`, `kick-user`)| S_Socket
+    S_Broadcast -->|"WebSocket Events: room-state, kicked, room-joined"| C_SocketClient
+    C_SocketClient -->|"WebSocket Emits: join-room, vote, reveal, kick-user"| S_Socket
 ```
