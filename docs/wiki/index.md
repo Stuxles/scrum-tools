@@ -14,6 +14,8 @@ Welcome to the official technical wiki of **Scrum Poker**. This documentation de
    *Detailed socket interaction sequences between the Scrum Master, Voters, Spectators, and the Server during voting rounds and kick actions.*
 4. [**Roles & Permissions (SM vs. Voter vs. Spectator)**](./roles.md)  
    *Permission matrix and detailed behavior of the progress bar, vote counting exclusions, and live role toggling.*
+5. [**Complete Repository File Structure & Modules**](./file-structure.md)  
+   *Exhaustive directory and file tree with module responsibilities and dependency graph across backend and frontend.*
 
 ---
 

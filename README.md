@@ -85,6 +85,7 @@ For deep-dive documentation on system design, state management, security (`sanit
 | [**🔄 Room Lifecycle & Timers**](./docs/wiki/lifecycle.md) | State transitions (`stateDiagram-v2`) showing the **15-minute empty room grace period** and **24-hour cleanup**. |
 | [**⚡ Socket.IO Sequence Flows**](./docs/wiki/socket-flows.md) | Sequence diagrams (`sequenceDiagram`) for voting rounds (`join → vote → reveal → reset`) and user kicks (`handleKickUser`). |
 | [**👑 Roles & Permissions Matrix**](./docs/wiki/roles.md) | Detailed capability matrix and progress bar calculations filtering out non-voters (`isMaster` / `isSpectator`). |
+| [**📂 Complete File Structure & Modules**](./docs/wiki/file-structure.md) | Exhaustive directory and file tree with module responsibilities and dependency graph (`graph TD`). |
 
 ---
 
@@ -101,7 +102,8 @@ For deep-dive documentation on system design, state management, security (`sanit
 │   ├── architecture.md      # Modular ES Components & sanitizeRoom security
 │   ├── lifecycle.md         # State machines & cleanup timers
 │   ├── socket-flows.md      # Real-time WebSockets sequence flows
-│   └── roles.md             # SM vs Voter vs Spectator permission matrix
+│   ├── roles.md             # SM vs Voter vs Spectator permission matrix
+│   └── file-structure.md    # Exhaustive repository & module directory breakdown
 ├── public/
 │   ├── index.html           # Home / Landing page
 │   ├── room.html            # Active poker room
