@@ -209,8 +209,8 @@ export const translations = {
     'vote-status-picked': 'You picked {card} ✓',
     'progress-text': '{voted} / {total} voted',
     'story-label': 'Current Ticket',
-    'story-empty': 'No ticket / story selected',
-    'story-placeholder': 'e.g., PROJ-204: Login page refactor',
+    'story-empty': 'No issue entered',
+    'story-placeholder': 'e.g., Straightening bananas',
     'story-btn-save': 'Save',
     'story-btn-edit': 'Edit'
   }
