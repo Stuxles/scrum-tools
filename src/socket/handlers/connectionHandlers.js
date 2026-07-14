@@ -14,6 +14,8 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
   if (target) {
     target.emit('kicked', {});
     target.leave(roomId);
+  } else {
+    io.to(targetId).emit('kicked', {});
   }
   delete room.participants[targetId];
   broadcastRoomState(roomId);

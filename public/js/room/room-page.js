@@ -365,7 +365,9 @@ export function initRoomPage(socket, urlRoomId) {
   });
 
   socket.on('kicked', () => {
-    toast('Je bent uit de room verwijderd.', 'error');
+    window._isInScrumRoom = false;
+    currentRoom = null;
+    toast(t('toast-kicked'), 'error');
     setTimeout(() => { window.location.href = '/'; }, 2000);
   });
 
@@ -373,7 +375,7 @@ export function initRoomPage(socket, urlRoomId) {
   socket.on('disconnect', ()   => toast(t('toast-disconnect'), 'error'));
   socket.io.on('reconnect', () => {
     toast(t('toast-reconnected'), 'success');
-    if (urlRoomId) {
+    if (urlRoomId && window._isInScrumRoom) {
       const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
       socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem', isSpectator: savedSpec });
     }

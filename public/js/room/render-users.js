@@ -1,5 +1,6 @@
 import { escHtml } from '../utils/helpers.js';
 import { t } from '../utils/i18n.js';
+import { toast } from '../utils/toast.js';
 
 /**
  * Participants list renderer.
@@ -58,10 +59,14 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
       const kickBtn = document.createElement('button');
       kickBtn.className = 'btn btn-danger btn-icon kick-btn';
       kickBtn.textContent = '✕';
-      kickBtn.title       = `${p.name} verwijderen`;
-      kickBtn.setAttribute('aria-label', `${p.name} verwijderen`);
+      const kickTitle = t('btn-kick-title', { name: p.name });
+      kickBtn.title       = kickTitle;
+      kickBtn.setAttribute('aria-label', kickTitle);
       kickBtn.addEventListener('click', () => {
-        socket.emit('kick-user', { roomId: room.id, targetId: p.id });
+        if (confirm(t('confirm-kick', { name: p.name }))) {
+          socket.emit('kick-user', { roomId: room.id, targetId: p.id });
+          toast(t('toast-kicked-success', { name: p.name }), 'info');
+        }
       });
       li.appendChild(kickBtn);
     }
