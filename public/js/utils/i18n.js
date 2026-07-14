@@ -51,6 +51,18 @@ export const translations = {
     'deck-modal-custom-label': 'Kaarten (komma-gescheiden)',
     'deck-modal-save': 'Toepassen',
     'deck-modal-cancel': 'Annuleer',
+    'options-btn-title': 'Opties & instellingen',
+    'options-modal-title': 'Opties & Instellingen',
+    'options-modal-subtitle': 'Beheer hier je rol, naam en weergave.',
+    'options-label-name': 'Jouw naam',
+    'options-label-role': 'Jouw rol',
+    'options-label-claim': 'Scrum Master',
+    'options-sub-claim': 'Neem het beheer over',
+    'claim-sm-btn-text': 'Overnemen',
+    'options-label-lang': 'Taal / Language',
+    'options-label-theme': 'Thema',
+    'options-sub-theme': 'Donkere of lichte modus',
+    'options-theme-btn': 'Licht',
 
     // ── Room Page UI ──
     'panel-title-participants': 'Deelnemers',
@@ -119,7 +131,17 @@ export const translations = {
     'story-empty': 'Geen issue ingevoerd',
     'story-placeholder': 'Bijv. Login refactor (#104)',
     'story-btn-save': 'Opslaan',
-    'story-btn-edit': 'Bewerken'
+    'story-btn-edit': 'Bewerken',
+    'leave-btn-title': 'Verlaat de room',
+    'confirm-leave-room': 'Weet je zeker dat je deze room wilt verlaten?',
+    'claim-sm-btn': '👑',
+    'claim-sm-title': 'Scrum Master rol overnemen',
+    'confirm-claim-sm': 'Wil je de rol van Scrum Master overnemen?',
+    'transfer-sm-btn': '👑 Overdragen',
+    'transfer-sm-title': 'Maak deze deelnemer Scrum Master',
+    'confirm-transfer-sm': 'Wil je de rol van Scrum Master overdragen aan {name}?',
+    'toast-sm-claimed': 'Je bent nu de Scrum Master 👑',
+    'toast-sm-transferred': 'Scrum Master rol overgedragen aan {name} 👑'
   },
   en: {
     // ── Header / General ──
@@ -168,6 +190,18 @@ export const translations = {
     'deck-modal-custom-label': 'Cards (comma-separated)',
     'deck-modal-save': 'Apply',
     'deck-modal-cancel': 'Cancel',
+    'options-btn-title': 'Options & Settings',
+    'options-modal-title': 'Options & Settings',
+    'options-modal-subtitle': 'Manage your role, name and preferences here.',
+    'options-label-name': 'Your name',
+    'options-label-role': 'Your role',
+    'options-label-claim': 'Scrum Master',
+    'options-sub-claim': 'Take over room management',
+    'claim-sm-btn-text': 'Take over',
+    'options-label-lang': 'Language / Taal',
+    'options-label-theme': 'Theme',
+    'options-sub-theme': 'Dark or light mode',
+    'options-theme-btn': 'Light',
 
     // ── Room Page UI ──
     'panel-title-participants': 'Participants',
@@ -236,7 +270,17 @@ export const translations = {
     'story-empty': 'No issue entered',
     'story-placeholder': 'e.g., Login refactor (#104)',
     'story-btn-save': 'Save',
-    'story-btn-edit': 'Edit'
+    'story-btn-edit': 'Edit',
+    'leave-btn-title': 'Leave room',
+    'confirm-leave-room': 'Are you sure you want to leave this room?',
+    'claim-sm-btn': '👑',
+    'claim-sm-title': 'Take over Scrum Master role',
+    'confirm-claim-sm': 'Do you want to take over the Scrum Master role?',
+    'transfer-sm-btn': '👑 Transfer',
+    'transfer-sm-title': 'Make this participant Scrum Master',
+    'confirm-transfer-sm': 'Do you want to transfer the Scrum Master role to {name}?',
+    'toast-sm-claimed': 'You are now the Scrum Master 👑',
+    'toast-sm-transferred': 'Scrum Master role transferred to {name} 👑'
   }
 };
 

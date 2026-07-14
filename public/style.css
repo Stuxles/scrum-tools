@@ -323,6 +323,32 @@ label.field-label {
   margin-top: 20px;
 }
 
+/* ── Options Modal Rows ───────────────────────────────────────── */
+.option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--glass-border);
+  transition: background 0.2s;
+}
+[data-theme="light"] .option-row {
+  background: rgba(0,0,0,0.03);
+  border-color: rgba(0,0,0,0.08);
+}
+.option-row-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-100);
+}
+.option-row-sub {
+  font-size: 0.82rem;
+  color: var(--text-500);
+  margin-top: 2px;
+}
+
 /* ── Utility ─────────────────────────────────────────────────── */
 .hidden   { display: none !important; }
 .sr-only  { position:absolute; width:1px; height:1px; clip:rect(0,0,0,0); overflow:hidden; }
@@ -460,7 +486,11 @@ label.field-label {
   backdrop-filter: blur(20px);
   z-index: 10;
   flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.room-header::-webkit-scrollbar { display: none; }
 
 .header-brand {
   display: flex;
@@ -658,13 +688,16 @@ label.field-label {
   opacity: 0.6;
 }
 
-.participant-item .kick-btn {
+.participant-item .kick-btn,
+.participant-item .transfer-btn {
   opacity: 0;
   transition: opacity 0.15s;
   padding: 4px 6px;
   font-size: 0.7rem;
+  margin-left: 4px;
 }
-.participant-item:hover .kick-btn { opacity: 1; }
+.participant-item:hover .kick-btn,
+.participant-item:hover .transfer-btn { opacity: 1; }
 
 /* ── Main Voting Area ────────────────────────────────────────── */
 .voting-area {
@@ -1243,9 +1276,12 @@ label.field-label {
   .participant-item { padding: 6px 8px; }
   .participant-role { display: none; }
 
-  .room-header { padding: 0 12px; gap: 8px; }
+  .room-header { padding: 0 8px; gap: 6px; }
+  .header-right { gap: 4px; }
   .header-brand span:last-child { display: none; }
-  .room-name-display { max-width: 100px; font-size: 0.85rem; }
+  .room-name-display { max-width: 80px; font-size: 0.85rem; }
+  #header-spectator-text { display: none; }
+  .my-name-btn { padding: 4px 8px; max-width: 90px; }
 
   .voting-area { padding: 16px 12px; gap: 20px; }
   .card-deck { gap: 8px; }
@@ -1413,6 +1449,23 @@ label.field-label {
   font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.03em;
+}
+
+/* ── Options Modal Uniform Buttons ───────────────────────────── */
+.options-list .btn,
+.options-list .theme-toggle,
+.options-list .lang-toggle {
+  width: auto !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  border-radius: var(--r-sm) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
 }
 
 /* ════════════════════════════════════════════════════════════════

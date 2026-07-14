@@ -40,6 +40,16 @@ export function initRoomPage(socket, urlRoomId) {
   const headerOnline     = document.getElementById('header-online-count');
   const headerQrBtn      = document.getElementById('header-qr-btn');
   const headerDeckBtn    = document.getElementById('header-deck-btn');
+  const headerLeaveBtn   = document.getElementById('header-leave-btn');
+  const headerOptionsBtn = document.getElementById('header-options-btn');
+  const optionsModal     = document.getElementById('options-modal');
+  const optionsCloseBtn  = document.getElementById('options-close-btn');
+  const optionsCurrentName = document.getElementById('options-current-name');
+  const optionsCurrentRole = document.getElementById('options-current-role');
+  const optionsRowClaimSm  = document.getElementById('options-row-claim-sm');
+  const optionsRowSpectator = document.getElementById('options-row-spectator');
+
+  const btnClaimSm       = document.getElementById('btn-claim-sm');
   const headerSpectatorBtn  = document.getElementById('header-spectator-btn');
   const headerSpectatorIcon = document.getElementById('header-spectator-icon');
   const headerSpectatorText = document.getElementById('header-spectator-text');
@@ -120,17 +130,26 @@ export function initRoomPage(socket, urlRoomId) {
   function showSMControls() {
     smPanel.classList.remove('hidden');
     mobileSMBar.classList.remove('hidden');
-    headerQrBtn.classList.add('hidden');
+    if (headerQrBtn) headerQrBtn.classList.remove('hidden');
+    if (btnClaimSm) btnClaimSm.classList.add('hidden');
+    if (optionsRowClaimSm) optionsRowClaimSm.classList.add('hidden');
+    if (headerSpectatorBtn) headerSpectatorBtn.classList.add('hidden');
+    if (optionsRowSpectator) optionsRowSpectator.classList.add('hidden');
     headerDeckBtn.classList.add('hidden');
     if (storyBanner) storyBanner.classList.remove('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.remove('hidden');
     if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
     document.body.classList.add('is-presenter');
+    qr.loadQR();
   }
   function hideSMControls() {
     smPanel.classList.add('hidden');
     mobileSMBar.classList.add('hidden');
-    headerQrBtn.classList.remove('hidden');
+    if (headerQrBtn) headerQrBtn.classList.add('hidden');
+    if (btnClaimSm) btnClaimSm.classList.remove('hidden');
+    if (optionsRowClaimSm) optionsRowClaimSm.classList.remove('hidden');
+    if (headerSpectatorBtn) headerSpectatorBtn.classList.remove('hidden');
+    if (optionsRowSpectator) optionsRowSpectator.classList.remove('hidden');
     headerDeckBtn.classList.add('hidden');
     if (storyBanner) storyBanner.classList.remove('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.add('hidden');
@@ -217,8 +236,18 @@ export function initRoomPage(socket, urlRoomId) {
     myVote = null;
   });
 
+  // ── Options modal ─────────────────────────────────────────────────────────
+  if (headerOptionsBtn && optionsModal) {
+    headerOptionsBtn.addEventListener('click', () => {
+      optionsModal.classList.remove('hidden');
+    });
+    if (optionsCloseBtn) optionsCloseBtn.addEventListener('click', () => optionsModal.classList.add('hidden'));
+    optionsModal.addEventListener('click', e => { if (e.target === optionsModal) optionsModal.classList.add('hidden'); });
+  }
+
   // ── Name modal ────────────────────────────────────────────────────────────
   headerNameBtn.addEventListener('click', () => {
+    if (optionsModal) optionsModal.classList.add('hidden');
     nameModalInput.value = getSavedName();
     nameModal.classList.remove('hidden');
     nameModalInput.focus();
@@ -262,16 +291,25 @@ export function initRoomPage(socket, urlRoomId) {
     const isSpec = me ? Boolean(me.isSpectator) : false;
     if (me) {
       headerMyName.textContent = me.name;
+      if (optionsCurrentName) optionsCurrentName.textContent = me.name;
       isMaster = me.isMaster;
     }
 
     if (headerSpectatorBtn) {
       if (isMaster) {
         headerSpectatorBtn.classList.add('hidden');
+        if (optionsRowSpectator) optionsRowSpectator.classList.add('hidden');
       } else {
         headerSpectatorBtn.classList.remove('hidden');
+        if (optionsRowSpectator) optionsRowSpectator.classList.remove('hidden');
         if (headerSpectatorIcon) headerSpectatorIcon.textContent = isSpec ? '👁️' : '🃏';
         if (headerSpectatorText) headerSpectatorText.textContent = isSpec ? t('role-spectator') : t('role-voter');
+        if (optionsCurrentRole) optionsCurrentRole.textContent = isSpec ? (t('role-spectator') || 'Toeschouwer') : (t('role-voter') || 'Stemmer');
+        const roleLabel = isSpec ? t('role-spectator') : t('role-voter');
+        if (roleLabel) {
+          headerSpectatorBtn.title = roleLabel;
+          headerSpectatorBtn.setAttribute('aria-label', roleLabel);
+        }
       }
     }
 
@@ -437,6 +475,23 @@ export function initRoomPage(socket, urlRoomId) {
   }
   if (btnSwitchToVoter) {
     btnSwitchToVoter.addEventListener('click', () => toggleSpectator(false));
+  }
+  if (headerLeaveBtn) {
+    headerLeaveBtn.addEventListener('click', () => {
+      if (confirm(t('confirm-leave-room') || 'Weet je zeker dat je deze room wilt verlaten?')) {
+        socket.disconnect();
+        window.location.href = '/';
+      }
+    });
+  }
+  if (btnClaimSm) {
+    btnClaimSm.addEventListener('click', () => {
+      if (!currentRoom) return;
+      if (confirm(t('confirm-claim-sm') || 'Wil je de rol van Scrum Master overnemen?')) {
+        if (optionsModal) optionsModal.classList.add('hidden');
+        socket.emit('claim-master', { roomId: currentRoom.id });
+      }
+    });
   }
 
   modalJoinBtn.addEventListener('click',    () => doJoinRoom());

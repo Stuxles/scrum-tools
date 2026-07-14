@@ -17,7 +17,13 @@ export function initThemeToggle() {
   const icon = document.getElementById('theme-icon');
   if (!btn || !icon) return;
 
-  const update = (t) => { icon.textContent = t === 'light' ? '🌙' : '☀️'; };
+  const update = (t) => {
+    icon.textContent = t === 'light' ? '🌙' : '☀️';
+    const label = document.getElementById('theme-label');
+    if (label) label.textContent = t === 'light' ? 'Donker' : 'Licht';
+    const subTheme = document.getElementById('options-sub-theme');
+    if (subTheme) subTheme.textContent = t === 'light' ? 'Lichte modus' : 'Donkere modus';
+  };
   update(document.documentElement.getAttribute('data-theme') || 'dark');
 
   btn.addEventListener('click', () => {
