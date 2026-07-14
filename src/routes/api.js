@@ -5,9 +5,12 @@
 import { Router } from 'express';
 import QRCode     from 'qrcode';
 import { rooms }  from '../store/rooms.js';
-import { PUBLIC_URL } from '../config.js';
+import { PUBLIC_URL, APP_NAME } from '../config.js';
 
 const router = Router();
+
+// ─── Config info ──────────────────────────────────────────────────────────────
+router.get('/config', (_req, res) => res.json({ appName: APP_NAME }));
 
 // ─── Room info ────────────────────────────────────────────────────────────────
 router.get('/rooms/:id', (req, res) => {

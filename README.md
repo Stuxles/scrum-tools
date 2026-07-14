@@ -1,6 +1,9 @@
-# 🃏 StuxPoker
+# 🃏 Scrum Poker
 
-A modern, interactive, and real-time **StuxPoker (Scrum Poker) web application** designed for seamless collaboration among Agile development teams. Specially optimized for local network use, hybrid meetings, and quick mobile participation via QR codes.
+A modern, interactive, and real-time **Scrum Poker web application** designed for seamless collaboration among Agile development teams. Specially optimized for local network use, hybrid meetings, and quick mobile participation via QR codes.
+
+> **💡 Centralized Application Name:**  
+> The application name is defined in **one single place**: `public/js/config.js` (`export const APP_NAME = 'Scrum Poker';`). If you ever wish to rename the app in the future, simply update `APP_NAME` in that file or via the `APP_NAME` environment variable, and all UI titles, headers, brand icons, console logs, and API endpoints will update automatically!
 
 ---
 
@@ -37,7 +40,7 @@ A modern, interactive, and real-time **StuxPoker (Scrum Poker) web application**
 
 ```bash
 # Clone or download the repository
-cd stuxpoker
+cd scrum-poker
 
 # Install dependencies
 npm install

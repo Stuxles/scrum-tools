@@ -1,8 +1,10 @@
+import { APP_NAME } from '../config.js';
+
 /** localStorage key for persisting the user's display name. */
-export const LS_NAME = 'stuxpoker_name';
+export const LS_NAME = `${APP_NAME.toLowerCase().replace(/[^a-z0-9]/g, '_')}_name`;
 
 /** @returns {string} */
-export const getSavedName = () => localStorage.getItem(LS_NAME) || localStorage.getItem('scrumpoker_name') || '';
+export const getSavedName = () => localStorage.getItem(LS_NAME) || localStorage.getItem('scrumpoker_name') || localStorage.getItem('stuxpoker_name') || '';
 
 /** @param {string} name */
 export const saveName = (name) => { if (name) localStorage.setItem(LS_NAME, name); };
