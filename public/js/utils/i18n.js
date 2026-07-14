@@ -102,7 +102,12 @@ export const translations = {
     'stat-consensus': 'Overeenstemming',
     'stat-total-votes': 'Stemmen',
     'vote-status-picked': 'Je hebt {card} gekozen ✓',
-    'progress-text': '{voted} / {total} gestemd'
+    'progress-text': '{voted} / {total} gestemd',
+    'story-label': 'Actueel Ticket',
+    'story-empty': 'Geen issue ingevoerd',
+    'story-placeholder': 'Bijv. Bananen weer rechttrekken',
+    'story-btn-save': 'Opslaan',
+    'story-btn-edit': 'Bewerken'
   },
   en: {
     // ── Header / General ──
@@ -202,7 +207,12 @@ export const translations = {
     'stat-consensus': 'Consensus',
     'stat-total-votes': 'Votes',
     'vote-status-picked': 'You picked {card} ✓',
-    'progress-text': '{voted} / {total} voted'
+    'progress-text': '{voted} / {total} voted',
+    'story-label': 'Current Ticket',
+    'story-empty': 'No ticket / story selected',
+    'story-placeholder': 'e.g., PROJ-204: Login page refactor',
+    'story-btn-save': 'Save',
+    'story-btn-edit': 'Edit'
   }
 };
 
@@ -247,6 +257,7 @@ export function applyI18n() {
   document.documentElement.setAttribute('lang', lang);
 
   document.querySelectorAll('[data-i18n]').forEach(el => {
+    if (el.id === 'story-title-display' && el.classList.contains('has-title')) return;
     const key = el.getAttribute('data-i18n');
     const val = t(key);
     if (val) el.innerHTML = val;

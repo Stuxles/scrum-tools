@@ -65,3 +65,12 @@ export function handleUpdateName(socket, { roomId, name }) {
   room.participants[socket.id].name = name;
   broadcastRoomState(roomId);
 }
+
+/** @param {import('socket.io').Socket} socket */
+export function handleUpdateStoryTitle(socket, { roomId, storyTitle }) {
+  const room = rooms[roomId];
+  if (!room || room.masterId !== socket.id) return;
+
+  room.storyTitle = String(storyTitle || '').trim().slice(0, 200);
+  broadcastRoomState(roomId);
+}

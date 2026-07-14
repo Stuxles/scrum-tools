@@ -4,7 +4,7 @@
  */
 
 import { handleCreateRoom, handleJoinRoom, handleVote } from './handlers/roomHandlers.js';
-import { handleReveal, handleReset, handleChangeDeck, handleUpdateName } from './handlers/smHandlers.js';
+import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle } from './handlers/smHandlers.js';
 import { handleKickUser, handleDisconnect }              from './handlers/connectionHandlers.js';
 
 /** @param {import('socket.io').Server} io */
@@ -34,8 +34,9 @@ export function initSocketHandlers(io) {
     // ── SM-only events ───────────────────────────────────────────────────────
     socket.on('reveal',      (data) => handleReveal(socket, data));
     socket.on('reset',       (data) => handleReset(socket, data));
-    socket.on('change-deck', (data) => handleChangeDeck(socket, data));
-    socket.on('update-name', (data) => handleUpdateName(socket, data));
+    socket.on('change-deck',        (data) => handleChangeDeck(socket, data));
+    socket.on('update-name',        (data) => handleUpdateName(socket, data));
+    socket.on('update-story-title', (data) => handleUpdateStoryTitle(socket, data));
 
     // ── Admin / lifecycle ────────────────────────────────────────────────────
     socket.on('kick-user',   (data) => handleKickUser(io, socket, data));

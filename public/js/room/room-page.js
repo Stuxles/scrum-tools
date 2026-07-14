@@ -47,6 +47,12 @@ export function initRoomPage(socket, urlRoomId) {
   const presenterBanner  = document.getElementById('presenter-banner');
   const deckWrapper      = document.getElementById('deck-wrapper');
 
+  const storyBannerEditor  = document.getElementById('story-banner-editor');
+  const storyTitleDisplay  = document.getElementById('story-title-display');
+  const storyTitleInput    = document.getElementById('story-title-input');
+  const storyBtnSave       = document.getElementById('story-btn-save');
+  const storyBtnClear      = document.getElementById('story-btn-clear');
+
   const votingPhase      = document.getElementById('voting-phase');
   const votingPhaseTitle = document.getElementById('voting-phase-title');
   const votingPhaseSub   = document.getElementById('voting-phase-subtitle');
@@ -110,6 +116,8 @@ export function initRoomPage(socket, urlRoomId) {
     mobileSMBar.classList.remove('hidden');
     headerQrBtn.classList.add('hidden');
     headerDeckBtn.classList.add('hidden');
+    if (storyBannerEditor) storyBannerEditor.classList.remove('hidden');
+    if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
     document.body.classList.add('is-presenter');
   }
   function hideSMControls() {
@@ -117,7 +125,35 @@ export function initRoomPage(socket, urlRoomId) {
     mobileSMBar.classList.add('hidden');
     headerQrBtn.classList.remove('hidden');
     headerDeckBtn.classList.add('hidden');
+    if (storyBannerEditor) storyBannerEditor.classList.add('hidden');
+    if (storyTitleDisplay) storyTitleDisplay.classList.remove('hidden');
     document.body.classList.remove('is-presenter');
+  }
+
+  function saveStoryTitle() {
+    if (!currentRoom) return;
+    const storyTitle = storyTitleInput?.value.trim() || '';
+    socket.emit('update-story-title', { roomId: currentRoom.id, storyTitle });
+    toast(storyTitle ? 'Ticket / story opgeslagen ✓' : 'Ticket gewist ✓', 'success');
+  }
+
+  if (storyBtnSave) storyBtnSave.addEventListener('click', saveStoryTitle);
+  if (storyTitleInput) {
+    storyTitleInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveStoryTitle();
+        storyTitleInput.blur();
+      }
+    });
+  }
+  if (storyBtnClear) {
+    storyBtnClear.addEventListener('click', () => {
+      if (!currentRoom) return;
+      if (storyTitleInput) storyTitleInput.value = '';
+      socket.emit('update-story-title', { roomId: currentRoom.id, storyTitle: '' });
+      toast('Ticket gewist ✓', 'info');
+    });
   }
 
   smRevealBtn.addEventListener('click', () => {
@@ -226,6 +262,20 @@ export function initRoomPage(socket, urlRoomId) {
       deckModalType.value       = room.deckType;
     } else {
       hideSMControls();
+    }
+
+    const storyText = (room.storyTitle || '').trim();
+    if (storyTitleDisplay) {
+      if (storyText) {
+        storyTitleDisplay.textContent = storyText;
+        storyTitleDisplay.classList.add('has-title');
+      } else {
+        storyTitleDisplay.textContent = t('story-empty');
+        storyTitleDisplay.classList.remove('has-title');
+      }
+    }
+    if (storyTitleInput && document.activeElement !== storyTitleInput) {
+      storyTitleInput.value = storyText;
     }
 
     renderParticipants(participantsList, room, isMaster, socket);

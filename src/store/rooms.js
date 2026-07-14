@@ -35,12 +35,13 @@ export function deleteRoom(roomId) {
  */
 export function sanitizeRoom(room, viewerSocketId = null) {
   return {
-    id:       room.id,
-    name:     room.name,
-    masterId: room.masterId,
-    deckType: room.deckType,
-    deck:     room.deck,
-    revealed: room.revealed,
+    id:         room.id,
+    name:       room.name,
+    masterId:   room.masterId,
+    deckType:   room.deckType,
+    deck:       room.deck,
+    revealed:   room.revealed,
+    storyTitle: room.storyTitle || '',
     participants: Object.values(room.participants).map(p => ({
       id:       p.id,
       name:     p.name,

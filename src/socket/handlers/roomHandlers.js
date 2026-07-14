@@ -38,6 +38,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
     masterName:   name,   // used to re-identify creator on reconnect
     deckType,
     deck,
+    storyTitle:   '',
     revealed:     false,
     participants: {},
     createdAt:    Date.now(),
