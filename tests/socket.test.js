@@ -223,4 +223,83 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
 
     assert.strictEqual(updatedRoom.storyTitle, 'Refactor Login API (#202)');
   });
+
+  test('sm-transfer-master should transfer master status to target participant', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+
+    voter.emit('join-room', { roomId, name: 'Voter Bob' });
+    const voterJoined = await onceEvent(voter, 'room-joined');
+    const targetId = voterJoined.room.participants.find(p => p.name === 'Voter Bob').id;
+
+    const becameMasterPromise = onceEvent(voter, 'became-master');
+    master.emit('sm-transfer-master', { roomId, targetId });
+
+    await becameMasterPromise;
+    assert.ok(true, 'Target received became-master event');
+  });
+
+  test('claim-master should allow a participant to take over Scrum Master role', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+
+    voter.emit('join-room', { roomId, name: 'Voter Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    const becameMasterPromise = onceEvent(voter, 'became-master');
+    voter.emit('claim-master', { roomId });
+
+    await becameMasterPromise;
+    assert.ok(true, 'Voter received became-master event after claiming');
+  });
+
+  test('disconnecting SM starts 30s grace period instead of immediate transfer, and reconnecting recovers role', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM Grace', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+
+    master.emit('join-room', { roomId, name: 'Original SM' });
+    await onceEvent(master, 'room-joined');
+
+    voter.emit('join-room', { roomId, name: 'Voter Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    // Master disconnects suddenly
+    let becameMasterFired = false;
+    voter.on('became-master', () => { becameMasterFired = true; });
+
+    master.disconnect();
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    assert.strictEqual(becameMasterFired, false, 'Voter Bob should NOT become master right after disconnect due to 30s grace timer');
+
+    // Original SM reconnects with a new socket and same name within 30s
+    const masterReconnected = createClient();
+    await waitForConnect(masterReconnected);
+    masterReconnected.emit('join-room', { roomId, name: 'Original SM' });
+    const rejoined = await onceEvent(masterReconnected, 'room-joined');
+
+    assert.strictEqual(rejoined.isMaster, true, 'Original SM recovered master role during grace window');
+    assert.strictEqual(becameMasterFired, false, 'Voter Bob never received became-master');
+  });
 });

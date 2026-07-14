@@ -22,6 +22,7 @@ export function deleteRoom(roomId) {
   if (!room) return;
   if (room.cleanupTimer)    clearTimeout(room.cleanupTimer);
   if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
+  if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);
   delete rooms[roomId];
 }
 

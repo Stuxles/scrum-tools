@@ -3,7 +3,7 @@
  * Wires all event handlers and attaches the per-socket rate limiter.
  */
 
-import { handleCreateRoom, handleJoinRoom, handleVote, handleToggleSpectator } from './handlers/roomHandlers.js';
+import { handleCreateRoom, handleJoinRoom, handleVote, handleToggleSpectator, handleClaimMaster, handleTransferMaster } from './handlers/roomHandlers.js';
 import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle } from './handlers/smHandlers.js';
 import { handleKickUser, handleDisconnect }              from './handlers/connectionHandlers.js';
 
@@ -31,13 +31,15 @@ export function initSocketHandlers(io) {
     socket.on('join-room',        (data) => handleJoinRoom(socket, data));
     socket.on('vote',             (data) => handleVote(socket, data));
     socket.on('toggle-spectator', (data) => handleToggleSpectator(socket, data));
+    socket.on('claim-master',     (data) => handleClaimMaster(socket, data));
 
     // ── SM-only events ───────────────────────────────────────────────────────
-    socket.on('reveal',      (data) => handleReveal(socket, data));
-    socket.on('reset',       (data) => handleReset(socket, data));
+    socket.on('reveal',             (data) => handleReveal(socket, data));
+    socket.on('reset',              (data) => handleReset(socket, data));
     socket.on('change-deck',        (data) => handleChangeDeck(socket, data));
     socket.on('update-name',        (data) => handleUpdateName(socket, data));
     socket.on('update-story-title', (data) => handleUpdateStoryTitle(socket, data));
+    socket.on('sm-transfer-master', (data) => handleTransferMaster(io, socket, data));
 
     // ── Admin / lifecycle ────────────────────────────────────────────────────
     socket.on('kick-user',   (data) => handleKickUser(io, socket, data));

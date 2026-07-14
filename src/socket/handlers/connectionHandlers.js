@@ -48,9 +48,21 @@ export function handleDisconnect(io, socket) {
       continue;
     }
 
-    if (wasMaster) {
-      room.masterId = remaining[0];
-      io.to(remaining[0]).emit('became-master', {});
+    if (wasMaster && remaining.length > 0) {
+      if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);
+      room.masterGraceTimer = setTimeout(() => {
+        if (rooms[roomId] && rooms[roomId].masterId === socket.id) {
+          const rem = Object.keys(rooms[roomId].participants);
+          if (rem.length > 0) {
+            rooms[roomId].masterId = rem[0];
+            const newMaster = rooms[roomId].participants[rem[0]];
+            if (newMaster) rooms[roomId].masterName = newMaster.name;
+            io.to(rem[0]).emit('became-master', {});
+            broadcastRoomState(roomId);
+            console.log(`[master-grace] Assigned new Scrum Master (${rem[0]}) after 30s timeout in room ${roomId}`);
+          }
+        }
+      }, 30000);
     }
 
     broadcastRoomState(roomId);

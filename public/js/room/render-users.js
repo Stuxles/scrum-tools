@@ -56,6 +56,19 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     li.appendChild(statusEl);
 
     if (isMaster && p.id !== socket.id) {
+      const transferBtn = document.createElement('button');
+      transferBtn.className = 'btn btn-secondary btn-icon transfer-btn';
+      transferBtn.textContent = '👑';
+      const transferTitle = t('transfer-sm-title');
+      transferBtn.title = transferTitle;
+      transferBtn.setAttribute('aria-label', transferTitle);
+      transferBtn.addEventListener('click', () => {
+        if (confirm(t('confirm-transfer-sm', { name: p.name }))) {
+          socket.emit('sm-transfer-master', { roomId: room.id, targetId: p.id });
+        }
+      });
+      li.appendChild(transferBtn);
+
       const kickBtn = document.createElement('button');
       kickBtn.className = 'btn btn-danger btn-icon kick-btn';
       kickBtn.textContent = '✕';

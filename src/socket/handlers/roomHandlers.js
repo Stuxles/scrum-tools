@@ -66,8 +66,13 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
     delete room.disconnectTimer;
   }
 
-  // Assign master: only when room has no master or current master is disconnected
-  if (!room.masterId || !room.participants[room.masterId]) {
+  // Assign master or reconnect gracefully within 30s
+  if (room.masterGraceTimer && room.masterName && room.masterName.trim().toLowerCase() === name.trim().toLowerCase()) {
+    clearTimeout(room.masterGraceTimer);
+    room.masterGraceTimer = null;
+    room.masterId   = socket.id;
+    room.masterName = name;
+  } else if (!room.masterId || (!room.participants[room.masterId] && !room.masterGraceTimer)) {
     room.masterId   = socket.id;
     room.masterName = name;
   }
@@ -128,4 +133,47 @@ export function handleToggleSpectator(socket, { roomId, isSpectator }) {
     p.hasVoted = false;
   }
   broadcastRoomState(roomId);
+}
+
+/**
+ * Handle claim master role (`claim-master`).
+ * @param {import('socket.io').Socket} socket
+ * @param {{ roomId: string }} payload
+ */
+export function handleClaimMaster(socket, { roomId } = {}) {
+  const room = rooms[roomId];
+  if (!room || !room.participants[socket.id]) return;
+
+  if (room.masterGraceTimer) {
+    clearTimeout(room.masterGraceTimer);
+    room.masterGraceTimer = null;
+  }
+
+  room.masterId = socket.id;
+  room.masterName = room.participants[socket.id].name;
+  socket.emit('became-master', {});
+  broadcastRoomState(roomId);
+  console.log(`[claim-master] ${room.masterName} claimed SM in room ${roomId}`);
+}
+
+/**
+ * Handle transfer master role (`sm-transfer-master`).
+ * @param {import('socket.io').Server} io
+ * @param {import('socket.io').Socket} socket
+ * @param {{ roomId: string, targetId: string }} payload
+ */
+export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
+  const room = rooms[roomId];
+  if (!room || room.masterId !== socket.id || !targetId || !room.participants[targetId] || targetId === socket.id) return;
+
+  if (room.masterGraceTimer) {
+    clearTimeout(room.masterGraceTimer);
+    room.masterGraceTimer = null;
+  }
+
+  room.masterId = targetId;
+  room.masterName = room.participants[targetId].name;
+  io.to(targetId).emit('became-master', {});
+  broadcastRoomState(roomId);
+  console.log(`[transfer-master] SM transferred from ${socket.id} to ${targetId} in room ${roomId}`);
 }
