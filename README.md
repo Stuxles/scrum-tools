@@ -74,13 +74,34 @@ docker-compose up -d --build
 
 ---
 
+## 📚 Architecture & Technical Wiki (with Mermaid Diagrams)
+
+For deep-dive documentation on system design, state management, security (`sanitizeRoom`), and real-time WebSockets interactions, check out our in-repo **Technical Wiki**:
+
+| Guide / Diagram Page | Description |
+| :--- | :--- |
+| [**🏠 Wiki Index & System Overview**](./docs/wiki/index.md) | High-level system topology (`graph TD`) connecting Express, Socket.IO, ES Modules, and `localStorage`. |
+| [**🧩 Modular Components & Security**](./docs/wiki/architecture.md) | ES Module breakdown (`graph LR`) and unrevealed vote protection (`sanitizeRoom` flowchart). |
+| [**🔄 Room Lifecycle & Timers**](./docs/wiki/lifecycle.md) | State transitions (`stateDiagram-v2`) showing the **15-minute empty room grace period** and **24-hour cleanup**. |
+| [**⚡ Socket.IO Sequence Flows**](./docs/wiki/socket-flows.md) | Sequence diagrams (`sequenceDiagram`) for voting rounds (`join → vote → reveal → reset`) and user kicks (`handleKickUser`). |
+| [**👑 Roles & Permissions Matrix**](./docs/wiki/roles.md) | Detailed capability matrix and progress bar calculations filtering out non-voters (`isMaster` / `isSpectator`). |
+
+---
+
 ## 🛠️ Technology Stack & Project Structure
 
 - **Backend**: Node.js, Express, Socket.IO (`server.js`, `src/`)
 - **Frontend**: Vanilla ES Modules, CSS Variables (Dark/Light mode), Native DOM APIs (`public/`)
 - **QR Generation**: `qrcode` library on the backend, full-screen DOM modal on the frontend (`public/js/room/qr-module.js`).
+- **Documentation**: Markdown + Native GitHub Mermaid Diagrams (`docs/wiki/`)
 
 ```text
+├── docs/wiki/               # 📚 Technical Wiki & Mermaid Diagrams
+│   ├── index.md             # Wiki Home & System Topology
+│   ├── architecture.md      # Modular ES Components & sanitizeRoom security
+│   ├── lifecycle.md         # State machines & cleanup timers
+│   ├── socket-flows.md      # Real-time WebSockets sequence flows
+│   └── roles.md             # SM vs Voter vs Spectator permission matrix
 ├── public/
 │   ├── index.html           # Home / Landing page
 │   ├── room.html            # Active poker room
