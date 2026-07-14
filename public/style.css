@@ -175,6 +175,12 @@ body {
   font-size: 1rem;
 }
 
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  border-radius: var(--r-sm);
+}
+
 .btn-lg {
   padding: 14px 28px;
   font-size: 1rem;
@@ -819,6 +825,8 @@ label.field-label {
   font-size: 0.82rem;
   outline: none;
   width: 200px;
+  height: 26px;
+  line-height: 1;
   transition: all 0.2s;
   font-family: inherit;
 }
@@ -826,9 +834,25 @@ label.field-label {
   border-color: var(--purple-400);
   width: 250px;
 }
+#story-btn-save {
+  padding: 3px 10px !important;
+  font-size: 0.78rem !important;
+  border-radius: var(--r-sm) !important;
+  height: 26px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
 .story-btn-clear {
   padding: 3px 7px !important;
   font-size: 0.75rem !important;
+  border-radius: var(--r-sm) !important;
+  height: 26px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .story-title-display {
   font-size: 0.82rem;
