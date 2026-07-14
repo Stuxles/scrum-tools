@@ -115,9 +115,9 @@ export const translations = {
     'stat-total-votes': 'Stemmen',
     'vote-status-picked': 'Je hebt {card} gekozen ✓',
     'progress-text': '{voted} / {total} gestemd',
-    'story-label': 'Actueel Ticket',
+    'story-label': 'Actueel Issue:',
     'story-empty': 'Geen issue ingevoerd',
-    'story-placeholder': 'Bijv. Bananen weer rechttrekken',
+    'story-placeholder': 'Bijv. Login refactor (#104)',
     'story-btn-save': 'Opslaan',
     'story-btn-edit': 'Bewerken'
   },
@@ -232,9 +232,9 @@ export const translations = {
     'stat-total-votes': 'Votes',
     'vote-status-picked': 'You picked {card} ✓',
     'progress-text': '{voted} / {total} voted',
-    'story-label': 'Current Ticket',
+    'story-label': 'Current Issue:',
     'story-empty': 'No issue entered',
-    'story-placeholder': 'e.g., Straightening bananas',
+    'story-placeholder': 'e.g., Login refactor (#104)',
     'story-btn-save': 'Save',
     'story-btn-edit': 'Edit'
   }

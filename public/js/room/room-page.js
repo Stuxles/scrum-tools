@@ -52,6 +52,7 @@ export function initRoomPage(socket, urlRoomId) {
   const presenterBanner  = document.getElementById('presenter-banner');
   const deckWrapper      = document.getElementById('deck-wrapper');
 
+  const storyBanner        = document.getElementById('story-banner');
   const storyBannerEditor  = document.getElementById('story-banner-editor');
   const storyTitleDisplay  = document.getElementById('story-title-display');
   const storyTitleInput    = document.getElementById('story-title-input');
@@ -121,6 +122,7 @@ export function initRoomPage(socket, urlRoomId) {
     mobileSMBar.classList.remove('hidden');
     headerQrBtn.classList.add('hidden');
     headerDeckBtn.classList.add('hidden');
+    if (storyBanner) storyBanner.classList.remove('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.remove('hidden');
     if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
     document.body.classList.add('is-presenter');
@@ -130,8 +132,9 @@ export function initRoomPage(socket, urlRoomId) {
     mobileSMBar.classList.add('hidden');
     headerQrBtn.classList.remove('hidden');
     headerDeckBtn.classList.add('hidden');
+    if (storyBanner) storyBanner.classList.add('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.add('hidden');
-    if (storyTitleDisplay) storyTitleDisplay.classList.remove('hidden');
+    if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
     document.body.classList.remove('is-presenter');
   }
 
@@ -139,7 +142,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (!currentRoom) return;
     const storyTitle = storyTitleInput?.value.trim() || '';
     socket.emit('update-story-title', { roomId: currentRoom.id, storyTitle });
-    toast(storyTitle ? 'Ticket / story opgeslagen ✓' : 'Ticket gewist ✓', 'success');
+    toast(storyTitle ? 'Actueel issue opgeslagen ✓' : 'Actueel issue gewist ✓', 'success');
   }
 
   if (storyBtnSave) storyBtnSave.addEventListener('click', saveStoryTitle);
@@ -157,7 +160,7 @@ export function initRoomPage(socket, urlRoomId) {
       if (!currentRoom) return;
       if (storyTitleInput) storyTitleInput.value = '';
       socket.emit('update-story-title', { roomId: currentRoom.id, storyTitle: '' });
-      toast('Ticket gewist ✓', 'info');
+      toast('Actueel issue gewist ✓', 'info');
     });
   }
 

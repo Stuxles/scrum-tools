@@ -153,6 +153,19 @@
           <span aria-hidden="true">🔑</span>
           <span id="room-code-text">——</span>
         </button>
+
+        <!-- STORY / ISSUE BANNER (Presenter Only in Header) -->
+        <div class="header-story-banner hidden" id="story-banner">
+          <span class="story-banner-label" data-i18n="story-label">Actueel Issue:</span>
+          <div class="story-banner-editor" id="story-banner-editor">
+            <input type="text" id="story-title-input" class="story-title-input"
+              placeholder="Bijv. Login refactor (#104)" maxlength="200" data-i18n-placeholder="story-placeholder" />
+            <button class="btn btn-primary btn-sm" id="story-btn-save" data-i18n="story-btn-save">Opslaan</button>
+            <button class="btn btn-secondary btn-sm story-btn-clear" id="story-btn-clear"
+              title="Wissen / Clear">✕</button>
+          </div>
+          <div class="story-title-display hidden" id="story-title-display" data-i18n="story-empty">Geen issue ingevoerd</div>
+        </div>
       </div>
 
       <div class="header-right">
@@ -206,24 +219,6 @@
 
       <!-- CENTER: Voting / Results -->
       <main class="voting-area" id="voting-area" aria-label="Stemgebied">
-
-        <!-- STORY / TICKET BANNER -->
-        <div class="story-banner" id="story-banner">
-          <div class="story-banner-icon" aria-hidden="true">🎯</div>
-          <div class="story-banner-main">
-            <span class="story-banner-label" data-i18n="story-label">Actueel Ticket</span>
-            <div class="story-title-display" id="story-title-display" data-i18n="story-empty">Geen ticket / story
-              geselecteerd</div>
-          </div>
-          <!-- SM inline edit controls -->
-          <div class="story-banner-editor hidden" id="story-banner-editor">
-            <input type="text" id="story-title-input" class="story-title-input"
-              placeholder="Bijv. Bananen weer rechttrekken" maxlength="200" data-i18n-placeholder="story-placeholder" />
-            <button class="btn btn-primary btn-sm" id="story-btn-save" data-i18n="story-btn-save">Opslaan</button>
-            <button class="btn btn-secondary btn-sm story-btn-clear" id="story-btn-clear"
-              title="Wissen / Clear">✕</button>
-          </div>
-        </div>
 
         <!-- VOTING PHASE -->
         <div id="voting-phase">
