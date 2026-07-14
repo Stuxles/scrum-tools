@@ -1,6 +1,6 @@
-# 🃏 Scrum Poker Collab
+# 🃏 StuxPoker
 
-Een moderne, interactieve en realtime **Scrum Poker webapplicatie** ontworpen voor naadloze samenwerking binnen Agile development teams. Speciaal geoptimaliseerd voor lokaal gebruik, hybride meetings en snelle mobiele deelname via QR-codes.
+Een moderne, interactieve en realtime **StuxPoker (Scrum Poker) webapplicatie** ontworpen voor naadloze samenwerking binnen Agile development teams. Speciaal geoptimaliseerd voor lokaal gebruik, hybride meetings en snelle mobiele deelname via QR-codes.
 
 ---
 
@@ -37,7 +37,7 @@ Een moderne, interactieve en realtime **Scrum Poker webapplicatie** ontworpen vo
 
 ```bash
 # Clone of download de repository
-cd "scrum poker collab"
+cd stuxpoker
 
 # Installeer de afhankelijkheden
 npm install

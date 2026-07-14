@@ -1,7 +1,7 @@
 {
-  "name": "scrum-poker-collab",
+  "name": "stuxpoker",
   "version": "1.0.0",
-  "description": "Real-time Scrum Poker webapp met rooms, QR-code join en configureerbare kaartdekken",
+  "description": "Real-time StuxPoker webapp met rooms, QR-code join en configureerbare kaartdekken",
   "type": "module",
   "main": "server.js",
   "scripts": {

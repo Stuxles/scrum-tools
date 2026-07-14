@@ -1,8 +1,8 @@
 /** localStorage key for persisting the user's display name. */
-export const LS_NAME = 'scrumpoker_name';
+export const LS_NAME = 'stuxpoker_name';
 
 /** @returns {string} */
-export const getSavedName = () => localStorage.getItem(LS_NAME) || '';
+export const getSavedName = () => localStorage.getItem(LS_NAME) || localStorage.getItem('scrumpoker_name') || '';
 
 /** @param {string} name */
 export const saveName = (name) => { if (name) localStorage.setItem(LS_NAME, name); };

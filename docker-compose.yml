@@ -1,10 +1,10 @@
 version: "3.9"
 
 services:
-  scrum-poker:
+  stuxpoker:
     build: .
-    image: scrum-poker-collab:latest
-    container_name: scrum-poker
+    image: stuxpoker:latest
+    container_name: stuxpoker
     restart: unless-stopped
     ports:
       - "3000:3000"

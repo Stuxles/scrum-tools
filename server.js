@@ -1,5 +1,5 @@
 /**
- * Scrum Poker Collab — Server entrypoint
+ * StuxPoker — Server entrypoint
  *
  * Responsibilities:
  *   - Start Express app (static files, JSON body, API routes)
@@ -59,7 +59,7 @@ initSocketHandlers(io);
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🃏  Scrum Poker Collab`);
+  console.log(`\n🃏  StuxPoker`);
   console.log(`    Lokaal :  http://localhost:${PORT}`);
   console.log(`    Netwerk:  ${PUBLIC_URL}`);
   console.log(`    (Tip: Stel PUBLIC_URL in via env-variabele voor reverse proxies of Docker bridge)\n`);
