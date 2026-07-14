@@ -1,7 +1,7 @@
 {
   "name": "stuxpoker",
   "version": "1.0.0",
-  "description": "Real-time StuxPoker webapp met rooms, QR-code join en configureerbare kaartdekken",
+  "description": "Real-time StuxPoker webapp with rooms, QR-code join, and configurable card decks",
   "type": "module",
   "main": "server.js",
   "scripts": {

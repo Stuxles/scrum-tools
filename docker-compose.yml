@@ -9,8 +9,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Stel dit in op het LAN-IP (of hostname) van je Unraid server
-      # zodat QR-codes naar het juiste adres wijzen.
+      # Set this to the LAN IP (or hostname) of your Unraid server
+      # so that QR codes point to the correct address.
       - PUBLIC_URL=http://192.168.1.100:3000
       - PORT=3000
       - NODE_ENV=production

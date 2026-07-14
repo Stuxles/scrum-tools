@@ -1,100 +1,100 @@
 # 🃏 StuxPoker
 
-Een moderne, interactieve en realtime **StuxPoker (Scrum Poker) webapplicatie** ontworpen voor naadloze samenwerking binnen Agile development teams. Speciaal geoptimaliseerd voor lokaal gebruik, hybride meetings en snelle mobiele deelname via QR-codes.
+A modern, interactive, and real-time **StuxPoker (Scrum Poker) web application** designed for seamless collaboration among Agile development teams. Specially optimized for local network use, hybrid meetings, and quick mobile participation via QR codes.
 
 ---
 
-## ✨ Kenmerken & Features
+## ✨ Features & Highlights
 
-- **⚡ Real-time Samenwerking**: Directe updates via **Socket.IO**. Geen polling, geen vertraging.
-- **📱 QR-Code Join & Zoom**: De Scrum Master of presenter ziet live een QR-code. Klik erop om deze **full-screen** te tonen op een groot scherm of projector. Teamleden scannen met hun telefoon en zitten direct in de juiste room!
-- **🃏 Configureerbare Kaartdekken**:
+- **⚡ Real-Time Collaboration**: Instant updates powered by **Socket.IO**. No polling, zero latency.
+- **📱 QR-Code Join & Zoom**: The Scrum Master or presenter sees a live QR code on their dashboard. Click it to open a **full-screen modal** suitable for large displays or projectors. Team members scan the code with their smartphone camera to join the exact room instantly!
+- **🃏 Configurable Card Decks**:
   - **Standard**: `0, 1, 2, 3, 4, 5, 6, 8, 12, 16, 24, 32, 40, ♾️, ❓, ☕`
   - **Fibonacci**: `0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, ❓, ☕`
   - **T-Shirt**: `XS, S, M, L, XL, XXL, ❓, ☕`
-  - **Custom**: Zelf kaarten en waarden invoeren tijdens de sessie.
-- **🌐 Tweetalig (NL 🇳🇱 / EN 🇬🇧)**: Volledig meertalige interface met directe taalschakelaar (zonder paginaherlaad) op zowel de homepagina als in de pokerooms.
-- **🔋 Slim Mobiel & Energiebeheer**:
-  - **Screen Wake Lock API**: Voorkomt automatisch dat het scherm van telefoons op standby of screensaver gaat tijdens een actieve pokersessie.
-  - **Auto-Reconnect & Rejoin**: Schakel je even naar een andere app (zoals Slack of WhatsApp) of verlies je kort de wifi-verbinding? Bij terugkeer verbindt de app automatisch opnieuw en re-joinet je direct de actieve ronde.
-  - **Deselecteren**: Klik simpelweg nogmaals op een geselecteerde kaart om je stem te wissen of te wijzigen voor de onthulling.
+  - **Custom**: Enter your own custom card values dynamically during the session.
+- **🌐 Bilingual UI (EN 🇬🇧 / NL 🇳🇱)**: Fully multilingual interface with instant language switching (no page reloads required) across the home page and inside poker rooms.
+- **🔋 Smart Mobile & Power Management**:
+  - **Screen Wake Lock API**: Automatically prevents smartphone screens from turning off or going into standby during an active planning session.
+  - **Auto-Reconnect & Rejoin**: Switched momentarily to another app (like Slack or WhatsApp) or suffered a brief Wi-Fi drop? When returning to the browser tab, the application automatically reconnects and re-joins the active round.
+  - **Card Deselection**: Click an already selected card again to easily deselect or change your vote prior to the reveal.
 - **👑 Scrum Master Controls**:
-  - Voortgangsbalk met live stemstatus (*bijv. 4/5 gestemd*).
-  - **Reveal** (eenmalig per ronde te openen om dubbelklikken te voorkomen).
-  - **Nieuwe ronde / Reset** (reset stemmen voor alle deelnemers).
-  - Deelnemers beheren (kicken of rol overdragen).
-- **🪶 Licht & Snel**: Geen database nodig! State wordt slim in-geheugen bijgehouden met automatische opschoning (`disconnectTimer`) voor lege rooms.
+  - Progress bar with live voting status (*e.g., 4/5 voted*).
+  - **Reveal** (one-time action per round to prevent accidental double-clicks).
+  - **New Round / Reset** (clears votes for all participants).
+  - Participant management (kick members or transfer the Scrum Master role).
+- **🪶 Lightweight & Fast**: No database required! State is kept in-memory with automatic cleanup timers (`disconnectTimer`) for inactive rooms.
 
 ---
 
-## 🚀 Snel Starten (Lokaal / Node.js)
+## 🚀 Quick Start (Local / Node.js)
 
-### 1. Vereisten
-- [Node.js](https://nodejs.org/) (v18 of hoger)
+### 1. Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher)
 - npm
 
-### 2. Installatie & Starten
+### 2. Installation & Running
 
 ```bash
-# Clone of download de repository
+# Clone or download the repository
 cd stuxpoker
 
-# Installeer de afhankelijkheden
+# Install dependencies
 npm install
 
-# Start de server
+# Start the server
 npm start
 ```
 
-De server draait nu standaard op `http://localhost:3000`. 
-*(Voor live ontwikkeling met automatische herstart kun je `npm run dev` gebruiken).*
+The server runs by default at `http://localhost:3000`. 
+*(For live development with auto-restart upon file changes, run `npm run dev`).*
 
 ---
 
 ## 🐳 Docker & Unraid Deployment
 
-Het project is volledig voorbereid op deployment via Docker en Unraid:
+The project is fully ready for deployment via Docker and Unraid:
 
-### Met Docker Compose
+### Using Docker Compose
 
 ```bash
 docker-compose up -d --build
 ```
 
-### Belangrijke Omgevingsvariabelen (`Environment Variables`)
+### Key Environment Variables
 
-| Variabele | Standaard | Beschrijving |
+| Variable | Default | Description |
 | :--- | :--- | :--- |
-| `PORT` | `3000` | Poort waarop de Express / Socket.IO server luistert. |
-| `PUBLIC_URL` | *(Automatisch LAN-IP)* | De URL die wordt verwerkt in de gegenereerde QR-codes. **Let op**: Bij gebruik in Docker/Unraid op je netwerk zet je deze op bijv. `http://192.168.1.100:3000` of je domeinnaam. |
-| `CORS_ORIGIN` | `*` | Toegestane CORS origins (komma-gescheiden indien beperkt). |
+| `PORT` | `3000` | Port on which the Express / Socket.IO server listens. |
+| `PUBLIC_URL` | *(Auto-detected LAN IP)* | The base URL embedded inside generated QR codes. **Note**: When deploying inside Docker/Unraid on your network, set this explicitly to your server's address, e.g., `http://192.168.1.100:3000` or custom domain. |
+| `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated if restricted). |
 
 ---
 
-## 🛠️ Technologieën & Projectstructuur
+## 🛠️ Technology Stack & Project Structure
 
 - **Backend**: Node.js, Express, Socket.IO (`server.js`, `src/`)
 - **Frontend**: Vanilla ES Modules, CSS Variables (Dark/Light mode), Native DOM APIs (`public/`)
-- **QR-Generatie**: `qrcode` library op de backend, full-screen DOM modal in de frontend (`public/js/room/qr-module.js`).
+- **QR Generation**: `qrcode` library on the backend, full-screen DOM modal on the frontend (`public/js/room/qr-module.js`).
 
 ```text
 ├── public/
 │   ├── index.html           # Home / Landing page
-│   ├── room.html            # De actieve pokeroom
-│   ├── style.css            # Styling, thema's & animaties
+│   ├── room.html            # Active poker room
+│   ├── style.css            # Styling, themes & animations
 │   └── js/                  # Client-side ES Modules (room, i18n, utils)
 ├── src/
-│   ├── config.js            # Poorten, netwerk-detectie & dek-definities
+│   ├── config.js            # Ports, network detection & deck definitions
 │   ├── store/rooms.js       # In-memory room state management
 │   ├── socket/              # Socket.IO handlers (room, sm, vote, chat)
 │   └── routes/              # RESTful API endpoints (/api/rooms, /health)
-├── Dockerfile               # Alpine Node.js image config
-├── docker-compose.yml       # Docker deployment config met healthcheck
-└── server.js                # Hoofd-instappunt server
+├── Dockerfile               # Alpine Node.js image configuration
+├── docker-compose.yml       # Docker deployment config with healthcheck
+└── server.js                # Main server entrypoint
 ```
 
 ---
 
-## 📄 Licentie
+## 📄 License
 
-Dit project is ontwikkeld als open en collaboratieve tool voor Scrum & Agile teams. Veel plan- en pokersucces! 🎯
+This project is developed as an open, collaborative tool for Scrum & Agile teams. Happy planning and accurate estimating! 🎯
