@@ -121,6 +121,22 @@ For deep-dive documentation on system design, state management, security (`sanit
 
 ---
 
+## 🤝 Human-Developer & AI Collaboration
+
+### 🧑‍💻 Why This Codebase is 100% Human-Friendly
+While advanced AI assistants aided in architecting and expanding this application, the codebase is meticulously engineered to be **simple, transparent, and effortlessly maintainable by real human developers**:
+1. **Zero-Build Vanilla ES Modules**: No complex bundlers (`Webpack`, `Vite`), no transpilers (`Babel`, `TypeScript`), and no confusing sourcemaps. You can open any client-side JavaScript file inside `public/js/`, edit a line of code or CSS, refresh your browser (`F5`), and see your changes instantly.
+2. **Single-Responsibility Modularity**: Instead of monolithic multi-thousand-line files, functionality is cleanly segregated (`render-users.js` for the sidebar, `render-voting.js` for cards, `render-results.js` for analytics, and `connectionHandlers.js` for socket resilience). A developer debugging or enhancing a specific feature knows exactly which file to open immediately.
+3. **Transparent In-Memory State**: Without external SQL/NoSQL database dependencies or ORM boilerplate, the entire state model (`src/store/rooms.js`) can be inspected, logged, and understood in minutes.
+4. **Comprehensive Technical Wiki**: All internal workflows, state machines, and socket packet definitions are documented right here inside the repo (`docs/wiki/`) with visual Mermaid diagrams.
+
+### 🤖 AI Co-Creation Credits
+This project is a showcase of modern collaborative pair-programming between human intuition and cutting-edge agentic AI assistants:
+- **Google DeepMind Antigravity (Gemini)** — *Agentic Architecture, Socket Resilience, UI Polish & Documentation Wiki*
+- **Anthropic Claude Code / Claude 3.5 Sonnet** — *Core Feature Iteration, Caveman-Mode Token Efficiency & Workflow Automation*
+
+---
+
 ## 📄 License
 
 This project is developed as an open, collaborative tool for Scrum & Agile teams. Happy planning and accurate estimating! 🎯
