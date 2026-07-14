@@ -45,6 +45,10 @@
         <label class="field-label" for="modal-name" data-i18n="label-name">Jouw naam</label>
         <input class="input input-lg" id="modal-name" type="text" placeholder="Bijv. Alice" maxlength="40"
           autocomplete="nickname" autofocus />
+        <label class="modal-spectator-label" style="display:flex; align-items:center; gap:8px; margin-top: 14px; font-size: 0.9rem; color: var(--text-300); cursor:pointer;">
+          <input type="checkbox" id="modal-spectator-chk" style="width:16px; height:16px; cursor:pointer;" />
+          <span data-i18n="join-as-spectator">👁️ Alleen meekijken / Toeschouwer (niet stemmen)</span>
+        </label>
       </div>
 
       <div class="modal-actions" style="flex-direction:column;">
@@ -168,6 +172,12 @@
           🎴
         </button>
 
+        <!-- Role Toggle (Voter <-> Spectator) -->
+        <button class="btn btn-secondary btn-sm spectator-header-btn" id="header-spectator-btn" title="Wissel tussen Stemmer en Toeschouwer" style="display:flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;font-size:0.82rem;background:var(--glass);border:1px solid var(--glass-border);color:var(--text-200);cursor:pointer;">
+          <span id="header-spectator-icon">🃏</span>
+          <span id="header-spectator-text" data-i18n="role-voter">Stemmer</span>
+        </button>
+
         <button class="my-name-btn" id="header-name-btn" title="Naam aanpassen" data-i18n-title="name-btn-title"
           aria-label="Naam aanpassen">
           <span aria-hidden="true">✏️</span>
@@ -230,6 +240,16 @@
               <strong data-i18n="presenter-banner-title">Presenter-scherm</strong>
               <p data-i18n="presenter-banner-text">Kaarten zijn hier verborgen. Stem mee via je telefoon door de QR-code
                 te scannen.</p>
+            </div>
+          </div>
+
+          <!-- Spectator banner: shown when user is watching as spectator -->
+          <div id="spectator-banner" class="presenter-banner hidden" role="status" aria-live="polite" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.25);">
+            <div class="presenter-banner-icon" aria-hidden="true">👁️</div>
+            <div>
+              <strong data-i18n="spectator-banner-title">Je kijkt mee als Toeschouwer</strong>
+              <p data-i18n="spectator-banner-sub">Je stemt niet mee en telt niet mee voor de voortgangsbalk.</p>
+              <button class="btn btn-primary btn-sm" id="btn-switch-to-voter" style="margin-top:12px;" data-i18n="btn-switch-to-voter">🃏 Word Stemmer</button>
             </div>
           </div>
 

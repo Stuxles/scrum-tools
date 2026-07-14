@@ -31,6 +31,7 @@ export function initRoomPage(socket, urlRoomId) {
   const joinModalRoom    = document.getElementById('join-modal-room');
   const modalNameInput   = document.getElementById('modal-name');
   const modalJoinBtn     = document.getElementById('modal-join-btn');
+  const modalSpectatorChk= document.getElementById('modal-spectator-chk');
   const roomUi           = document.getElementById('room-ui');
 
   const headerRoomName   = document.getElementById('header-room-name');
@@ -39,8 +40,12 @@ export function initRoomPage(socket, urlRoomId) {
   const headerOnline     = document.getElementById('header-online-count');
   const headerQrBtn      = document.getElementById('header-qr-btn');
   const headerDeckBtn    = document.getElementById('header-deck-btn');
+  const headerSpectatorBtn  = document.getElementById('header-spectator-btn');
+  const headerSpectatorIcon = document.getElementById('header-spectator-icon');
+  const headerSpectatorText = document.getElementById('header-spectator-text');
   const headerNameBtn    = document.getElementById('header-name-btn');
   const headerMyName     = document.getElementById('header-my-name');
+  const btnSwitchToVoter = document.getElementById('btn-switch-to-voter');
 
   const participantsList = document.getElementById('participants-list');
   const cardDeck         = document.getElementById('card-deck');
@@ -251,9 +256,20 @@ export function initRoomPage(socket, urlRoomId) {
     headerOnline.textContent   = `${room.participants.length}`;
 
     const me = room.participants.find(p => p.id === socket.id);
+    const isSpec = me ? Boolean(me.isSpectator) : false;
     if (me) {
       headerMyName.textContent = me.name;
       isMaster = me.isMaster;
+    }
+
+    if (headerSpectatorBtn) {
+      if (isMaster) {
+        headerSpectatorBtn.classList.add('hidden');
+      } else {
+        headerSpectatorBtn.classList.remove('hidden');
+        if (headerSpectatorIcon) headerSpectatorIcon.textContent = isSpec ? '👁️' : '🃏';
+        if (headerSpectatorText) headerSpectatorText.textContent = isSpec ? t('role-spectator') : t('role-voter');
+      }
     }
 
     if (isMaster) {
@@ -302,15 +318,16 @@ export function initRoomPage(socket, urlRoomId) {
     } else {
       // Sync myVote from server state
       const me2 = room.participants.find(p => p.id === socket.id);
+      const isSpec2 = me2 ? Boolean(me2.isSpectator) : false;
       if (me2 && me2.vote != null) myVote = me2.vote;
       else if (!me2 || !me2.hasVoted) myVote = null;
 
-      renderVoting(votingCtx, room, isMaster, myVote);
+      renderVoting(votingCtx, room, isMaster, myVote, isSpec2);
     }
 
     // SM progress bar
     if (isMaster) {
-      const voters = room.participants.filter(p => !p.isMaster);
+      const voters = room.participants.filter(p => !p.isMaster && !p.isSpectator);
       const voted  = voters.filter(p => p.hasVoted).length;
       const total  = voters.length;
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
@@ -357,7 +374,8 @@ export function initRoomPage(socket, urlRoomId) {
   socket.io.on('reconnect', () => {
     toast(t('toast-reconnected'), 'success');
     if (urlRoomId) {
-      socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem' });
+      const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
+      socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem', isSpectator: savedSpec });
     }
   });
 
@@ -372,10 +390,12 @@ export function initRoomPage(socket, urlRoomId) {
         setTimeout(() => { window.location.href = '/'; }, 2500);
         return;
       }
+      const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
+      if (modalSpectatorChk) modalSpectatorChk.checked = savedSpec;
       const saved = getSavedName();
       if (saved) {
         modalNameInput.value = saved;
-        doJoinRoom(saved);
+        doJoinRoom(saved, savedSpec);
       } else {
         modalNameInput.focus();
       }
@@ -385,13 +405,33 @@ export function initRoomPage(socket, urlRoomId) {
       if (saved) modalNameInput.value = saved;
     });
 
-  function doJoinRoom(name) {
+  function doJoinRoom(name, isSpectator) {
     name = (name || modalNameInput.value).trim();
     if (!name) { toast(t('toast-enter-name'), 'error'); modalNameInput.focus(); return; }
     saveName(name);
+    if (isSpectator === undefined && modalSpectatorChk) {
+      isSpectator = modalSpectatorChk.checked;
+    }
+    localStorage.setItem('scrum_is_spectator', isSpectator ? 'true' : 'false');
     window._scrumSocket = socket;
     window._scrumRoomId = urlRoomId;
-    socket.emit('join-room', { roomId: urlRoomId, name });
+    socket.emit('join-room', { roomId: urlRoomId, name, isSpectator: Boolean(isSpectator) });
+  }
+
+  function toggleSpectator(targetSpec) {
+    if (!currentRoom) return;
+    const me = currentRoom.participants.find(p => p.id === socket.id);
+    const newSpec = targetSpec !== undefined ? targetSpec : !(me && me.isSpectator);
+    localStorage.setItem('scrum_is_spectator', newSpec ? 'true' : 'false');
+    socket.emit('toggle-spectator', { roomId: currentRoom.id, isSpectator: newSpec });
+    toast(newSpec ? t('toast-spectator-on') : t('toast-spectator-off'), 'info');
+  }
+
+  if (headerSpectatorBtn) {
+    headerSpectatorBtn.addEventListener('click', () => toggleSpectator());
+  }
+  if (btnSwitchToVoter) {
+    btnSwitchToVoter.addEventListener('click', () => toggleSpectator(false));
   }
 
   modalJoinBtn.addEventListener('click',    () => doJoinRoom());

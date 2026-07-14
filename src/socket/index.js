@@ -3,7 +3,7 @@
  * Wires all event handlers and attaches the per-socket rate limiter.
  */
 
-import { handleCreateRoom, handleJoinRoom, handleVote } from './handlers/roomHandlers.js';
+import { handleCreateRoom, handleJoinRoom, handleVote, handleToggleSpectator } from './handlers/roomHandlers.js';
 import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle } from './handlers/smHandlers.js';
 import { handleKickUser, handleDisconnect }              from './handlers/connectionHandlers.js';
 
@@ -27,9 +27,10 @@ export function initSocketHandlers(io) {
     });
 
     // ── Room events ──────────────────────────────────────────────────────────
-    socket.on('create-room', (data) => handleCreateRoom(socket, data));
-    socket.on('join-room',   (data) => handleJoinRoom(socket, data));
-    socket.on('vote',        (data) => handleVote(socket, data));
+    socket.on('create-room',      (data) => handleCreateRoom(socket, data));
+    socket.on('join-room',        (data) => handleJoinRoom(socket, data));
+    socket.on('vote',             (data) => handleVote(socket, data));
+    socket.on('toggle-spectator', (data) => handleToggleSpectator(socket, data));
 
     // ── SM-only events ───────────────────────────────────────────────────────
     socket.on('reveal',      (data) => handleReveal(socket, data));

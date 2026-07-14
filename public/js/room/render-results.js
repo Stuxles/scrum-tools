@@ -14,8 +14,8 @@ export function renderResults(ctx, room) {
   votingPhase.classList.add('hidden');
   resultsPhase.classList.remove('hidden');
 
-  // Exclude SM (presenter) from vote tallies
-  const nonMaster = room.participants.filter(p => !p.isMaster);
+  // Exclude SM (presenter) and spectators from vote tallies
+  const nonMaster = room.participants.filter(p => !p.isMaster && !p.isSpectator);
   const voters    = nonMaster.filter(p => p.hasVoted);
 
   resultsSubtitle.textContent = t('progress-text', { voted: voters.length, total: nonMaster.length });

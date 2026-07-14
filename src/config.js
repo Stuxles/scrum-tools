@@ -12,6 +12,8 @@ export const CORS_ORIGIN = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
   : '*';
 
+export const RECONNECT_GRACE_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
+
 // ─── Deck Definitions ────────────────────────────────────────────────────────
 export const DECKS = {
   standard:  ['0','1','2','3','4','5','6','8','12','16','24','32','40','♾️','❓','☕'],

@@ -65,25 +65,36 @@ export function selectVoteCard(cardDeck, val) {
  * @param {object}  room
  * @param {boolean} isMaster
  * @param {string|null} myVote
+ * @param {boolean} [isSpectator]
  */
-export function renderVoting(ctx, room, isMaster, myVote) {
+export function renderVoting(ctx, room, isMaster, myVote, isSpectator = false) {
   const {
     votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,
     voteStatusBar, voteStatusText, cardDeck, presenterBanner, deckWrapper,
     socket, currentRoom, onVote,
   } = ctx;
 
+  const spectatorBanner = document.getElementById('spectator-banner');
   votingPhase.classList.remove('hidden');
   resultsPhase.classList.add('hidden');
 
   if (isMaster) {
     presenterBanner?.classList.remove('hidden');
+    spectatorBanner?.classList.add('hidden');
     deckWrapper?.classList.add('hidden');
     voteStatusBar.classList.add('hidden');
     votingPhaseTitle.textContent = t('voting-phase-waiting');
     votingPhaseSub.textContent   = '';
+  } else if (isSpectator) {
+    presenterBanner?.classList.add('hidden');
+    spectatorBanner?.classList.remove('hidden');
+    deckWrapper?.classList.add('hidden');
+    voteStatusBar.classList.add('hidden');
+    votingPhaseTitle.textContent = t('spectator-banner-title');
+    votingPhaseSub.textContent   = t('spectator-banner-sub');
   } else {
     presenterBanner?.classList.add('hidden');
+    spectatorBanner?.classList.add('hidden');
     deckWrapper?.classList.remove('hidden');
     voteStatusBar.classList.remove('hidden');
 

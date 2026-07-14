@@ -43,11 +43,12 @@ export function sanitizeRoom(room, viewerSocketId = null) {
     revealed:   room.revealed,
     storyTitle: room.storyTitle || '',
     participants: Object.values(room.participants).map(p => ({
-      id:       p.id,
-      name:     p.name,
-      hasVoted: p.hasVoted,
-      vote:     (room.revealed || (viewerSocketId && p.id === viewerSocketId)) ? p.vote : null,
-      isMaster: p.id === room.masterId,
+      id:          p.id,
+      name:        p.name,
+      hasVoted:    p.hasVoted,
+      vote:        (room.revealed || (viewerSocketId && p.id === viewerSocketId)) ? p.vote : null,
+      isMaster:    p.id === room.masterId,
+      isSpectator: Boolean(p.isSpectator),
     })),
   };
 }

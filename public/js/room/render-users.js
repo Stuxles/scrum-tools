@@ -18,11 +18,12 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     li.dataset.id = p.id;
 
     const initial = (p.name || '?')[0].toUpperCase();
+    const roleText = p.isMaster ? 'Scrum Master' : (p.isSpectator ? t('role-spectator') : t('role-participant'));
     li.innerHTML  = `
       <div class="participant-avatar" aria-hidden="true">${initial}</div>
       <div class="participant-info">
         <div class="participant-name">${escHtml(p.name)}${p.id === socket.id ? ` <span style="color:var(--purple-300)">${t('user-you')}</span>` : ''}${p.isMaster ? ' 👑' : ''}</div>
-        <div class="participant-role">${p.isMaster ? 'Scrum Master' : t('role-participant')}</div>
+        <div class="participant-role">${roleText}</div>
       </div>
     `;
 
@@ -33,6 +34,10 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
       statusEl.className  += ' presenter-mode';
       statusEl.textContent = '🖥️';
       statusEl.title       = t('presenter-banner-title');
+    } else if (p.isSpectator) {
+      statusEl.className  += ' spectator-mode';
+      statusEl.textContent = '👁️';
+      statusEl.title       = t('role-spectator');
     } else if (room.revealed && p.hasVoted) {
       statusEl.className  += ' revealed-vote';
       statusEl.textContent = p.vote || '—';

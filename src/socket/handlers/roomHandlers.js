@@ -50,7 +50,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
 }
 
 /** @param {import('socket.io').Socket} socket */
-export function handleJoinRoom(socket, { roomId, name }) {
+export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
   roomId = (roomId || '').trim().toUpperCase();
   name   = (name   || 'Anoniem').trim().slice(0, 40);
 
@@ -74,9 +74,16 @@ export function handleJoinRoom(socket, { roomId, name }) {
 
   // Allow rejoin (e.g. page refresh) — only create entry if absent
   room.participants[socket.id] = room.participants[socket.id] || {
-    id: socket.id, name, vote: null, hasVoted: false,
+    id: socket.id, name, vote: null, hasVoted: false, isSpectator: Boolean(isSpectator),
   };
   room.participants[socket.id].name = name;
+  if (isSpectator !== undefined) {
+    room.participants[socket.id].isSpectator = Boolean(isSpectator);
+    if (room.participants[socket.id].isSpectator) {
+      room.participants[socket.id].vote     = null;
+      room.participants[socket.id].hasVoted = false;
+    }
+  }
 
   socket.join(roomId);
 
@@ -103,7 +110,22 @@ export function handleVote(socket, { roomId, vote }) {
   const voteStr = String(vote).trim().slice(0, 20);
   if (!room.deck.includes(voteStr)) return;
 
+  room.participants[socket.id].isSpectator = false;
   room.participants[socket.id].vote     = voteStr;
   room.participants[socket.id].hasVoted = true;
+  broadcastRoomState(roomId);
+}
+
+/** @param {import('socket.io').Socket} socket */
+export function handleToggleSpectator(socket, { roomId, isSpectator }) {
+  const room = rooms[roomId];
+  if (!room || !room.participants[socket.id]) return;
+
+  const p = room.participants[socket.id];
+  p.isSpectator = Boolean(isSpectator);
+  if (p.isSpectator) {
+    p.vote     = null;
+    p.hasVoted = false;
+  }
   broadcastRoomState(roomId);
 }
