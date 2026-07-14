@@ -74,6 +74,26 @@ docker-compose up -d --build
 
 ---
 
+## 🧪 Automated Testing (`npm test`)
+
+The project includes a blazing fast, zero-configuration automated test suite powered by Node's native **Test Runner (`node:test`) and Assert (`node:assert`)**.
+
+### Running the tests
+To execute all unit and integration test suites locally or in CI:
+```bash
+npm test
+```
+
+### Test Suites (`tests/`)
+| Suite | Scope | What it tests |
+| :--- | :--- | :--- |
+| `tests/store.test.js` | **State & Security** | In-memory room store, timer leak prevention (`deleteRoom`), unrevealed vote protection (`sanitizeRoom`), role differentiation, and issue title tracking. |
+| `tests/config.test.js` | **Decks & Translations** | Verification of all deck arrays (`standard`, `fibonacci`, `tshirt`), special cards (`❓`, `☕`), and 100% bilingual parity check between NL and EN dictionaries in `i18n.js`. |
+| `tests/api.test.js` | **REST API** | HTTP integration testing of Express routes via `supertest`: `GET /api/config`, `GET /api/rooms/:id`, Base64 PNG QR code generation (`/api/rooms/:id/qr`), and Docker health check (`/health`). |
+| `tests/socket.test.js` | **Real-time WebSockets** | End-to-end Socket.IO integration testing (`socket.io-client`) simulating full room lifecycles: `create-room` → `join-room` → `vote` → `reveal` → `reset` → `kick-user` → `update-story-title`. |
+
+---
+
 ## 📚 Architecture & Technical Wiki (with Mermaid Diagrams)
 
 For deep-dive documentation on system design, state management, security (`sanitizeRoom`), and real-time WebSockets interactions, check out our in-repo **Technical Wiki**:
@@ -114,6 +134,11 @@ For deep-dive documentation on system design, state management, security (`sanit
 │   ├── store/rooms.js       # In-memory room state management
 │   ├── socket/              # Socket.IO handlers (room, sm, vote, chat)
 │   └── routes/              # RESTful API endpoints (/api/rooms, /health)
+├── tests/
+│   ├── store.test.js        # Unit tests for rooms store & sanitizeRoom security
+│   ├── config.test.js       # Unit tests for deck validity & i18n dictionary parity
+│   ├── api.test.js          # HTTP integration tests for Express routes (/api, /health)
+│   └── socket.test.js       # E2E Socket.IO real-time room lifecycle & voting tests
 ├── Dockerfile               # Alpine Node.js image configuration
 ├── docker-compose.yml       # Docker deployment config with healthcheck
 └── server.js                # Main server entrypoint
