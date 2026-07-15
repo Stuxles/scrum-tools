@@ -25,6 +25,7 @@ export function initRoomPage(socket, urlRoomId) {
   let isMaster    = false;
   let myVote      = null;
   let currentRoom = null;
+  let isRevealing = false;
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const joinModal        = document.getElementById('join-modal');
@@ -183,21 +184,28 @@ export function initRoomPage(socket, urlRoomId) {
     });
   }
 
-  smRevealBtn.addEventListener('click', () => {
-    if (!currentRoom || currentRoom.revealed) return;
+  function doReveal() {
+    if (!currentRoom || currentRoom.revealed || smRevealBtn.disabled || mobileRevealBtn.disabled || isRevealing) return;
+    isRevealing = true;
+    currentRoom.revealed = true;
     smRevealBtn.disabled     = true;
     mobileRevealBtn.disabled = true;
     socket.emit('reveal', { roomId: currentRoom.id });
-  });
-  mobileRevealBtn.addEventListener('click', () => smRevealBtn.click());
+  }
 
-  smResetBtn.addEventListener('click', () => {
+  smRevealBtn.addEventListener('click', doReveal);
+  mobileRevealBtn.addEventListener('click', doReveal);
+
+  function doReset() {
     if (!currentRoom) return;
+    isRevealing = false;
     myVote = null;
     socket.emit('reset', { roomId: currentRoom.id });
     toast(t('toast-new-round'), 'success');
-  });
-  mobileResetBtn.addEventListener('click', () => smResetBtn.click());
+  }
+
+  smResetBtn.addEventListener('click', doReset);
+  mobileResetBtn.addEventListener('click', doReset);
 
   // ── Room code copy ────────────────────────────────────────────────────────
   headerRoomCode.addEventListener('click', () => {
@@ -374,7 +382,8 @@ export function initRoomPage(socket, urlRoomId) {
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
       smProgressFill.style.width = `${pct}%`;
       smProgressText.textContent = t('progress-text', { voted, total });
-      smRevealBtn.disabled       = room.revealed || voted === 0;
+      if (room.revealed || (voted === 0 && !room.revealed)) isRevealing = false;
+      smRevealBtn.disabled       = room.revealed || isRevealing || voted === 0;
       mobileRevealBtn.disabled   = smRevealBtn.disabled;
     }
   }
@@ -429,6 +438,7 @@ export function initRoomPage(socket, urlRoomId) {
       if (data.exists) {
         joinModalRoom.textContent = `📍 ${data.name || urlRoomId}`;
       } else {
+        localStorage.removeItem('scrum_auto_join_room');
         toast(t('toast-room-not-found', { id: urlRoomId }), 'error');
         setTimeout(() => { window.location.href = '/'; }, 2500);
         return;
@@ -504,6 +514,11 @@ export function initRoomPage(socket, urlRoomId) {
   }
 
   modalJoinBtn.addEventListener('click', () => doJoinRoom());
+  if (modalNameInput) {
+    modalNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doJoinRoom();
+    });
+  }
 
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);

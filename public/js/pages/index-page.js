@@ -54,7 +54,7 @@ export function initIndexPage(socket, urlRoomId) {
   });
 
   // ── Create room ───────────────────────────────────────────────────────────
-  createBtn.addEventListener('click', () => {
+  function doCreate() {
     const name     = createName.value.trim();
     const deckType = deckTypeSelect.value;
     const roomName = roomNameInput.value.trim();
@@ -83,7 +83,11 @@ export function initIndexPage(socket, urlRoomId) {
         toast(t('toast-server-offline'), 'error');
       }
     }, 10_000);
-  });
+  }
+
+  createBtn.addEventListener('click', doCreate);
+  createName.addEventListener('keydown',    e => { if (e.key === 'Enter') doCreate(); });
+  roomNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doCreate(); });
 
   // ── Join room ─────────────────────────────────────────────────────────────
   function doJoin() {
