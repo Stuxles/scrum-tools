@@ -438,10 +438,8 @@ export function initRoomPage(socket, urlRoomId) {
       const saved = getSavedName();
       if (saved) {
         modalNameInput.value = saved;
-        doJoinRoom(saved, savedSpec);
-      } else {
-        modalNameInput.focus();
       }
+      modalNameInput.focus();
     })
     .catch(() => {
       const saved = getSavedName();
@@ -494,8 +492,7 @@ export function initRoomPage(socket, urlRoomId) {
     });
   }
 
-  modalJoinBtn.addEventListener('click',    () => doJoinRoom());
-  modalNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doJoinRoom(); });
+  modalJoinBtn.addEventListener('click', () => doJoinRoom());
 
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);
