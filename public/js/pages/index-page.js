@@ -105,6 +105,7 @@ export function initIndexPage(socket, urlRoomId) {
 
   // ── Socket events ─────────────────────────────────────────────────────────
   socket.on('room-created', ({ roomId }) => {
+    localStorage.setItem('scrum_auto_join_room', roomId);
     window.location.href = `/room.html?id=${roomId}`;
   });
 
