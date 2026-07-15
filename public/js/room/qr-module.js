@@ -34,7 +34,7 @@ export function initQrModule(els, _socket, roomId) {
       smQrPlaceholder.classList.add('hidden');
       smQrUrl.textContent = data.url;
     } catch {
-      smQrPlaceholder.textContent = 'QR niet beschikbaar';
+      smQrPlaceholder.textContent = t('qr-not-available');
     }
   }
 

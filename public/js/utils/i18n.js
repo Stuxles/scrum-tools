@@ -141,7 +141,16 @@ export const translations = {
     'transfer-sm-title': 'Maak deze deelnemer Scrum Master',
     'confirm-transfer-sm': 'Wil je de rol van Scrum Master overdragen aan {name}?',
     'toast-sm-claimed': 'Je bent nu de Scrum Master 👑',
-    'toast-sm-transferred': 'Scrum Master rol overgedragen aan {name} 👑'
+    'toast-sm-transferred': 'Scrum Master rol overgedragen aan {name} 👑',
+    'btn-creating': 'Aanmaken…',
+    'btn-continuing': 'Doorgaan…',
+    'story-saved': 'Actueel issue opgeslagen ✓',
+    'story-cleared': 'Actueel issue gewist ✓',
+    'qr-not-available': 'QR niet beschikbaar',
+    'theme-dark': 'Donker',
+    'theme-light': 'Licht',
+    'theme-mode-dark': 'Donkere modus',
+    'theme-mode-light': 'Lichte modus'
   },
   en: {
     // ── Header / General ──
@@ -280,7 +289,16 @@ export const translations = {
     'transfer-sm-title': 'Make this participant Scrum Master',
     'confirm-transfer-sm': 'Do you want to transfer the Scrum Master role to {name}?',
     'toast-sm-claimed': 'You are now the Scrum Master 👑',
-    'toast-sm-transferred': 'Scrum Master role transferred to {name} 👑'
+    'toast-sm-transferred': 'Scrum Master role transferred to {name} 👑',
+    'btn-creating': 'Creating…',
+    'btn-continuing': 'Continuing…',
+    'story-saved': 'Current issue saved ✓',
+    'story-cleared': 'Current issue cleared ✓',
+    'qr-not-available': 'QR not available',
+    'theme-dark': 'Dark',
+    'theme-light': 'Light',
+    'theme-mode-dark': 'Dark mode',
+    'theme-mode-light': 'Light mode'
   }
 };
 

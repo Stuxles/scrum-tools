@@ -161,7 +161,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (!currentRoom) return;
     const storyTitle = storyTitleInput?.value.trim() || '';
     socket.emit('update-story-title', { roomId: currentRoom.id, storyTitle });
-    toast(storyTitle ? 'Actueel issue opgeslagen ✓' : 'Actueel issue gewist ✓', 'success');
+    toast(storyTitle ? t('story-saved') : t('story-cleared'), 'success');
   }
 
   if (storyBtnSave) storyBtnSave.addEventListener('click', saveStoryTitle);
@@ -179,7 +179,7 @@ export function initRoomPage(socket, urlRoomId) {
       if (!currentRoom) return;
       if (storyTitleInput) storyTitleInput.value = '';
       socket.emit('update-story-title', { roomId: currentRoom.id, storyTitle: '' });
-      toast('Actueel issue gewist ✓', 'info');
+      toast(t('story-cleared'), 'info');
     });
   }
 
@@ -195,7 +195,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (!currentRoom) return;
     myVote = null;
     socket.emit('reset', { roomId: currentRoom.id });
-    toast('Nieuwe ronde gestart 🔄', 'success');
+    toast(t('toast-new-round'), 'success');
   });
   mobileResetBtn.addEventListener('click', () => smResetBtn.click());
 
@@ -203,7 +203,7 @@ export function initRoomPage(socket, urlRoomId) {
   headerRoomCode.addEventListener('click', () => {
     copyToClipboard(
       urlRoomId,
-      () => toast(`Code "${urlRoomId}" gekopieerd!`, 'success'),
+      () => toast(t('toast-code-copied', { id: urlRoomId }), 'success'),
     );
   });
 
@@ -229,7 +229,7 @@ export function initRoomPage(socket, urlRoomId) {
     let customCards = [];
     if (deckType === 'custom') {
       customCards = deckModalCustom.value.split(',').map(s => s.trim()).filter(Boolean);
-      if (customCards.length < 2) { toast('Voer minimaal 2 kaarten in', 'error'); return; }
+      if (customCards.length < 2) { toast(t('toast-min-cards'), 'error'); return; }
     }
     socket.emit('change-deck', { roomId: currentRoom.id, deckType, customCards });
     deckModal.classList.add('hidden');
@@ -256,11 +256,11 @@ export function initRoomPage(socket, urlRoomId) {
 
   function saveNameChange() {
     const name = nameModalInput.value.trim();
-    if (!name) { toast('Naam mag niet leeg zijn', 'error'); return; }
+    if (!name) { toast(t('toast-name-empty'), 'error'); return; }
     saveName(name);
     if (currentRoom) socket.emit('update-name', { roomId: currentRoom.id, name });
     nameModal.classList.add('hidden');
-    toast('Naam bijgewerkt ✓', 'success');
+    toast(t('toast-name-updated'), 'success');
   }
 
   nameModalSave.addEventListener('click',   saveNameChange);
@@ -396,7 +396,7 @@ export function initRoomPage(socket, urlRoomId) {
 
   socket.on('became-master', () => {
     isMaster = true;
-    toast('Je bent nu de Scrum Master 👑', 'info');
+    toast(t('toast-sm-promoted'), 'info');
     if (currentRoom) {
       currentRoom.masterId = socket.id;
       currentRoom.participants.forEach(p => { p.isMaster = (p.id === socket.id); });
@@ -429,7 +429,7 @@ export function initRoomPage(socket, urlRoomId) {
       if (data.exists) {
         joinModalRoom.textContent = `📍 ${data.name || urlRoomId}`;
       } else {
-        toast(`Room "${urlRoomId}" bestaat niet.`, 'error');
+        toast(t('toast-room-not-found', { id: urlRoomId }), 'error');
         setTimeout(() => { window.location.href = '/'; }, 2500);
         return;
       }

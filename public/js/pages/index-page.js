@@ -7,6 +7,7 @@
 
 import { toast }                    from '../utils/toast.js';
 import { getSavedName, saveName }   from '../utils/helpers.js';
+import { t }                        from '../utils/i18n.js';
 
 export function initIndexPage(socket, urlRoomId) {
   const createName     = document.getElementById('create-name');
@@ -58,13 +59,13 @@ export function initIndexPage(socket, urlRoomId) {
     const deckType = deckTypeSelect.value;
     const roomName = roomNameInput.value.trim();
 
-    if (!name) { toast('Voer je naam in', 'error'); createName.focus(); return; }
+    if (!name) { toast(t('toast-enter-name'), 'error'); createName.focus(); return; }
 
     let custom = [];
     if (deckType === 'custom') {
       custom = customCards.value.split(',').map(s => s.trim()).filter(Boolean);
       if (custom.length < 2) {
-        toast('Voer minimaal 2 kaarten in (komma-gescheiden)', 'error');
+        toast(t('toast-min-cards'), 'error');
         customCards.focus();
         return;
       }
@@ -72,14 +73,14 @@ export function initIndexPage(socket, urlRoomId) {
 
     saveName(name);
     createBtn.disabled    = true;
-    createBtn.textContent = 'Aanmaken…';
+    createBtn.textContent = t('btn-creating');
     socket.emit('create-room', { name, deckType, customCards: custom, roomName });
 
     setTimeout(() => {
       if (createBtn.disabled) {
         createBtn.disabled    = false;
-        createBtn.textContent = '✦ Maak Room aan';
-        toast('De server reageert niet of is offline.', 'error');
+        createBtn.textContent = t('btn-create');
+        toast(t('toast-server-offline'), 'error');
       }
     }, 10_000);
   });
@@ -89,12 +90,12 @@ export function initIndexPage(socket, urlRoomId) {
     const name = joinName.value.trim();
     const code = joinCodeInput.value.trim().toUpperCase();
 
-    if (!name) { toast('Voer je naam in', 'error');       joinName.focus();      return; }
-    if (!code) { toast('Voer een room code in', 'error'); joinCodeInput.focus(); return; }
+    if (!name) { toast(t('toast-enter-name'), 'error'); joinName.focus();      return; }
+    if (!code) { toast(t('toast-enter-code'), 'error'); joinCodeInput.focus(); return; }
 
     saveName(name);
     joinBtn.disabled    = true;
-    joinBtn.textContent = 'Doorgaan…';
+    joinBtn.textContent = t('btn-continuing');
     window.location.href = `/room.html?id=${encodeURIComponent(code)}`;
   }
 
@@ -116,8 +117,8 @@ export function initIndexPage(socket, urlRoomId) {
   socket.on('error', ({ message }) => {
     toast(message, 'error');
     createBtn.disabled    = false;
-    createBtn.textContent = '✦ Maak Room aan';
+    createBtn.textContent = t('btn-create');
     joinBtn.disabled      = false;
-    joinBtn.textContent   = '→ Meedoen';
+    joinBtn.textContent   = t('btn-join');
   });
 }
