@@ -94,16 +94,8 @@ export function initIndexPage(socket, urlRoomId) {
 
     saveName(name);
     joinBtn.disabled    = true;
-    joinBtn.textContent = 'Verbinden…';
-    socket.emit('join-room', { roomId: code, name });
-
-    setTimeout(() => {
-      if (joinBtn.disabled) {
-        joinBtn.disabled    = false;
-        joinBtn.textContent = '→ Meedoen';
-        toast('De server reageert niet of is offline.', 'error');
-      }
-    }, 10_000);
+    joinBtn.textContent = 'Doorgaan…';
+    window.location.href = `/room.html?id=${encodeURIComponent(code)}`;
   }
 
   joinBtn.addEventListener('click', doJoin);
