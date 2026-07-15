@@ -1,4 +1,5 @@
 import { APP_NAME } from '../config.js';
+import { t } from './i18n.js';
 
 /** localStorage key for persisting the user's display name. */
 export const LS_NAME = `${APP_NAME.toLowerCase().replace(/[^a-z0-9]/g, '_')}_name`;
@@ -51,7 +52,7 @@ export async function copyToClipboard(text, onSuccess, onFallback) {
       document.execCommand('copy');
       onSuccess?.();
     } catch {
-      prompt('Kopieer handmatig:', text);
+      prompt(t('prompt-copy-manual') || 'Kopieer handmatig:', text);
       onFallback?.();
     }
     ta.remove();

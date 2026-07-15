@@ -42,11 +42,11 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     } else if (room.revealed && p.hasVoted) {
       statusEl.className  += ' revealed-vote';
       statusEl.textContent = p.vote || '—';
-      statusEl.title       = `Vote: ${p.vote}`;
+      statusEl.title       = t('participant-vote-title', { vote: p.vote }) || `Vote: ${p.vote}`;
     } else if (p.hasVoted) {
       statusEl.className  += ' voted';
       statusEl.textContent = '✓';
-      statusEl.title       = 'Voted';
+      statusEl.title       = t('participant-voted-title') || 'Voted';
     } else {
       statusEl.className  += ' not-voted';
       statusEl.textContent = '…';

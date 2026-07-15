@@ -150,7 +150,11 @@ export const translations = {
     'theme-dark': 'Donker',
     'theme-light': 'Licht',
     'theme-mode-dark': 'Donkere modus',
-    'theme-mode-light': 'Lichte modus'
+    'theme-mode-light': 'Lichte modus',
+    'prompt-copy-manual': 'Kopieer handmatig:',
+    'participant-vote-title': 'Stem: {vote}',
+    'participant-voted-title': 'Gestemd',
+    'aria-vote-card': 'Stem {val}'
   },
   en: {
     // ── Header / General ──
@@ -298,7 +302,11 @@ export const translations = {
     'theme-dark': 'Dark',
     'theme-light': 'Light',
     'theme-mode-dark': 'Dark mode',
-    'theme-mode-light': 'Light mode'
+    'theme-mode-light': 'Light mode',
+    'prompt-copy-manual': 'Copy manually:',
+    'participant-vote-title': 'Vote: {vote}',
+    'participant-voted-title': 'Voted',
+    'aria-vote-card': 'Vote {val}'
   }
 };
 

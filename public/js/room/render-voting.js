@@ -18,7 +18,7 @@ export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, current
     const btn = document.createElement('button');
     btn.className = 'vote-card';
     btn.dataset.val = val;
-    btn.setAttribute('aria-label',   `Stem ${val}`);
+    btn.setAttribute('aria-label',   t('aria-vote-card', { val }) || `Stem ${val}`);
     btn.setAttribute('role',         'radio');
     btn.setAttribute('aria-checked', String(myVote === val));
     const span = document.createElement('span');
