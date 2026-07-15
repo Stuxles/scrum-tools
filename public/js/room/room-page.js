@@ -439,11 +439,22 @@ export function initRoomPage(socket, urlRoomId) {
       if (saved) {
         modalNameInput.value = saved;
       }
+      if (saved && localStorage.getItem('scrum_auto_join_room') === urlRoomId) {
+        localStorage.removeItem('scrum_auto_join_room');
+        doJoinRoom(saved, false);
+        return;
+      }
       modalNameInput.focus();
     })
     .catch(() => {
       const saved = getSavedName();
-      if (saved) modalNameInput.value = saved;
+      if (saved) {
+        modalNameInput.value = saved;
+      }
+      if (saved && localStorage.getItem('scrum_auto_join_room') === urlRoomId) {
+        localStorage.removeItem('scrum_auto_join_room');
+        doJoinRoom(saved, false);
+      }
     });
 
   function doJoinRoom(name, isSpectator) {
