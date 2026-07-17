@@ -1,6 +1,6 @@
 # ⚡ Real-Time Socket.IO Sequence Flows
 
-All communication during active planning rounds happens over bi-directional **Socket.IO** WebSockets. This document breaks down the exact interaction sequences for joining, voting, revealing, kicking, and spectator toggling.
+All communication during active planning rounds happens over bi-directional **Socket.IO** WebSockets. This document breaks down the exact interaction sequences for creating, joining, voting, revealing, kicking, spectator toggling, and Scrum Master handoff.
 
 ---
 
@@ -16,10 +16,15 @@ sequenceDiagram
     actor B as Voter B 🃏
     participant S as Node.js Server (`rooms.js`)
 
-    Note over SM,S: Room Creation & Joining
-    SM->>S: emit('create-room', { name, masterName, deckType })
+    Note over SM,S: Room Creation (Landing Page)
+    SM->>S: emit('create-room', { name, deckType, customCards, roomName })
+    S-->>SM: emit('room-created', { roomId })
+    Note over SM: Browser navigates to /room.html?id=roomId
+
+    Note over SM,S: Joining the Room (first joiner becomes Master)
+    SM->>S: emit('join-room', { roomId, name, isSpectator: false })
     S-->>SM: emit('room-joined', { room, isMaster: true })
-    
+
     A->>S: emit('join-room', { roomId, name: 'Alice', isSpectator: false })
     S-->>A: emit('room-joined', { room, isMaster: false })
     S-->>SM: broadcast('room-state', sanitizedRoom)
@@ -117,4 +122,44 @@ sequenceDiagram
 
     Note over SM: SM UI recalculates progress bar excluding P (`!p.isSpectator`)
     Note over P: P UI replaces card deck with Spectator Banner ("You are observing as a Spectator")
+```
+
+---
+
+## 👑 Scrum Master Handoff (`sm-transfer-master`, `claim-master`, disconnect grace)
+
+The Scrum Master role can change hands three ways. Note that `claim-master` is intentionally **open to any participant** — the room code is the trust boundary, not the role. See [Roles & Permissions](./roles.md) for the full trust model.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor SM as Scrum Master 👑
+    actor P as Participant 🃏
+    participant S as Node.js Server (`roomHandlers.js` / `connectionHandlers.js`)
+
+    Note over SM,S: Path 1 — Explicit Transfer (SM hands off)
+    SM->>S: emit('sm-transfer-master', { roomId, targetId: P.id })
+    Note over S: Verify room.masterId == SM.id && P is a participant
+    S->>P: emit('became-master', {})
+    S-->>SM: broadcast('room-state', { P.isMaster: true })
+    S-->>P: broadcast('room-state', { P.isMaster: true })
+
+    Note over P,S: Path 2 — Claim (any participant may take over)
+    P->>S: emit('claim-master', { roomId })
+    Note over S: Clears masterGraceTimer if pending; no ownership check
+    S->>P: emit('became-master', {})
+    S-->>P: broadcast('room-state', { P.isMaster: true })
+
+    Note over SM,S: Path 3 — Disconnect Grace (SM drops unexpectedly)
+    SM--xS: socket 'disconnect' (other participants remain)
+    Note over S: Start masterGraceTimer = setTimeout(30s)
+    alt Original SM rejoins by name within 30s
+        SM->>S: emit('join-room', { roomId, name })
+        Note over S: name matches masterName → reclaim role, cancel timer
+        S-->>SM: emit('room-joined', { room, isMaster: true })
+    else 30 seconds elapse
+        Note over S: masterId = first remaining participant
+        S->>P: emit('became-master', {})
+        S-->>P: broadcast('room-state', updatedRoom)
+    end
 ```

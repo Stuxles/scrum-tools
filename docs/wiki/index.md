@@ -34,6 +34,7 @@ graph TD
     end
 
     subgraph Backend["Node.js / Express / Socket.IO Server"]
+        RestApi["src/routes/api.js (REST: /api/rooms/:id, /qr, /health)"]
         ServerEntry["server.js / src/socket/index.js (Safe Dispatch + Rate Limiter: 35 req/s)"]
         RoomHandlers["roomHandlers.js (create, join, vote, toggle-spectator, claim/transfer-master)"]
         SMHandlers["smHandlers.js (reveal, reset, change-deck, update-story)"]
@@ -42,11 +43,14 @@ graph TD
         RoomsStore["src/store/rooms.js (Null-Prototype Rooms Dictionary & sanitizeRoom)"]
     end
 
-    Landing -->|"REST API / Socket"| ServerEntry
+    Landing -->|"REST: verify room code"| RestApi
+    Landing -->|"Socket: create / join"| ServerEntry
+    RoomUI -->|"REST: QR code / room info"| RestApi
     RoomUI -->|"Socket Events"| ServerEntry
     RoomUI --- RenderUsers & RenderVoting & RenderResults
     RoomUI -.- LocalStore & I18n
 
+    RestApi -->|"read-only lookup"| RoomsStore
     ServerEntry --> RoomHandlers & SMHandlers & ConnHandlers
     RoomHandlers & SMHandlers & ConnHandlers --> RoomsStore
     RoomHandlers & SMHandlers & ConnHandlers --> Broadcast

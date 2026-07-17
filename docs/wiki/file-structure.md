@@ -71,8 +71,10 @@ scrum-poker-collab/
 graph TD
     subgraph Server["Backend Layer (Node.js / Socket.IO)"]
         S_Entry["server.js"] --> S_Socket["src/socket/index.js"]
+        S_Entry --> S_Rest["REST Routes (src/routes/api.js)"]
         S_Socket --> S_Handlers["Handlers (roomHandlers.js, smHandlers.js, connectionHandlers.js)"]
         S_Handlers --> S_Store["Rooms Store (src/store/rooms.js)"]
+        S_Rest --> S_Store
         S_Handlers --> S_Broadcast["Broadcast & Sanitize (src/utils/broadcast.js)"]
     end
 
@@ -85,4 +87,5 @@ graph TD
 
     S_Broadcast -->|"WebSocket Events: room-state, kicked, room-joined"| C_SocketClient
     C_SocketClient -->|"WebSocket Emits: join-room, vote, reveal, kick-user"| S_Socket
+    C_Room -->|"REST: room info, QR code, health"| S_Rest
 ```
