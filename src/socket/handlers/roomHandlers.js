@@ -1,6 +1,6 @@
 import { rooms, sanitizeRoom } from '../../store/rooms.js';
 import { DECKS }               from '../../config.js';
-import { generateRoomId }      from '../../utils/roomId.js';
+import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
   broadcastRoomState,
   scheduleRoomCleanup,
@@ -51,7 +51,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
 
 /** @param {import('socket.io').Socket} socket */
 export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
-  roomId = (roomId || '').trim().toUpperCase();
+  roomId = normalizeRoomId(roomId);
   name   = (name   || 'Anoniem').trim().slice(0, 40);
 
   const room = rooms[roomId];
@@ -101,6 +101,7 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleVote(socket, { roomId, vote }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
   if (room.revealed) return;
@@ -123,6 +124,7 @@ export function handleVote(socket, { roomId, vote }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleToggleSpectator(socket, { roomId, isSpectator }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
@@ -141,6 +143,7 @@ export function handleToggleSpectator(socket, { roomId, isSpectator }) {
  * @param {{ roomId: string }} payload
  */
 export function handleClaimMaster(socket, { roomId } = {}) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
@@ -163,6 +166,7 @@ export function handleClaimMaster(socket, { roomId } = {}) {
  * @param {{ roomId: string, targetId: string }} payload
  */
 export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id || !targetId || !room.participants[targetId] || targetId === socket.id) return;
 

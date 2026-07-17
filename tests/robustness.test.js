@@ -116,4 +116,33 @@ describe('Socket robustness / malformed payload handling', () => {
     const { roomId } = await onceEvent(probe, 'room-created');
     assert.ok(roomId, 'Server survives prototype-key lookups');
   });
+
+  test('lowercase roomId on vote is normalized and registers the vote', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    // Vote using a lowercase room id — must be normalized server-side.
+    voter.emit('vote', { roomId: roomId.toLowerCase(), vote: '8' });
+
+    const state = await new Promise((resolve) => {
+      const handler = ({ room }) => {
+        const bob = room.participants.find(p => p.name === 'Bob');
+        if (bob && bob.hasVoted) { master.off('room-state', handler); resolve(room); }
+      };
+      master.on('room-state', handler);
+    });
+
+    const bob = state.participants.find(p => p.name === 'Bob');
+    assert.strictEqual(bob.hasVoted, true, 'Vote registered despite lowercase roomId');
+  });
 });
