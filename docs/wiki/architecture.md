@@ -76,3 +76,30 @@ socket.use((_packet, next) => {
   next();
 });
 ```
+
+---
+
+## 🧯 Malformed Input & Crash Hardening
+
+Beyond rate limiting, every inbound socket event passes through a **safe dispatch layer** (`src/socket/index.js`) so that a single malformed message from any client can never throw an uncaught exception and crash the Node process (which would wipe **every** active room, not just the offender's).
+
+- **Payload defaulting** — a missing or `null` event payload is coerced to `{}` before it reaches a handler, so destructuring `{ roomId }` never throws.
+- **Error isolation** — each handler runs inside a `try/catch`; a thrown error is logged server-side and a generic error toast is returned to the offending socket instead of propagating.
+- **Prototype-safe store** — the rooms dictionary is created with `Object.create(null)` (`src/store/rooms.js`), so attacker-supplied room IDs such as `__proto__` or `constructor` resolve to `undefined` rather than a truthy prototype value that would slip past the `if (!room)` guard.
+- **Canonical room IDs** — every handler normalizes the client-supplied `roomId` (trim + uppercase) via `normalizeRoomId()` (`src/utils/roomId.js`), removing silent no-ops from case differences and narrowing the lookup surface.
+
+```javascript
+// src/socket/index.js — safe dispatch wrapper wired to every event
+const on = (event, handler) => {
+  socket.on(event, (data = {}) => {
+    try {
+      handler(data || {});
+    } catch (err) {
+      console.error(`[handler:${event}] ${socket.id}`, err);
+      socket.emit('error', { message: 'Er ging iets mis. Probeer het opnieuw.' });
+    }
+  });
+};
+```
+
+> These guarantees are locked in by the `tests/robustness.test.js` suite, which fires every event with missing, `null`, and prototype-key payloads and asserts the server stays alive.

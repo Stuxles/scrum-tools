@@ -34,12 +34,12 @@ graph TD
     end
 
     subgraph Backend["Node.js / Express / Socket.IO Server"]
-        ServerEntry["server.js / src/socket/index.js (Rate Limiter: 35 req/s)"]
-        RoomHandlers["roomHandlers.js (create, join, vote, toggle-spectator)"]
+        ServerEntry["server.js / src/socket/index.js (Safe Dispatch + Rate Limiter: 35 req/s)"]
+        RoomHandlers["roomHandlers.js (create, join, vote, toggle-spectator, claim/transfer-master)"]
         SMHandlers["smHandlers.js (reveal, reset, change-deck, update-story)"]
         ConnHandlers["connectionHandlers.js (kick-user, disconnect, 15m Grace Timer)"]
         Broadcast["broadcast.js (broadcastRoomState, 24h Cleanup)"]
-        RoomsStore["src/store/rooms.js (In-Memory Rooms Dictionary & sanitizeRoom)"]
+        RoomsStore["src/store/rooms.js (Null-Prototype Rooms Dictionary & sanitizeRoom)"]
     end
 
     Landing -->|"REST API / Socket"| ServerEntry
