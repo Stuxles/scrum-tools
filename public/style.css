@@ -690,14 +690,15 @@ label.field-label {
 
 .participant-item .kick-btn,
 .participant-item .transfer-btn {
-  opacity: 0;
-  transition: opacity 0.15s;
+  display: none;
   padding: 4px 6px;
   font-size: 0.7rem;
   margin-left: 4px;
 }
 .participant-item:hover .kick-btn,
-.participant-item:hover .transfer-btn { opacity: 1; }
+.participant-item:hover .transfer-btn,
+.participant-item:focus-within .kick-btn,
+.participant-item:focus-within .transfer-btn { display: inline-flex; }
 
 /* ── Main Voting Area ────────────────────────────────────────── */
 .voting-area {
