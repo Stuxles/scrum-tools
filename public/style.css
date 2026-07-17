@@ -690,14 +690,21 @@ label.field-label {
 
 .participant-item .kick-btn,
 .participant-item .transfer-btn {
-  opacity: 0;
-  transition: opacity 0.15s;
   padding: 4px 6px;
   font-size: 0.7rem;
   margin-left: 4px;
 }
-.participant-item:hover .kick-btn,
-.participant-item:hover .transfer-btn { opacity: 1; }
+/* On hover-capable (mouse/trackpad) devices, hide the action buttons until
+   the row is hovered or focused so the participant name gets the full width.
+   Touch devices cannot hover, so there the buttons stay visible and tappable. */
+@media (hover: hover) {
+  .participant-item .kick-btn,
+  .participant-item .transfer-btn { display: none; }
+  .participant-item:hover .kick-btn,
+  .participant-item:hover .transfer-btn,
+  .participant-item:focus-within .kick-btn,
+  .participant-item:focus-within .transfer-btn { display: inline-flex; }
+}
 
 /* ── Main Voting Area ────────────────────────────────────────── */
 .voting-area {
