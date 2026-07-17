@@ -116,6 +116,7 @@ export const translations = {
     'toast-server-offline': 'De server reageert niet of is offline.',
     'toast-rate-limit': 'Te veel acties achter elkaar. Wacht een seconde.',
     'toast-server-full': 'Kon geen unieke room-code genereren. Server zit vol.',
+    'toast-generic-error': 'Er ging iets mis. Probeer het opnieuw.',
 
     // ── Stats & Dynamic texts ──
     'stat-average': 'Gemiddelde',
@@ -268,6 +269,7 @@ export const translations = {
     'toast-server-offline': 'Server is not responding or offline.',
     'toast-rate-limit': 'Too many actions. Please wait a second.',
     'toast-server-full': 'Could not generate unique room code. Server is full.',
+    'toast-generic-error': 'Something went wrong. Please try again.',
 
     // ── Stats & Dynamic texts ──
     'stat-average': 'Average',
@@ -340,6 +342,7 @@ export function translateServerMsg(msg) {
   if (msg.includes('Voer minimaal 2 kaarten in')) return t('toast-min-cards');
   if (msg.includes('Kon geen unieke room-code') || msg.includes('Could not generate')) return t('toast-server-full');
   if (msg.includes('niet gevonden') || msg.includes('Controleer de code') || msg.includes('does not exist')) return t('toast-room-not-found', { id: '' });
+  if (msg.includes('Er ging iets mis') || msg.includes('Something went wrong')) return t('toast-generic-error');
   return msg;
 }
 

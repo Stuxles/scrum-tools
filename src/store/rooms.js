@@ -10,8 +10,12 @@
  * @typedef {{ id: string, name: string, vote: string|null, hasVoted: boolean }} Participant
  */
 
-/** @type {Record<string, Room>} */
-export const rooms = {};
+/**
+ * Null-prototype map so client-supplied room IDs like `__proto__` or
+ * `constructor` resolve to `undefined` instead of a truthy prototype value.
+ * @type {Record<string, Room>}
+ */
+export const rooms = Object.create(null);
 
 /**
  * Delete a room and clear any pending timers to avoid memory/timer leaks.
