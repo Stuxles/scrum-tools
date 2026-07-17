@@ -18,7 +18,7 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     li.className  = 'participant-item';
     li.dataset.id = p.id;
 
-    const initial = (p.name || '?')[0].toUpperCase();
+    const initial = escHtml((p.name || '?')[0].toUpperCase());
     const roleText = p.isMaster ? 'Scrum Master' : (p.isSpectator ? t('role-spectator') : t('role-participant'));
     li.innerHTML  = `
       <div class="participant-avatar" aria-hidden="true">${initial}</div>

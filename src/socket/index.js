@@ -26,23 +26,36 @@ export function initSocketHandlers(io) {
       next();
     });
 
+    // Safe dispatch: default a missing payload to {} and isolate handler
+    // errors so one malformed message can never crash the process.
+    const on = (event, handler) => {
+      socket.on(event, (data = {}) => {
+        try {
+          handler(data || {});
+        } catch (err) {
+          console.error(`[handler:${event}] ${socket.id}`, err);
+          socket.emit('error', { message: 'Er ging iets mis. Probeer het opnieuw.' });
+        }
+      });
+    };
+
     // ── Room events ──────────────────────────────────────────────────────────
-    socket.on('create-room',      (data) => handleCreateRoom(socket, data));
-    socket.on('join-room',        (data) => handleJoinRoom(socket, data));
-    socket.on('vote',             (data) => handleVote(socket, data));
-    socket.on('toggle-spectator', (data) => handleToggleSpectator(socket, data));
-    socket.on('claim-master',     (data) => handleClaimMaster(socket, data));
+    on('create-room',      (data) => handleCreateRoom(socket, data));
+    on('join-room',        (data) => handleJoinRoom(socket, data));
+    on('vote',             (data) => handleVote(socket, data));
+    on('toggle-spectator', (data) => handleToggleSpectator(socket, data));
+    on('claim-master',     (data) => handleClaimMaster(socket, data));
 
     // ── SM-only events ───────────────────────────────────────────────────────
-    socket.on('reveal',             (data) => handleReveal(socket, data));
-    socket.on('reset',              (data) => handleReset(socket, data));
-    socket.on('change-deck',        (data) => handleChangeDeck(socket, data));
-    socket.on('update-name',        (data) => handleUpdateName(socket, data));
-    socket.on('update-story-title', (data) => handleUpdateStoryTitle(socket, data));
-    socket.on('sm-transfer-master', (data) => handleTransferMaster(io, socket, data));
+    on('reveal',             (data) => handleReveal(socket, data));
+    on('reset',              (data) => handleReset(socket, data));
+    on('change-deck',        (data) => handleChangeDeck(socket, data));
+    on('update-name',        (data) => handleUpdateName(socket, data));
+    on('update-story-title', (data) => handleUpdateStoryTitle(socket, data));
+    on('sm-transfer-master', (data) => handleTransferMaster(io, socket, data));
 
     // ── Admin / lifecycle ────────────────────────────────────────────────────
-    socket.on('kick-user',   (data) => handleKickUser(io, socket, data));
+    on('kick-user',   (data) => handleKickUser(io, socket, data));
     socket.on('disconnect',  ()     => handleDisconnect(io, socket));
   });
 }

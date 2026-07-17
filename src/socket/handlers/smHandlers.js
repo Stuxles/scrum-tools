@@ -1,9 +1,11 @@
 import { rooms }            from '../../store/rooms.js';
 import { DECKS }            from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
+import { normalizeRoomId }  from '../../utils/roomId.js';
 
 /** @param {import('socket.io').Socket} socket */
 export function handleReveal(socket, { roomId }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id || room.revealed) return;
 
@@ -13,6 +15,7 @@ export function handleReveal(socket, { roomId }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleReset(socket, { roomId }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id) return;
 
@@ -26,6 +29,7 @@ export function handleReset(socket, { roomId }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id) return;
 
@@ -53,6 +57,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleUpdateName(socket, { roomId, name }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
@@ -68,6 +73,7 @@ export function handleUpdateName(socket, { roomId, name }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleUpdateStoryTitle(socket, { roomId, storyTitle }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id) return;
 

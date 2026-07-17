@@ -114,10 +114,6 @@ export function initIndexPage(socket, urlRoomId) {
     window.location.href = `/room.html?id=${roomId}`;
   });
 
-  socket.on('room-joined', ({ room }) => {
-    window.location.href = `/room.html?id=${room.id}`;
-  });
-
   socket.on('error', ({ message }) => {
     toast(message, 'error');
     createBtn.disabled    = false;

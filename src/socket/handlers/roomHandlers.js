@@ -1,6 +1,6 @@
 import { rooms, sanitizeRoom } from '../../store/rooms.js';
 import { DECKS }               from '../../config.js';
-import { generateRoomId }      from '../../utils/roomId.js';
+import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
   broadcastRoomState,
   scheduleRoomCleanup,
@@ -51,7 +51,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
 
 /** @param {import('socket.io').Socket} socket */
 export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
-  roomId = (roomId || '').trim().toUpperCase();
+  roomId = normalizeRoomId(roomId);
   name   = (name   || 'Anoniem').trim().slice(0, 40);
 
   const room = rooms[roomId];
@@ -66,12 +66,21 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
     delete room.disconnectTimer;
   }
 
-  // Assign master or reconnect gracefully within 30s
+  // Assign master or reconnect gracefully within 30s.
+  //
+  // TRUST MODEL: reconnect-as-master is gated only on a case-insensitive
+  // display-name match during the grace window. This means anyone who joins
+  // using the departed Scrum Master's name while masterGraceTimer is pending
+  // is handed the master role. This is an accepted trade-off for a
+  // frictionless, account-less reconnect flow. Hardening this would require
+  // issuing a per-session reconnect token on room-created/room-joined and
+  // verifying it here instead of comparing names. See docs/wiki/roles.md.
   if (room.masterGraceTimer && room.masterName && room.masterName.trim().toLowerCase() === name.trim().toLowerCase()) {
     clearTimeout(room.masterGraceTimer);
     room.masterGraceTimer = null;
     room.masterId   = socket.id;
     room.masterName = name;
+    console.log(`[master-grace] ${name} reclaimed SM by name match in room ${roomId}`);
   } else if (!room.masterId || (!room.participants[room.masterId] && !room.masterGraceTimer)) {
     room.masterId   = socket.id;
     room.masterName = name;
@@ -101,6 +110,7 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleVote(socket, { roomId, vote }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
   if (room.revealed) return;
@@ -123,6 +133,7 @@ export function handleVote(socket, { roomId, vote }) {
 
 /** @param {import('socket.io').Socket} socket */
 export function handleToggleSpectator(socket, { roomId, isSpectator }) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
@@ -141,6 +152,7 @@ export function handleToggleSpectator(socket, { roomId, isSpectator }) {
  * @param {{ roomId: string }} payload
  */
 export function handleClaimMaster(socket, { roomId } = {}) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
@@ -163,6 +175,7 @@ export function handleClaimMaster(socket, { roomId } = {}) {
  * @param {{ roomId: string, targetId: string }} payload
  */
 export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
+  roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id || !targetId || !room.participants[targetId] || targetId === socket.id) return;
 
