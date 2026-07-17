@@ -48,3 +48,16 @@ const pct = total > 0 ? Math.round((voted / total) * 100) : 0;
 smProgressFill.style.width = `${pct}%`;
 smProgressText.textContent = t('progress-text', { voted, total });
 ```
+
+---
+
+## 🔐 Scrum Master Reconnect Trust Model
+
+When the Scrum Master disconnects, the room does not immediately reassign the role. A **30-second grace timer** (`masterGraceTimer`) starts, during which the original SM can reclaim the role by rejoining.
+
+Reclaim is gated **only on a case-insensitive display-name match** (`handleJoinRoom` in `src/socket/handlers/roomHandlers.js`). Consequences:
+
+- The reconnect flow is frictionless and requires no account or token.
+- **Trade-off:** during the grace window, anyone who joins using the departed SM's name is handed the master role. This is accepted for a lightweight, account-less tool.
+
+If a room needs stronger guarantees, issue a per-session reconnect token on `room-created` / `room-joined` and verify it on rejoin instead of comparing names. If the grace timer expires without a reclaim, the role falls to the first remaining participant.
