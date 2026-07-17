@@ -108,6 +108,7 @@ export const translations = {
     'toast-disconnect': 'Verbinding verbroken — opnieuw verbinden…',
     'toast-reconnected': 'Opnieuw verbonden!',
     'toast-room-not-found': 'Room "{id}" bestaat niet.',
+    'toast-room-not-found-generic': 'Room niet gevonden. Controleer de code.',
     'toast-enter-name': 'Voer je naam in',
     'toast-enter-code': 'Voer een room code in',
     'toast-qr-loading': 'QR code nog niet geladen…',
@@ -261,6 +262,7 @@ export const translations = {
     'toast-disconnect': 'Connection lost — reconnecting…',
     'toast-reconnected': 'Reconnected!',
     'toast-room-not-found': 'Room "{id}" does not exist.',
+    'toast-room-not-found-generic': 'Room not found. Check the code.',
     'toast-enter-name': 'Please enter your name',
     'toast-enter-code': 'Please enter a room code',
     'toast-qr-loading': 'QR code not loaded yet…',
@@ -341,7 +343,7 @@ export function translateServerMsg(msg) {
   if (msg.includes('Te veel acties') || msg.includes('Too many actions')) return t('toast-rate-limit');
   if (msg.includes('Voer minimaal 2 kaarten in')) return t('toast-min-cards');
   if (msg.includes('Kon geen unieke room-code') || msg.includes('Could not generate')) return t('toast-server-full');
-  if (msg.includes('niet gevonden') || msg.includes('Controleer de code') || msg.includes('does not exist')) return t('toast-room-not-found', { id: '' });
+  if (msg.includes('niet gevonden') || msg.includes('Controleer de code') || msg.includes('does not exist')) return t('toast-room-not-found-generic');
   if (msg.includes('Er ging iets mis') || msg.includes('Something went wrong')) return t('toast-generic-error');
   return msg;
 }

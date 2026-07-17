@@ -7,7 +7,7 @@ import os from 'os';
 import { APP_NAME as SHARED_APP_NAME } from '../public/js/config.js';
 
 export const APP_NAME   = process.env.APP_NAME || SHARED_APP_NAME;
-export const PORT       = process.env.PORT       || 3000;
+export const PORT       = Number(process.env.PORT) || 3000;
 export const CORS_ORIGIN = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
   : '*';
