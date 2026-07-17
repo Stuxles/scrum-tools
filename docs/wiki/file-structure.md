@@ -30,16 +30,16 @@ scrum-poker-collab/
 │   ├── 📁 routes/
 │   │   └── 📄 api.js                     # RESTful API endpoints (`/api/rooms/:id` verification, `/health`)
 │   ├── 📁 socket/
-│   │   ├── 📄 index.js                   # Socket.IO connection bootstrap & 35 req/sec rate limiter
+│   │   ├── 📄 index.js                   # Socket.IO bootstrap, safe dispatch (payload guard + error isolation) & 35 req/sec rate limiter
 │   │   └── 📁 handlers/
 │   │       ├── 📄 connectionHandlers.js  # Disconnect grace period (`RECONNECT_GRACE_PERIOD_MS`) & kick-user
-│   │       ├── 📄 roomHandlers.js        # `create-room`, `join-room`, `vote`, `toggle-spectator` logic
+│   │       ├── 📄 roomHandlers.js        # `create-room`, `join-room`, `vote`, `toggle-spectator`, `claim-master`, `sm-transfer-master`
 │   │       └── 📄 smHandlers.js          # Scrum Master commands (`reveal`, `reset`, `change-deck`, `update-story-title`)
 │   ├── 📁 store/
-│   │   └── 📄 rooms.js                   # Single source of truth for in-memory room dictionary (`rooms`)
+│   │   └── 📄 rooms.js                   # In-memory room dictionary (null-prototype), `deleteRoom` & `sanitizeRoom`
 │   └── 📁 utils/
 │       ├── 📄 broadcast.js               # `broadcastRoomState` (with `sanitizeRoom`) & 24h cleanup timer
-│       └── 📄 roomId.js                  # Crypto-safe 6-character alphanumeric room code generator (`ABC123`)
+│       └── 📄 roomId.js                  # 6-character room code generator (`ABC123`) & `normalizeRoomId` canonicalizer
 │
 └── 📁 public/                            # 🎨 Client-Side Frontend (Static HTML, CSS Variables, ES Modules)
     ├── 📄 index.html                     # Landing / Home page (`/` -> create or join room)
@@ -71,8 +71,10 @@ scrum-poker-collab/
 graph TD
     subgraph Server["Backend Layer (Node.js / Socket.IO)"]
         S_Entry["server.js"] --> S_Socket["src/socket/index.js"]
+        S_Entry --> S_Rest["REST Routes (src/routes/api.js)"]
         S_Socket --> S_Handlers["Handlers (roomHandlers.js, smHandlers.js, connectionHandlers.js)"]
         S_Handlers --> S_Store["Rooms Store (src/store/rooms.js)"]
+        S_Rest --> S_Store
         S_Handlers --> S_Broadcast["Broadcast & Sanitize (src/utils/broadcast.js)"]
     end
 
@@ -85,4 +87,5 @@ graph TD
 
     S_Broadcast -->|"WebSocket Events: room-state, kicked, room-joined"| C_SocketClient
     C_SocketClient -->|"WebSocket Emits: join-room, vote, reveal, kick-user"| S_Socket
+    C_Room -->|"REST: room info, QR code, health"| S_Rest
 ```

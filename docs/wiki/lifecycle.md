@@ -20,6 +20,17 @@ stateDiagram-v2
         RevealedPhase --> VotingPhase : SM clicks New Round
     }
 
+    RoomCreated --> MasterGrace30s : Scrum Master disconnects (others remain)
+
+    state MasterGrace30s {
+        [*] --> SMTimerRunning : setTimeout 30s (masterGraceTimer)
+        SMTimerRunning --> Reclaimed : Original SM rejoins by name, or anyone claims
+        SMTimerRunning --> Reassigned : 30 seconds elapsed
+        Reassigned --> [*] : masterId = first remaining participant
+        Reclaimed --> [*]
+    }
+    MasterGrace30s --> RoomCreated
+
     RoomCreated --> GracePeriod15m : Last participant leaves room
     
     state GracePeriod15m {
@@ -38,6 +49,18 @@ stateDiagram-v2
 
     RoomDeleted --> [*] : deleteRoom and clear timers
 ```
+
+---
+
+## 👑 The 30-Second Scrum Master Reconnect Grace (`masterGraceTimer`)
+
+When the **Scrum Master disconnects but other participants are still present**, the role is not reassigned immediately. `connectionHandlers.js` starts a **30-second** `masterGraceTimer`:
+
+1. **SM Disconnect (room not empty)**: on `disconnect`, if the leaver was the master and participants remain, `room.masterGraceTimer = setTimeout(..., 30000)` starts.
+2. **Reclaim within 30s**: the original SM can reclaim the role by rejoining with the **same display name** (`handleJoinRoom` matches `masterName` case-insensitively), and any participant can take over via `claim-master`. Either path clears the timer.
+3. **Auto-Reassign after 30s**: if the window elapses, `masterId` is reassigned to the first remaining participant, who receives a `became-master` event.
+
+> ⚠️ **Trust model:** name-match reclaim means anyone joining with the departed SM's name during the window inherits the role. This is an accepted trade-off for an account-less tool — the room code is the real access boundary. See [Roles & Permissions](./roles.md#-scrum-master-reconnect-trust-model).
 
 ---
 
