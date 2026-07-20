@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS } from '../src/config.js';
+import { DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy } from '../src/config.js';
 import { translations } from '../public/js/utils/i18n.js';
 
 describe('Config & i18n Dictionary verification', () => {
@@ -22,6 +22,18 @@ describe('Config & i18n Dictionary verification', () => {
     assert.ok(typeof PORT === 'number' || typeof PORT === 'string', 'PORT must be set');
     assert.ok(CORS_ORIGIN, 'CORS_ORIGIN must be defined');
     assert.strictEqual(RECONNECT_GRACE_PERIOD_MS, 15 * 60 * 1000, 'Grace period must be 15 minutes');
+    assert.strictEqual(TRUST_PROXY, false, 'TRUST_PROXY must default to false when the env var is unset');
+  });
+
+  test('parseTrustProxy: safe default and Express-recognized value forms', () => {
+    assert.strictEqual(parseTrustProxy(undefined), false, 'unset -> false (untrusted, safe default)');
+    assert.strictEqual(parseTrustProxy(''), false);
+    assert.strictEqual(parseTrustProxy('true'), true);
+    assert.strictEqual(parseTrustProxy('false'), false);
+    assert.strictEqual(parseTrustProxy('1'), 1, 'numeric hop count is parsed to a Number');
+    assert.strictEqual(parseTrustProxy('2'), 2);
+    assert.strictEqual(parseTrustProxy('loopback'), 'loopback', 'named/CIDR values pass through for Express to interpret');
+    assert.strictEqual(parseTrustProxy('10.0.0.1/8'), '10.0.0.1/8');
   });
 
   test('i18n translations dictionary should have matching keys between NL and EN', () => {

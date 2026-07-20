@@ -26,7 +26,7 @@ scrum-poker-collab/
 │   └── file-structure.md                 # (This file) Comprehensive directory & module breakdown
 │
 ├── 📁 src/                               # ⚙️ Backend Node.js / Express / Socket.IO Source Code
-│   ├── 📄 config.js                      # Central server configuration (ports, CORS, 15m timeout, decks)
+│   ├── 📄 config.js                      # Central server configuration (ports, CORS, TRUST_PROXY, 15m timeout, decks)
 │   ├── 📁 routes/
 │   │   └── 📄 api.js                     # RESTful API endpoints (`/api/rooms/:id` verification, `/health`), per-IP rate limited
 │   ├── 📁 socket/
@@ -40,7 +40,7 @@ scrum-poker-collab/
 │   └── 📁 utils/
 │       ├── 📄 broadcast.js               # `broadcastRoomState` (with `sanitizeRoom`) & 24h cleanup timer
 │       ├── 📄 roomId.js                  # 6-character room code generator (Crockford Base32, no I/L/O/U) & `normalizeRoomId`
-│       └── 📄 rateLimiter.js             # Per-IP fixed-window REST rate limiter (`createRateLimiter`)
+│       └── 📄 rateLimiter.js             # Two-layer REST rate limiter (`createRateLimiter`): per-IP ceiling + per-(IP, room) budget
 │
 └── 📁 public/                            # 🎨 Client-Side Frontend (Static HTML, CSS Variables, ES Modules)
     ├── 📄 index.html                     # Landing / Home page (`/` -> create or join room)

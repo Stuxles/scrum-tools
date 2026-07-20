@@ -54,4 +54,27 @@ describe('createRateLimiter', () => {
     const second = await request(app).get('/ping').set('X-Forwarded-For', '10.0.0.2');
     assert.strictEqual(second.status, 429, 'without trust proxy, both requests share the same real IP');
   });
+
+  test('a custom keyFn scopes the budget beyond just the IP (e.g. IP + room id)', async () => {
+    const app = express();
+    // Registered per-route (like api.js does), so req.params.id is already
+    // populated when the limiter runs — app.use() would run before routing
+    // matches :id and see it as undefined.
+    const limiter = createRateLimiter({
+      windowMs: 60_000,
+      max: 1,
+      keyFn: (req) => `${req.ip}:${req.params.id}`,
+    });
+    app.get('/rooms/:id', limiter, (_req, res) => res.json({ ok: true }));
+
+    // Same (simulated) IP, two different room ids: each gets its own budget.
+    const roomA1 = await request(app).get('/rooms/AAA111');
+    const roomB1 = await request(app).get('/rooms/BBB222');
+    assert.strictEqual(roomA1.status, 200);
+    assert.strictEqual(roomB1.status, 200, 'a different room id is not blocked by room AAA111 exhausting its budget');
+
+    // The same room id a second time is now over budget.
+    const roomA2 = await request(app).get('/rooms/AAA111');
+    assert.strictEqual(roomA2.status, 429);
+  });
 });

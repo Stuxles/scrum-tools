@@ -27,7 +27,7 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
   - **New Round / Reset** (clears votes for all participants).
   - Participant management (kick members or transfer the Scrum Master role).
 - **🪶 Lightweight & Fast**: No database required! State is kept in-memory with automatic cleanup timers (`disconnectTimer`) for inactive rooms.
-- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a per-IP REST rate limiter (60 req/min) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
+- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a two-layer REST rate limiter (a 300/min per-IP ceiling plus a 30/min per-room budget, so a shared office connection or reverse proxy doesn't collapse everyone into one bucket) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
 
 ---
 
@@ -72,6 +72,7 @@ docker-compose up -d --build
 | `PORT` | `3000` | Port on which the Express / Socket.IO server listens. |
 | `PUBLIC_URL` | *(Auto-detected LAN IP)* | The base URL embedded inside generated QR codes. **Note**: When deploying inside Docker/Unraid on your network, set this explicitly to your server's address, e.g., `http://192.168.1.100:3000` or custom domain. |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated if restricted). |
+| `TRUST_PROXY` | *(off)* | Express `trust proxy` setting. Set this when the app sits behind a reverse proxy you control (nginx, Traefik, Cloudflare Tunnel) so the REST rate limiter sees each client's real IP instead of the proxy's. **Only** enable this if that proxy strips/overwrites client-supplied `X-Forwarded-For` — otherwise a client can spoof its IP and bypass rate limiting. Accepts `true`, a hop count (`1`, `2`, …), or an [Express-recognized value](https://expressjs.com/en/guide/behind-proxies.html) like `loopback`. |
 
 ---
 

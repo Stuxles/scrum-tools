@@ -1,19 +1,25 @@
 /**
- * Minimal per-IP fixed-window rate limiter for Express routes.
+ * Minimal fixed-window rate limiter for Express routes.
  * Mirrors the per-socket limiter in src/socket/index.js but keyed by
- * client IP instead of socket connection.
+ * `keyFn(req)` — by default the client IP, but callers can key on
+ * something more specific (e.g. IP + room ID) so unrelated resources
+ * don't share one budget when many distinct clients present as the same
+ * IP (NAT, a shared office connection, or a reverse proxy — see
+ * TRUST_PROXY in src/config.js for the latter).
  */
 
+const defaultKeyFn = (req) => req.ip || req.socket?.remoteAddress || 'unknown';
+
 /**
- * @param {{ windowMs: number, max: number }} opts
+ * @param {{ windowMs: number, max: number, keyFn?: (req: import('express').Request) => string }} opts
  * @returns {import('express').RequestHandler}
  */
-export function createRateLimiter({ windowMs, max }) {
+export function createRateLimiter({ windowMs, max, keyFn = defaultKeyFn }) {
   /** @type {Map<string, { count: number, resetAt: number }>} */
   const hits = new Map();
 
   // Periodically drop expired entries so the map doesn't grow unbounded
-  // under many distinct IPs. unref() so it never keeps the process alive.
+  // under many distinct keys. unref() so it never keeps the process alive.
   const sweep = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of hits) {
@@ -23,7 +29,7 @@ export function createRateLimiter({ windowMs, max }) {
   sweep.unref?.();
 
   return function rateLimiter(req, res, next) {
-    const key = req.ip || req.socket?.remoteAddress || 'unknown';
+    const key = keyFn(req);
     const now = Date.now();
     let entry = hits.get(key);
 

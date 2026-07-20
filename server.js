@@ -24,7 +24,7 @@ import { Server } from 'socket.io';
 import path       from 'path';
 import { fileURLToPath } from 'url';
 
-import { PORT, PUBLIC_URL, CORS_ORIGIN, APP_NAME } from './src/config.js';
+import { PORT, PUBLIC_URL, CORS_ORIGIN, APP_NAME, TRUST_PROXY } from './src/config.js';
 import { initBroadcast }                 from './src/utils/broadcast.js';
 import apiRouter                         from './src/routes/api.js';
 import { initSocketHandlers }            from './src/socket/index.js';
@@ -33,6 +33,9 @@ import { initSocketHandlers }            from './src/socket/index.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app       = express();
 const server    = http.createServer(app);
+
+// Off by default; see TRUST_PROXY in src/config.js before enabling.
+if (TRUST_PROXY) app.set('trust proxy', TRUST_PROXY);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
