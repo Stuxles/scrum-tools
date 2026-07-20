@@ -269,6 +269,133 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     assert.ok(true, 'Voter received became-master event after claiming');
   });
 
+  test('auto-reveal off by default: room stays unrevealed when all voters have voted', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    voter.emit('vote', { roomId, vote: '8' });
+    await new Promise(r => setTimeout(r, 150));
+
+    assert.strictEqual(rooms[roomId].autoReveal, false, 'autoReveal defaults to false');
+    assert.strictEqual(rooms[roomId].revealed, false, 'Room must not auto-reveal when disabled');
+  });
+
+  test('auto-reveal enabled: room reveals automatically once every voter has voted', async () => {
+    const master = createClient();
+    const a = createClient();
+    const b = createClient();
+    await waitForConnect(master);
+    await waitForConnect(a);
+    await waitForConnect(b);
+
+    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    a.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(a, 'room-joined');
+    b.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(b, 'room-joined');
+
+    master.emit('toggle-auto-reveal', { roomId, autoReveal: true });
+    await new Promise(r => setTimeout(r, 100));
+    assert.strictEqual(rooms[roomId].autoReveal, true);
+
+    // First vote must NOT reveal (Bob still pending)
+    a.emit('vote', { roomId, vote: '5' });
+    await new Promise(r => setTimeout(r, 150));
+    assert.strictEqual(rooms[roomId].revealed, false, 'Must not reveal while a voter is pending');
+
+    // Second (final) vote triggers the auto-reveal
+    b.emit('vote', { roomId, vote: '8' });
+    const revealedRoom = await new Promise((resolve) => {
+      const handler = ({ room }) => {
+        if (room.revealed === true) { master.off('room-state', handler); resolve(room); }
+      };
+      master.on('room-state', handler);
+    });
+
+    assert.strictEqual(revealedRoom.revealed, true, 'Room auto-revealed after last vote');
+    const votes = revealedRoom.participants.filter(p => !p.isMaster).map(p => p.vote).sort();
+    assert.deepStrictEqual(votes, ['5', '8'], 'All votes visible after auto-reveal');
+  });
+
+  test('enabling auto-reveal when everyone already voted reveals immediately', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    voter.emit('vote', { roomId, vote: '13' });
+    await new Promise(r => setTimeout(r, 150));
+    assert.strictEqual(rooms[roomId].revealed, false);
+
+    master.emit('toggle-auto-reveal', { roomId, autoReveal: true });
+    await new Promise(r => setTimeout(r, 150));
+    assert.strictEqual(rooms[roomId].revealed, true, 'Enabling with all votes in reveals at once');
+  });
+
+  test('auto-reveal ignores the Scrum Master and spectators when deciding', async () => {
+    const master = createClient();
+    const voter = createClient();
+    const spectator = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+    await waitForConnect(spectator);
+
+    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+    spectator.emit('join-room', { roomId, name: 'Eve', isSpectator: true });
+    await onceEvent(spectator, 'room-joined');
+
+    master.emit('toggle-auto-reveal', { roomId, autoReveal: true });
+    await new Promise(r => setTimeout(r, 100));
+
+    // Bob is the only real voter; SM and spectator must not block the reveal
+    voter.emit('vote', { roomId, vote: '3' });
+    await new Promise(r => setTimeout(r, 150));
+    assert.strictEqual(rooms[roomId].revealed, true, 'SM and spectators excluded from the check');
+  });
+
+  test('non-master cannot toggle auto-reveal', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    voter.emit('toggle-auto-reveal', { roomId, autoReveal: true });
+    await new Promise(r => setTimeout(r, 150));
+
+    assert.strictEqual(rooms[roomId].autoReveal, false, 'Only the Scrum Master may toggle auto-reveal');
+  });
+
   test('disconnecting SM starts 30s grace period instead of immediate transfer, and reconnecting recovers role', async () => {
     const master = createClient();
     const voter = createClient();

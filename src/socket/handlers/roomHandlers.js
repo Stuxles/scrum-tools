@@ -5,6 +5,7 @@ import {
   broadcastRoomState,
   scheduleRoomCleanup,
 } from '../../utils/broadcast.js';
+import { applyAutoReveal }     from '../../utils/autoReveal.js';
 
 /** @param {import('socket.io').Socket} socket */
 export function handleCreateRoom(socket, { name, deckType, customCards, roomName }) {
@@ -40,6 +41,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
     deck,
     storyTitle:   '',
     revealed:     false,
+    autoReveal:   false,
     participants: {},
     createdAt:    Date.now(),
   };
@@ -128,6 +130,7 @@ export function handleVote(socket, { roomId, vote }) {
   room.participants[socket.id].isSpectator = false;
   room.participants[socket.id].vote     = voteStr;
   room.participants[socket.id].hasVoted = true;
+  applyAutoReveal(room);
   broadcastRoomState(roomId);
 }
 
@@ -142,6 +145,8 @@ export function handleToggleSpectator(socket, { roomId, isSpectator }) {
   if (p.isSpectator) {
     p.vote     = null;
     p.hasVoted = false;
+    // The remaining voters may now all have voted
+    applyAutoReveal(room);
   }
   broadcastRoomState(roomId);
 }

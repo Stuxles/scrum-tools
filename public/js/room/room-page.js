@@ -86,6 +86,7 @@ export function initRoomPage(socket, urlRoomId) {
   const smResetBtn       = document.getElementById('sm-reset-btn');
   const smProgressFill   = document.getElementById('sm-progress-fill');
   const smProgressText   = document.getElementById('sm-progress-text');
+  const smAutoRevealChk  = document.getElementById('sm-auto-reveal-chk');
   const smCurrentDeck    = document.getElementById('sm-current-deck');
   const smChangeDeckBtn  = document.getElementById('sm-change-deck-btn');
   const smQrImg          = document.getElementById('sm-qr-img');
@@ -207,6 +208,15 @@ export function initRoomPage(socket, urlRoomId) {
   smResetBtn.addEventListener('click', doReset);
   mobileResetBtn.addEventListener('click', doReset);
 
+  if (smAutoRevealChk) {
+    smAutoRevealChk.addEventListener('change', () => {
+      if (!currentRoom) return;
+      const enabled = smAutoRevealChk.checked;
+      socket.emit('toggle-auto-reveal', { roomId: currentRoom.id, autoReveal: enabled });
+      toast(enabled ? t('toast-auto-reveal-on') : t('toast-auto-reveal-off'), 'info');
+    });
+  }
+
   // ── Room code copy ────────────────────────────────────────────────────────
   headerRoomCode.addEventListener('click', () => {
     copyToClipboard(
@@ -325,6 +335,7 @@ export function initRoomPage(socket, urlRoomId) {
       showSMControls();
       smCurrentDeck.textContent = getDeckLabel(room.deckType);
       deckModalType.value       = room.deckType;
+      if (smAutoRevealChk) smAutoRevealChk.checked = Boolean(room.autoReveal);
     } else {
       hideSMControls();
     }

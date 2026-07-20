@@ -2,6 +2,7 @@ import { rooms }            from '../../store/rooms.js';
 import { DECKS }            from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }  from '../../utils/roomId.js';
+import { applyAutoReveal }  from '../../utils/autoReveal.js';
 
 /** @param {import('socket.io').Socket} socket */
 export function handleReveal(socket, { roomId }) {
@@ -68,6 +69,22 @@ export function handleUpdateName(socket, { roomId, name }) {
   if (room.masterId === socket.id) room.masterName = name;
 
   room.participants[socket.id].name = name;
+  broadcastRoomState(roomId);
+}
+
+/**
+ * Toggle automatic reveal (`toggle-auto-reveal`). Scrum Master only.
+ * Enabling it while everyone has already voted reveals immediately.
+ *
+ * @param {import('socket.io').Socket} socket
+ */
+export function handleToggleAutoReveal(socket, { roomId, autoReveal }) {
+  roomId = normalizeRoomId(roomId);
+  const room = rooms[roomId];
+  if (!room || room.masterId !== socket.id) return;
+
+  room.autoReveal = Boolean(autoReveal);
+  if (room.autoReveal) applyAutoReveal(room);
   broadcastRoomState(roomId);
 }
 

@@ -1,6 +1,7 @@
 import { rooms, deleteRoom }  from '../../store/rooms.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
+import { applyAutoReveal }    from '../../utils/autoReveal.js';
 import { RECONNECT_GRACE_PERIOD_MS } from '../../config.js';
 
 /**
@@ -20,6 +21,8 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
     io.to(targetId).emit('kicked', {});
   }
   delete room.participants[targetId];
+  // The remaining voters may now all have voted
+  applyAutoReveal(room);
   broadcastRoomState(roomId);
 }
 
@@ -49,6 +52,9 @@ export function handleDisconnect(io, socket) {
       }, RECONNECT_GRACE_PERIOD_MS);
       continue;
     }
+
+    // A pending voter leaving may complete the round
+    applyAutoReveal(room);
 
     if (wasMaster && remaining.length > 0) {
       if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);

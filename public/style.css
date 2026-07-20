@@ -1125,6 +1125,19 @@ label.field-label {
 
 .sm-actions { display: flex; flex-direction: column; gap: 10px; }
 
+.sm-auto-reveal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px;
+  font-size: 0.8rem;
+  color: var(--text-300);
+  cursor: pointer;
+  user-select: none;
+}
+.sm-auto-reveal input { cursor: pointer; accent-color: var(--purple-500); }
+.sm-auto-reveal:hover { color: var(--text-100); }
+
 .reveal-btn {
   padding: 14px;
   font-size: 1rem;

@@ -46,6 +46,7 @@ export function sanitizeRoom(room, viewerSocketId = null) {
     deckType:   room.deckType,
     deck:       room.deck,
     revealed:   room.revealed,
+    autoReveal: Boolean(room.autoReveal),
     storyTitle: room.storyTitle || '',
     participants: Object.values(room.participants).map(p => ({
       id:          p.id,
