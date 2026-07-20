@@ -4,7 +4,7 @@
  */
 
 import { handleCreateRoom, handleJoinRoom, handleVote, handleToggleSpectator, handleClaimMaster, handleTransferMaster } from './handlers/roomHandlers.js';
-import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle } from './handlers/smHandlers.js';
+import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle, handleToggleAutoReveal } from './handlers/smHandlers.js';
 import { handleKickUser, handleDisconnect }              from './handlers/connectionHandlers.js';
 
 /** @param {import('socket.io').Server} io */
@@ -52,6 +52,7 @@ export function initSocketHandlers(io) {
     on('change-deck',        (data) => handleChangeDeck(socket, data));
     on('update-name',        (data) => handleUpdateName(socket, data));
     on('update-story-title', (data) => handleUpdateStoryTitle(socket, data));
+    on('toggle-auto-reveal', (data) => handleToggleAutoReveal(socket, data));
     on('sm-transfer-master', (data) => handleTransferMaster(io, socket, data));
 
     // ── Admin / lifecycle ────────────────────────────────────────────────────
