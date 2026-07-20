@@ -129,6 +129,12 @@ export function initRoomPage(socket, urlRoomId) {
   onThemeChange(() => { if (isMaster) qr.loadQR(); });
 
   // ── SM controls ───────────────────────────────────────────────────────────
+  // Tracks whether we were already rendering as SM, so the (relatively
+  // expensive, server-generated) QR code is only re-fetched on the actual
+  // transition into the master role — not on every room-state broadcast
+  // (which fires on every vote, join, kick, etc. from anyone in the room).
+  let smControlsVisible = false;
+
   function showSMControls() {
     smPanel.classList.remove('hidden');
     mobileSMBar.classList.remove('hidden');
@@ -142,7 +148,10 @@ export function initRoomPage(socket, urlRoomId) {
     if (storyBannerEditor) storyBannerEditor.classList.remove('hidden');
     if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
     document.body.classList.add('is-presenter');
-    qr.loadQR();
+    if (!smControlsVisible) {
+      qr.loadQR();
+      smControlsVisible = true;
+    }
   }
   function hideSMControls() {
     smPanel.classList.add('hidden');
@@ -157,6 +166,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (storyBannerEditor) storyBannerEditor.classList.add('hidden');
     if (storyTitleDisplay) storyTitleDisplay.classList.remove('hidden');
     document.body.classList.remove('is-presenter');
+    smControlsVisible = false;
   }
 
   function saveStoryTitle() {
@@ -404,8 +414,7 @@ export function initRoomPage(socket, urlRoomId) {
     isMaster = isM;
     joinModal.classList.add('hidden');
     roomUi.classList.remove('hidden');
-    applyRoomState(room);
-    if (isM) qr.loadQR();
+    applyRoomState(room); // loads the QR once, via showSMControls, if isM
     window._isInScrumRoom = true;
     window._scrumSocket   = socket;
     window._scrumRoomId   = urlRoomId;
@@ -420,8 +429,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (currentRoom) {
       currentRoom.masterId = socket.id;
       currentRoom.participants.forEach(p => { p.isMaster = (p.id === socket.id); });
-      applyRoomState(currentRoom);
-      qr.loadQR();
+      applyRoomState(currentRoom); // loads the QR once, via showSMControls
     }
   });
 
