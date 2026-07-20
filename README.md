@@ -27,7 +27,7 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
   - **New Round / Reset** (clears votes for all participants).
   - Participant management (kick members or transfer the Scrum Master role).
 - **🪶 Lightweight & Fast**: No database required! State is kept in-memory with automatic cleanup timers (`disconnectTimer`) for inactive rooms.
-- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
+- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a two-layer REST rate limiter (a 300/min per-IP ceiling plus a 120/min per-room budget, so a shared office connection or reverse proxy doesn't collapse everyone into one bucket) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
 
 ---
 
@@ -72,6 +72,7 @@ docker-compose up -d --build
 | `PORT` | `3000` | Port on which the Express / Socket.IO server listens. |
 | `PUBLIC_URL` | *(Auto-detected LAN IP)* | The base URL embedded inside generated QR codes. **Note**: When deploying inside Docker/Unraid on your network, set this explicitly to your server's address, e.g., `http://192.168.1.100:3000` or custom domain. |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated if restricted). |
+| `TRUST_PROXY` | *(off)* | Express `trust proxy` setting. Set this when the app sits behind a reverse proxy you control (nginx, Traefik, Cloudflare Tunnel) so the REST rate limiter sees each client's real IP instead of the proxy's. **Only** enable this if that proxy strips/overwrites client-supplied `X-Forwarded-For` — otherwise a client can spoof its IP and bypass rate limiting. Accepts `true`, a hop count (`1`, `2`, …), or an [Express-recognized value](https://expressjs.com/en/guide/behind-proxies.html) like `loopback`. |
 
 ---
 
@@ -93,6 +94,10 @@ npm test
 | `tests/api.test.js` | **REST API** | HTTP integration testing of Express routes via `supertest`: `GET /api/config`, `GET /api/rooms/:id`, Base64 PNG QR code generation (`/api/rooms/:id/qr`), and Docker health check (`/health`). |
 | `tests/socket.test.js` | **Real-time WebSockets** | End-to-end Socket.IO integration testing (`socket.io-client`) simulating full room lifecycles: `create-room` → `join-room` → `vote` → `reveal` → `reset` → `kick-user` → `update-story-title`, plus `claim-master`, `sm-transfer-master`, and the 30s Scrum Master reconnect grace. |
 | `tests/robustness.test.js` | **Resilience / Hardening** | Malformed & missing socket payloads, prototype-key room IDs (`__proto__`, `constructor`, …) and `roomId` case-normalization — proving a single bad client message can never crash the server. |
+| `tests/rateLimiter.test.js` | **REST Rate Limiting** | Per-IP fixed-window limiter: requests under quota pass, exceeding it returns `429` with `Retry-After`, the window resets, and separate IPs are tracked independently. |
+| `tests/roomId.test.js` | **Room Codes** | `generateRoomId` only emits the curated Crockford Base32 alphabet (no ambiguous `I`/`L`/`O`/`U`), is always uppercase, and produces distinct codes; `normalizeRoomId` trims/uppercases correctly. |
+| `tests/stats.test.js` | **Vote Statistics** | `computeVoteStats` (extracted, DOM-free from `render-results.js`): average/median for odd & even vote counts, non-numeric vote handling, and distribution-bar scaling. |
+| `tests/helpers.test.js` | **XSS Prevention** | `escHtml` escapes all special characters, neutralizes script-tag and attribute-breakout injection attempts, and leaves plain text unchanged. |
 
 ---
 
@@ -141,7 +146,11 @@ For deep-dive documentation on system design, state management, security (`sanit
 │   ├── config.test.js       # Unit tests for deck validity & i18n dictionary parity
 │   ├── api.test.js          # HTTP integration tests for Express routes (/api, /health)
 │   ├── socket.test.js       # E2E Socket.IO real-time room lifecycle & voting tests
-│   └── robustness.test.js   # Malformed-payload & prototype-key crash hardening tests
+│   ├── robustness.test.js   # Malformed-payload & prototype-key crash hardening tests
+│   ├── rateLimiter.test.js  # Per-IP REST rate limiter tests
+│   ├── roomId.test.js       # Room code alphabet & normalization tests
+│   ├── stats.test.js        # Pure vote-statistics calculation tests
+│   └── helpers.test.js      # escHtml XSS-prevention tests
 ├── Dockerfile               # Alpine Node.js image configuration
 ├── docker-compose.yml       # Docker deployment config with healthcheck
 └── server.js                # Main server entrypoint

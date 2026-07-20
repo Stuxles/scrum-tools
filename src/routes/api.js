@@ -6,21 +6,41 @@ import { Router } from 'express';
 import QRCode     from 'qrcode';
 import { rooms }  from '../store/rooms.js';
 import { PUBLIC_URL, APP_NAME } from '../config.js';
+import { createRateLimiter }    from '../utils/rateLimiter.js';
 
 const router = Router();
+
+// ─── Health check ─────────────────────────────────────────────────────────────
+// Registered before the rate limiter so Docker's HEALTHCHECK is never throttled.
+router.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+// Two layers, because many distinct users can present as a single IP (a
+// shared office connection or a reverse proxy — see TRUST_PROXY):
+//   1. A generous per-IP ceiling across all REST endpoints (broad abuse).
+//   2. A tighter per-(IP, room) limit on the room-specific endpoints, so
+//      unrelated rooms behind the same apparent IP don't share one budget,
+//      while a single room/QR endpoint still can't be hammered.
+router.use(createRateLimiter({ windowMs: 60_000, max: 300 }));
+
+const roomLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 120,
+  keyFn: (req) => `${req.ip || req.socket?.remoteAddress || 'unknown'}:${req.params.id}`,
+});
 
 // ─── Config info ──────────────────────────────────────────────────────────────
 router.get('/config', (_req, res) => res.json({ appName: APP_NAME }));
 
 // ─── Room info ────────────────────────────────────────────────────────────────
-router.get('/rooms/:id', (req, res) => {
+router.get('/rooms/:id', roomLimiter, (req, res) => {
   const room = rooms[req.params.id];
   if (!room) return res.status(404).json({ error: 'Room niet gevonden' });
   res.json({ exists: true, name: room.name });
 });
 
 // ─── QR code ─────────────────────────────────────────────────────────────────
-router.get('/rooms/:id/qr', async (req, res) => {
+router.get('/rooms/:id/qr', roomLimiter, async (req, res) => {
   const room = rooms[req.params.id];
   if (!room) return res.status(404).json({ error: 'Room niet gevonden' });
 
@@ -40,8 +60,5 @@ router.get('/rooms/:id/qr', async (req, res) => {
     res.status(500).json({ error: 'QR generatie mislukt' });
   }
 });
-
-// ─── Health check ─────────────────────────────────────────────────────────────
-router.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 export default router;
