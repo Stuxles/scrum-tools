@@ -33,30 +33,11 @@ Afgeronde items staan onderaan.
 
 ## 🔧 Technisch
 
-### 4. Rate limiting op de REST-endpoints
-**Waarde: gemiddeld (hoog bij publieke deploy).** De sockets hebben een limiter (35 events/s), maar de REST-routes niet — en `/api/rooms/:id/qr` genereert een QR-code, wat relatief duur is.
-
-- Simpele per-IP limiter voor `/api/*`.
-- Relevant zodra de app buiten een vertrouwd LAN draait (net als de `CORS_ORIGIN: *` default).
-
-### 5. State overleeft geen herstart
+### 4. State overleeft geen herstart
 **Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
 
 - Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
 - **Bewuste trade-off:** de README verkoopt "geen database nodig" als feature. Alleen oppakken als dit in de praktijk stoort.
-
-### 6. Room-code alfabet verbeteren
-**Waarde: laag.** `generateRoomId()` knipt een uuid-v4 af, dus codes bevatten alleen `0-9A-F` — nooit G t/m Z. De docs noemen het "alphanumeric", wat dus niet klopt.
-
-- 16,7M combinaties is ruim voldoende, dus geen bug.
-- Met een eigen alfabet krijg je meer entropie in minder tekens, en kun je verwarrende tekens (0/O, 1/I) weglaten — handig bij het voorlezen in een meeting.
-- Docs (`file-structure.md`) meteen corrigeren.
-
-### 7. Frontend-tests
-**Waarde: laag/gemiddeld.** De renderers en helpers zijn onbetest; alleen i18n-pariteit wordt gecheckt.
-
-- Denk aan `escHtml`, `sanitizeRoom`-rendering, de stats-berekening in `render-results.js`.
-- Vereist een DOM-omgeving (jsdom) of het extraheren van pure functies.
 
 ---
 
@@ -70,3 +51,6 @@ Afgeronde items staan onderaan.
 - **Alles op de nieuwste versies** — Node 26 (Dockerfile, CI, `engines`), `actions/setup-node@v7`.
 - **Dode i18n-keys opgeruimd** (`stat-consensus`, `stat-most-picked`, `stat-total-votes`).
 - **Auto-reveal** — optioneel automatisch onthullen zodra iedereen gestemd heeft.
+- **Rate limiting op de REST-endpoints** — per-IP limiter (60 req/min) op `/api/*`; `/health` blijft uitgezonderd zodat de Docker-healthcheck nooit geraakt wordt.
+- **Room-code alfabet verbeterd** — Crockford Base32 (32 tekens, geen I/L/O/U), crypto-random zonder modulo-bias, ~64x meer combinaties dan het oude hex-only alfabet. De `uuid`-dependency is niet meer nodig en verwijderd.
+- **Frontend-tests** — `computeVoteStats` (uit `render-results.js`), `escHtml`, `generateRoomId`/`normalizeRoomId` en de rate limiter zijn nu allemaal los getest als pure functies (geen jsdom nodig).

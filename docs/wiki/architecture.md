@@ -77,6 +77,8 @@ socket.use((_packet, next) => {
 });
 ```
 
+The REST layer (`src/routes/api.js`) has its own **per-IP fixed-window limiter** (`src/utils/rateLimiter.js`, `createRateLimiter`), capped at **60 requests/minute**. QR-code generation in particular is relatively expensive, and unlike the socket layer, REST requests aren't gated behind an active room connection. `/health` is registered *before* the limiter middleware so Docker's `HEALTHCHECK` is never throttled. Exceeding the limit returns `429` with a `Retry-After` header and a JSON error body.
+
 ---
 
 ## 🧯 Malformed Input & Crash Hardening

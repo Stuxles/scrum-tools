@@ -6,8 +6,18 @@ import { Router } from 'express';
 import QRCode     from 'qrcode';
 import { rooms }  from '../store/rooms.js';
 import { PUBLIC_URL, APP_NAME } from '../config.js';
+import { createRateLimiter }    from '../utils/rateLimiter.js';
 
 const router = Router();
+
+// ─── Health check ─────────────────────────────────────────────────────────────
+// Registered before the rate limiter so Docker's HEALTHCHECK is never throttled.
+router.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+// 60 requests/minute per IP. QR generation in particular is relatively
+// expensive, and the socket layer already has its own 35 events/sec limiter.
+router.use(createRateLimiter({ windowMs: 60_000, max: 60 }));
 
 // ─── Config info ──────────────────────────────────────────────────────────────
 router.get('/config', (_req, res) => res.json({ appName: APP_NAME }));
@@ -40,8 +50,5 @@ router.get('/rooms/:id/qr', async (req, res) => {
     res.status(500).json({ error: 'QR generatie mislukt' });
   }
 });
-
-// ─── Health check ─────────────────────────────────────────────────────────────
-router.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 export default router;

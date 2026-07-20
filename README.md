@@ -27,7 +27,7 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
   - **New Round / Reset** (clears votes for all participants).
   - Participant management (kick members or transfer the Scrum Master role).
 - **🪶 Lightweight & Fast**: No database required! State is kept in-memory with automatic cleanup timers (`disconnectTimer`) for inactive rooms.
-- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
+- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a per-IP REST rate limiter (60 req/min) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
 
 ---
 
@@ -93,6 +93,10 @@ npm test
 | `tests/api.test.js` | **REST API** | HTTP integration testing of Express routes via `supertest`: `GET /api/config`, `GET /api/rooms/:id`, Base64 PNG QR code generation (`/api/rooms/:id/qr`), and Docker health check (`/health`). |
 | `tests/socket.test.js` | **Real-time WebSockets** | End-to-end Socket.IO integration testing (`socket.io-client`) simulating full room lifecycles: `create-room` → `join-room` → `vote` → `reveal` → `reset` → `kick-user` → `update-story-title`, plus `claim-master`, `sm-transfer-master`, and the 30s Scrum Master reconnect grace. |
 | `tests/robustness.test.js` | **Resilience / Hardening** | Malformed & missing socket payloads, prototype-key room IDs (`__proto__`, `constructor`, …) and `roomId` case-normalization — proving a single bad client message can never crash the server. |
+| `tests/rateLimiter.test.js` | **REST Rate Limiting** | Per-IP fixed-window limiter: requests under quota pass, exceeding it returns `429` with `Retry-After`, the window resets, and separate IPs are tracked independently. |
+| `tests/roomId.test.js` | **Room Codes** | `generateRoomId` only emits the curated Crockford Base32 alphabet (no ambiguous `I`/`L`/`O`/`U`), is always uppercase, and produces distinct codes; `normalizeRoomId` trims/uppercases correctly. |
+| `tests/stats.test.js` | **Vote Statistics** | `computeVoteStats` (extracted, DOM-free from `render-results.js`): average/median for odd & even vote counts, non-numeric vote handling, and distribution-bar scaling. |
+| `tests/helpers.test.js` | **XSS Prevention** | `escHtml` escapes all special characters, neutralizes script-tag and attribute-breakout injection attempts, and leaves plain text unchanged. |
 
 ---
 
@@ -141,7 +145,11 @@ For deep-dive documentation on system design, state management, security (`sanit
 │   ├── config.test.js       # Unit tests for deck validity & i18n dictionary parity
 │   ├── api.test.js          # HTTP integration tests for Express routes (/api, /health)
 │   ├── socket.test.js       # E2E Socket.IO real-time room lifecycle & voting tests
-│   └── robustness.test.js   # Malformed-payload & prototype-key crash hardening tests
+│   ├── robustness.test.js   # Malformed-payload & prototype-key crash hardening tests
+│   ├── rateLimiter.test.js  # Per-IP REST rate limiter tests
+│   ├── roomId.test.js       # Room code alphabet & normalization tests
+│   ├── stats.test.js        # Pure vote-statistics calculation tests
+│   └── helpers.test.js      # escHtml XSS-prevention tests
 ├── Dockerfile               # Alpine Node.js image configuration
 ├── docker-compose.yml       # Docker deployment config with healthcheck
 └── server.js                # Main server entrypoint

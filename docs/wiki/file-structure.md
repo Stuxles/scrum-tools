@@ -28,7 +28,7 @@ scrum-poker-collab/
 ├── 📁 src/                               # ⚙️ Backend Node.js / Express / Socket.IO Source Code
 │   ├── 📄 config.js                      # Central server configuration (ports, CORS, 15m timeout, decks)
 │   ├── 📁 routes/
-│   │   └── 📄 api.js                     # RESTful API endpoints (`/api/rooms/:id` verification, `/health`)
+│   │   └── 📄 api.js                     # RESTful API endpoints (`/api/rooms/:id` verification, `/health`), per-IP rate limited
 │   ├── 📁 socket/
 │   │   ├── 📄 index.js                   # Socket.IO bootstrap, safe dispatch (payload guard + error isolation) & 35 req/sec rate limiter
 │   │   └── 📁 handlers/
@@ -39,7 +39,8 @@ scrum-poker-collab/
 │   │   └── 📄 rooms.js                   # In-memory room dictionary (null-prototype), `deleteRoom` & `sanitizeRoom`
 │   └── 📁 utils/
 │       ├── 📄 broadcast.js               # `broadcastRoomState` (with `sanitizeRoom`) & 24h cleanup timer
-│       └── 📄 roomId.js                  # 6-character room code generator (`ABC123`) & `normalizeRoomId` canonicalizer
+│       ├── 📄 roomId.js                  # 6-character room code generator (Crockford Base32, no I/L/O/U) & `normalizeRoomId`
+│       └── 📄 rateLimiter.js             # Per-IP fixed-window REST rate limiter (`createRateLimiter`)
 │
 └── 📁 public/                            # 🎨 Client-Side Frontend (Static HTML, CSS Variables, ES Modules)
     ├── 📄 index.html                     # Landing / Home page (`/` -> create or join room)
@@ -60,7 +61,8 @@ scrum-poker-collab/
         └── 📁 utils/
             ├── 📄 helpers.js             # Shared utilities (`escHtml` XSS prevention, localStorage helpers)
             ├── 📄 i18n.js                # Bilingual dictionary (`EN` / `NL`), `t(key)` formatter, DOM auto-translator
-            └── 📄 toast.js               # Non-blocking animated floating toast notification system (`toast(msg, type)`)
+            ├── 📄 toast.js               # Non-blocking animated floating toast notification system (`toast(msg, type)`)
+            └── 📄 stats.js               # Pure vote-statistics calculation (`computeVoteStats`), no DOM dependency
 ```
 
 ---

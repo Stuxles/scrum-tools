@@ -1,5 +1,6 @@
 import { escHtml } from '../utils/helpers.js';
 import { t }       from '../utils/i18n.js';
+import { computeVoteStats } from '../utils/stats.js';
 
 /**
  * Results phase renderer — cards grid and statistics panel.
@@ -46,21 +47,7 @@ export function renderResults(ctx, room) {
 }
 
 function renderStats(container, room) {
-  const votes   = room.participants.filter(p => !p.isMaster && p.hasVoted).map(p => p.vote);
-  const numeric = votes.map(v => parseFloat(v)).filter(v => !isNaN(v));
-  const nonNum  = votes.filter(v => isNaN(parseFloat(v)));
-
-  const avg    = numeric.length ? numeric.reduce((a, b) => a + b, 0) / numeric.length : null;
-  const sorted = [...numeric].sort((a, b) => a - b);
-  const median = sorted.length
-    ? (sorted.length % 2 === 0
-        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-        : sorted[Math.floor(sorted.length / 2)])
-    : null;
-
-  const dist     = {};
-  for (const v of votes) dist[v] = (dist[v] || 0) + 1;
-  const maxCount = Math.max(...Object.values(dist), 1);
+  const { avg, median, nonNum, dist, maxCount } = computeVoteStats(room.participants);
 
   let html = '';
 
