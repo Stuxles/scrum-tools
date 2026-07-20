@@ -80,7 +80,7 @@ socket.use((_packet, next) => {
 The REST layer (`src/routes/api.js`) has its own **two-layer fixed-window limiter** (`src/utils/rateLimiter.js`, `createRateLimiter`), because many distinct users can present as a single client IP — a shared office connection, or a reverse proxy in front of the app:
 
 1. A generous **300 requests/minute per IP** ceiling across all REST endpoints, as a broad defense-in-depth cap.
-2. A tighter **30 requests/minute per (IP, room ID)** budget on the room-specific endpoints (`/rooms/:id`, `/rooms/:id/qr`), via a custom `keyFn`. This is the layer that actually matters day-to-day: it stops one room's QR endpoint from being hammered, without letting unrelated rooms behind the same apparent IP share a single budget — e.g. several teams running poker sessions from the same office WiFi don't throttle each other.
+2. A tighter **120 requests/minute per (IP, room ID)** budget on the room-specific endpoints (`/rooms/:id`, `/rooms/:id/qr`), via a custom `keyFn`. This is the layer that actually matters day-to-day: it stops one room's QR endpoint from being hammered, without letting unrelated rooms behind the same apparent IP share a single budget — e.g. several teams running poker sessions from the same office WiFi don't throttle each other.
 
 `/health` is registered *before* both limiters so Docker's `HEALTHCHECK` is never throttled. Exceeding a limit returns `429` with a `Retry-After` header and a JSON error body.
 

@@ -27,7 +27,7 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
   - **New Round / Reset** (clears votes for all participants).
   - Participant management (kick members or transfer the Scrum Master role).
 - **🪶 Lightweight & Fast**: No database required! State is kept in-memory with automatic cleanup timers (`disconnectTimer`) for inactive rooms.
-- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a two-layer REST rate limiter (a 300/min per-IP ceiling plus a 30/min per-room budget, so a shared office connection or reverse proxy doesn't collapse everyone into one bucket) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
+- **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a two-layer REST rate limiter (a 300/min per-IP ceiling plus a 120/min per-room budget, so a shared office connection or reverse proxy doesn't collapse everyone into one bucket) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
 
 ---
 

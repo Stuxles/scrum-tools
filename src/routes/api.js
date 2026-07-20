@@ -25,7 +25,7 @@ router.use(createRateLimiter({ windowMs: 60_000, max: 300 }));
 
 const roomLimiter = createRateLimiter({
   windowMs: 60_000,
-  max: 30,
+  max: 120,
   keyFn: (req) => `${req.ip || req.socket?.remoteAddress || 'unknown'}:${req.params.id}`,
 });
 
