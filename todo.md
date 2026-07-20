@@ -66,6 +66,7 @@ Afgeronde items staan onderaan.
 - **Dependency-updates** — express 5, supertest 7 (PR #6).
 - **Documentatie & diagram-correcties** (PR #7).
 - **Deelnemer-knoppen alleen op hover**, met touch-fallback (PR #8).
-- **CI draait de testsuite** op Node 22 & 24, blokkeert de Docker-build bij falen.
+- **CI draait de testsuite** op Node 26, blokkeert de Docker-build bij falen.
+- **Alles op de nieuwste versies** — Node 26 (Dockerfile, CI, `engines`), `actions/setup-node@v7`.
 - **Dode i18n-keys opgeruimd** (`stat-consensus`, `stat-most-picked`, `stat-total-votes`).
 - **Auto-reveal** — optioneel automatisch onthullen zodra iedereen gestemd heeft.

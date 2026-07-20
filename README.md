@@ -34,7 +34,7 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
 ## 🚀 Quick Start (Local / Node.js)
 
 ### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Node.js](https://nodejs.org/) (v26 or higher)
 - npm
 
 ### 2. Installation & Running
