@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeVoteStats } from '../public/js/utils/stats.js';
+import { computeVoteStats, isUnanimousConsensus } from '../public/js/utils/stats.js';
 
 describe('computeVoteStats (pure vote-statistics calculation)', () => {
   test('no participants: everything is empty/null', () => {
@@ -77,5 +77,31 @@ describe('computeVoteStats (pure vote-statistics calculation)', () => {
     assert.strictEqual(stats.maxCount, 3);
     assert.strictEqual(stats.dist['5'], 3);
     assert.strictEqual(stats.dist['8'], 1);
+  });
+});
+
+describe('isUnanimousConsensus', () => {
+  test('true when every eligible voter voted the same numeric card', () => {
+    assert.strictEqual(isUnanimousConsensus(['5', '5', '5'], 3), true);
+  });
+
+  test('true when every eligible voter voted the same non-numeric card', () => {
+    assert.strictEqual(isUnanimousConsensus(['❓', '❓'], 2), true);
+  });
+
+  test('false when votes differ', () => {
+    assert.strictEqual(isUnanimousConsensus(['5', '8', '5'], 3), false);
+  });
+
+  test('false when not everyone eligible voted, even if the votes cast agree', () => {
+    assert.strictEqual(isUnanimousConsensus(['5', '5'], 3), false, '2 of 3 eligible voters voted');
+  });
+
+  test('false for a single voter — agreeing with yourself is not a celebration', () => {
+    assert.strictEqual(isUnanimousConsensus(['5'], 1), false);
+  });
+
+  test('false when there are no eligible voters', () => {
+    assert.strictEqual(isUnanimousConsensus([], 0), false);
   });
 });

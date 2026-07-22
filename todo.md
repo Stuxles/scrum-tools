@@ -14,7 +14,7 @@ Afgeronde items staan onderaan.
 - Zichtbaar in een paneel of modal voor de Scrum Master.
 - Knop "Kopieer als Markdown" / "Download als CSV" voor in de sprint-notulen.
 - Sluit direct aan op de bestaande `storyTitle`-functie.
-- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #5).
+- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #4).
 
 ### 2. Consensus- en outlier-indicatie
 **Waarde: hoog.** De stats tonen gemiddelde/mediaan/verdeling, maar niet het meest bruikbare voor de facilitator: *is er onenigheid?*
@@ -29,17 +29,11 @@ Afgeronde items staan onderaan.
 - Optionele aftelklok die de SM start; zichtbaar voor iedereen.
 - Eventueel automatisch onthullen bij 0 (combineert met auto-reveal).
 
-### 4. Consensus-animatie bij unanieme stem
-**Waarde: gemiddeld.** Leuke, motiverende afsluiter van een ronde: als iedereen exact hetzelfde kaartje heeft gekozen, toon een korte animatie/confetti bij de reveal.
-
-- Check: alle stemmen (excl. SM/toeschouwer) identiek na reveal.
-- Hangt samen met #2 (consensus-indicatie) — kan dezelfde detectielogica hergebruiken.
-
 ---
 
 ## 🔧 Technisch
 
-### 5. State overleeft geen herstart
+### 4. State overleeft geen herstart
 **Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
 
 - Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
@@ -61,3 +55,5 @@ Afgeronde items staan onderaan.
 - **Room-code alfabet verbeterd** — Crockford Base32 (32 tekens, geen I/L/O/U), crypto-random zonder modulo-bias, ~64x meer combinaties dan het oude hex-only alfabet. De `uuid`-dependency is niet meer nodig en verwijderd.
 - **Frontend-tests** — `computeVoteStats` (uit `render-results.js`), `escHtml`, `generateRoomId`/`normalizeRoomId` en de rate limiter zijn nu allemaal los getest als pure functies (geen jsdom nodig).
 - **Persoonlijke reconnect-grace** — een deelnemer die disconnect (bijv. scherm uit) wordt niet meer direct verwijderd, maar 10 minuten (override via `PARTICIPANT_GRACE_MINUTES`) als "afwezig" bewaard met stem/rol intact; reconnect met dezelfde naam herstelt de plek direct. SM kan een afwezige alsnog meteen kicken; master-overdracht naar een afwezige wordt geweigerd.
+- **Versienummer in het opties-scherm** — uit `package.json`, via `/api/config`.
+- **Consensus-animatie bij unanieme stem** — confetti-burst (dependency-vrij, CSS+JS) wanneer alle stemmers exact hetzelfde kaartje kiezen; respecteert `prefers-reduced-motion`, vuurt precies één keer per reveal. Persoonlijke "no fun mode"-toggle in het opties-scherm (localStorage, per apparaat) om 'm uit te zetten.

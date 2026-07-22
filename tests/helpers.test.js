@@ -1,6 +1,6 @@
-import { test, describe } from 'node:test';
+import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { escHtml } from '../public/js/utils/helpers.js';
+import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI } from '../public/js/utils/helpers.js';
 
 describe('escHtml (XSS-prevention HTML escaping)', () => {
   test('escapes all special characters', () => {
@@ -35,5 +35,46 @@ describe('escHtml (XSS-prevention HTML escaping)', () => {
 
   test('& is escaped first so entities are not double-escaped', () => {
     assert.strictEqual(escHtml('&lt;'), '&amp;lt;');
+  });
+});
+
+describe('confetti "no fun mode" preference (getConfettiEnabled/setConfettiEnabled)', () => {
+  let originalLocalStorage;
+  let store;
+
+  beforeEach(() => {
+    originalLocalStorage = globalThis.localStorage;
+    store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+    };
+  });
+
+  afterEach(() => {
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  test('defaults to enabled (true) when never set', () => {
+    assert.strictEqual(getConfettiEnabled(), true);
+  });
+
+  test('setConfettiEnabled(false) persists and getConfettiEnabled reflects it ("no fun mode")', () => {
+    setConfettiEnabled(false);
+    assert.strictEqual(store.get(LS_CONFETTI), 'false');
+    assert.strictEqual(getConfettiEnabled(), false);
+  });
+
+  test('setConfettiEnabled(true) after being off turns it back on', () => {
+    setConfettiEnabled(false);
+    setConfettiEnabled(true);
+    assert.strictEqual(getConfettiEnabled(), true);
+  });
+
+  test('only the literal string "false" disables it — any other stored value is treated as enabled', () => {
+    store.set(LS_CONFETTI, 'true');
+    assert.strictEqual(getConfettiEnabled(), true);
+    store.set(LS_CONFETTI, 'garbage');
+    assert.strictEqual(getConfettiEnabled(), true, 'defensive: unexpected stored value does not silently disable');
   });
 });

@@ -7,13 +7,15 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock } from '../utils/helpers.js';
+import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
 import { renderResults }            from './render-results.js';
 import { renderParticipants }       from './render-users.js';
 import { initQrModule }             from './qr-module.js';
+import { computeVoteStats, isUnanimousConsensus } from '../utils/stats.js';
+import { celebrateConsensus }       from '../utils/confetti.js';
 
 export function initRoomPage(socket, urlRoomId) {
   if (!urlRoomId) {
@@ -26,6 +28,7 @@ export function initRoomPage(socket, urlRoomId) {
   let myVote      = null;
   let currentRoom = null;
   let isRevealing = false;
+  let hasCelebratedThisReveal = false; // guards the confetti burst to fire once per reveal
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const joinModal        = document.getElementById('join-modal');
@@ -50,6 +53,8 @@ export function initRoomPage(socket, urlRoomId) {
   const optionsRowClaimSm  = document.getElementById('options-row-claim-sm');
   const optionsRowSpectator = document.getElementById('options-row-spectator');
   const optionsVersion   = document.getElementById('options-version');
+  const confettiToggle   = document.getElementById('confetti-toggle');
+  const confettiLabel    = document.getElementById('confetti-label');
 
   const btnClaimSm       = document.getElementById('btn-claim-sm');
   const headerSpectatorBtn  = document.getElementById('header-spectator-btn');
@@ -386,7 +391,18 @@ export function initRoomPage(socket, urlRoomId) {
 
     if (room.revealed) {
       renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
+
+      if (!hasCelebratedThisReveal) {
+        const eligible = room.participants.filter(p => !p.isMaster && !p.isSpectator);
+        const stats    = computeVoteStats(room.participants);
+        if (isUnanimousConsensus(stats.votes, eligible.length) && getConfettiEnabled()) {
+          celebrateConsensus();
+        }
+        hasCelebratedThisReveal = true; // only ever attempt once per reveal, win or lose
+      }
     } else {
+      hasCelebratedThisReveal = false;
+
       // Sync myVote from server state
       const me2 = room.participants.find(p => p.id === socket.id);
       const isSpec2 = me2 ? Boolean(me2.isSpectator) : false;
@@ -465,6 +481,21 @@ export function initRoomPage(socket, urlRoomId) {
         if (data.version) { appVersion = data.version; renderVersion(); }
       })
       .catch(() => {});
+  }
+
+  // ── Confetti toggle ("no fun mode") ─────────────────────────────────────────
+  function renderConfettiToggle() {
+    if (!confettiLabel) return;
+    const enabled = getConfettiEnabled();
+    confettiLabel.textContent = enabled ? t('confetti-on') : t('confetti-off');
+    if (confettiToggle) confettiToggle.setAttribute('aria-pressed', String(enabled));
+  }
+  renderConfettiToggle();
+  if (confettiToggle) {
+    confettiToggle.addEventListener('click', () => {
+      setConfettiEnabled(!getConfettiEnabled());
+      renderConfettiToggle();
+    });
   }
 
   // ── Join flow ─────────────────────────────────────────────────────────────
@@ -559,5 +590,6 @@ export function initRoomPage(socket, urlRoomId) {
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);
     renderVersion();
+    renderConfettiToggle();
   });
 }

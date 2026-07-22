@@ -10,6 +10,15 @@ export const getSavedName = () => localStorage.getItem(LS_NAME) || localStorage.
 /** @param {string} name */
 export const saveName = (name) => { if (name) localStorage.setItem(LS_NAME, name); };
 
+/** localStorage key for the personal confetti on/off preference ("no fun mode"). */
+export const LS_CONFETTI = 'scrum_confetti_enabled';
+
+/** @returns {boolean} Defaults to true (confetti on) when never set. */
+export const getConfettiEnabled = () => localStorage.getItem(LS_CONFETTI) !== 'false';
+
+/** @param {boolean} enabled */
+export const setConfettiEnabled = (enabled) => localStorage.setItem(LS_CONFETTI, enabled ? 'true' : 'false');
+
 /**
  * Escape HTML special characters to prevent XSS in innerHTML contexts.
  * @param {string} str
