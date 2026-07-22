@@ -37,3 +37,19 @@ export function computeVoteStats(participants) {
 
   return { votes, numeric, nonNum, avg, median, dist, maxCount };
 }
+
+/**
+ * True when every eligible voter voted and they all picked the exact same
+ * card (numeric or not, e.g. all "❓" counts as consensus too).
+ * Requires at least 2 voters — one person "agreeing with themselves"
+ * isn't a celebration-worthy consensus.
+ *
+ * @param {string[]} votes         The `votes` array from computeVoteStats.
+ * @param {number}   eligibleCount Total non-master, non-spectator participants.
+ * @returns {boolean}
+ */
+export function isUnanimousConsensus(votes, eligibleCount) {
+  return eligibleCount >= 2
+    && votes.length === eligibleCount
+    && new Set(votes).size === 1;
+}

@@ -356,6 +356,28 @@ label.field-label {
   margin-top: 14px;
 }
 
+/* ── Consensus confetti (utils/confetti.js) ─────────────────────── */
+.confetti-burst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9999;
+}
+.confetti-particle {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: confetti-fall var(--duration) ease-in var(--delay) forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.95; }
+  100% { transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rotate)); opacity: 0; }
+}
+
 /* ── Utility ─────────────────────────────────────────────────── */
 .hidden   { display: none !important; }
 .sr-only  { position:absolute; width:1px; height:1px; clip:rect(0,0,0,0); overflow:hidden; }

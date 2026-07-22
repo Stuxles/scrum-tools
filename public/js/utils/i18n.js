@@ -63,6 +63,11 @@ export const translations = {
     'options-label-theme': 'Thema',
     'options-sub-theme': 'Donkere of lichte modus',
     'options-theme-btn': 'Licht',
+    'options-label-confetti': 'Confetti',
+    'options-sub-confetti': 'Feestje bij unanieme stem',
+    'confetti-btn-title': 'Confetti aan/uit',
+    'confetti-on': 'Aan',
+    'confetti-off': 'Uit',
     'options-version-label': 'Versie',
 
     // ── Room Page UI ──
@@ -220,6 +225,11 @@ export const translations = {
     'options-label-theme': 'Theme',
     'options-sub-theme': 'Dark or light mode',
     'options-theme-btn': 'Light',
+    'options-label-confetti': 'Confetti',
+    'options-sub-confetti': 'Celebration on unanimous vote',
+    'confetti-btn-title': 'Toggle confetti',
+    'confetti-on': 'On',
+    'confetti-off': 'Off',
     'options-version-label': 'Version',
 
     // ── Room Page UI ──
