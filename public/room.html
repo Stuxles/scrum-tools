@@ -13,6 +13,9 @@
     (function () {
       var t = localStorage.getItem('scrumpoker_theme') || localStorage.getItem('stuxpoker_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', t);
+      if (localStorage.getItem('scrum_australia_mode') === 'true') {
+        document.documentElement.classList.add('australia-mode');
+      }
     })();
   </script>
   <script type="module">
@@ -205,6 +208,18 @@
           <button class="btn btn-secondary btn-sm" id="confetti-toggle" title="Confetti aan/uit" data-i18n-title="confetti-btn-title">
             <span id="confetti-icon">🎉</span>
             <span id="confetti-label" data-i18n="confetti-on">Aan</span>
+          </button>
+        </div>
+
+        <!-- 7. Australië-modus (alles ondersteboven) -->
+        <div class="option-row">
+          <div>
+            <div class="option-row-title" data-i18n="options-label-australia">Australië-modus</div>
+            <div class="option-row-sub" data-i18n="options-sub-australia">Alles ondersteboven 🇦🇺</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="australia-toggle" title="Australië-modus aan/uit" data-i18n-title="australia-btn-title">
+            <span id="australia-icon">🙃</span>
+            <span id="australia-label" data-i18n="confetti-off">Uit</span>
           </button>
         </div>
       </div>

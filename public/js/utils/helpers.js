@@ -20,6 +20,20 @@ export const getConfettiEnabled = () => localStorage.getItem(LS_CONFETTI) !== 'f
 export const setConfettiEnabled = (enabled) => localStorage.setItem(LS_CONFETTI, enabled ? 'true' : 'false');
 
 /**
+ * localStorage key for "Australia mode" — a purely cosmetic, personal
+ * per-device preference that flips the whole page 180°. Applied via an
+ * early inline <script> in the <head> of every page (matching the theme
+ * pattern) so it's active before first paint, no flash-then-flip.
+ */
+export const LS_AUSTRALIA = 'scrum_australia_mode';
+
+/** @returns {boolean} Defaults to false (right-side up) when never set. */
+export const getAustraliaModeEnabled = () => localStorage.getItem(LS_AUSTRALIA) === 'true';
+
+/** @param {boolean} enabled */
+export const setAustraliaModeEnabled = (enabled) => localStorage.setItem(LS_AUSTRALIA, enabled ? 'true' : 'false');
+
+/**
  * Escape HTML special characters to prevent XSS in innerHTML contexts.
  * @param {string} str
  * @returns {string}

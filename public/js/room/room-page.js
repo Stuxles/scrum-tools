@@ -7,7 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled } from '../utils/helpers.js';
+import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
@@ -55,6 +55,8 @@ export function initRoomPage(socket, urlRoomId) {
   const optionsVersion   = document.getElementById('options-version');
   const confettiToggle   = document.getElementById('confetti-toggle');
   const confettiLabel    = document.getElementById('confetti-label');
+  const australiaToggle  = document.getElementById('australia-toggle');
+  const australiaLabel   = document.getElementById('australia-label');
 
   const btnClaimSm       = document.getElementById('btn-claim-sm');
   const headerSpectatorBtn  = document.getElementById('header-spectator-btn');
@@ -498,6 +500,30 @@ export function initRoomPage(socket, urlRoomId) {
     });
   }
 
+  // ── Australia mode ("everything upside down") ───────────────────────────────
+  function renderAustraliaToggle() {
+    if (!australiaLabel) return;
+    const enabled = getAustraliaModeEnabled();
+    australiaLabel.textContent = enabled ? t('confetti-on') : t('confetti-off');
+    if (australiaToggle) australiaToggle.setAttribute('aria-pressed', String(enabled));
+  }
+  renderAustraliaToggle();
+  if (australiaToggle) {
+    australiaToggle.addEventListener('click', () => {
+      const enabled = !getAustraliaModeEnabled();
+      setAustraliaModeEnabled(enabled);
+      document.documentElement.classList.toggle('australia-mode', enabled);
+      // Some engines don't reliably recompute a dynamically-toggled class's
+      // transform on the root <html> element post-load (confirmed live: the
+      // class+CSSOM rule both matched, but getComputedStyle stayed identity
+      // until an inline style was also set). Setting the inline style
+      // directly is a fully reliable fallback that doesn't depend on that
+      // recalculation path.
+      document.documentElement.style.transform = enabled ? 'rotate(180deg)' : '';
+      renderAustraliaToggle();
+    });
+  }
+
   // ── Join flow ─────────────────────────────────────────────────────────────
   fetch(`/api/rooms/${urlRoomId}`)
     .then(r => r.json())
@@ -591,5 +617,6 @@ export function initRoomPage(socket, urlRoomId) {
     if (currentRoom) applyRoomState(currentRoom);
     renderVersion();
     renderConfettiToggle();
+    renderAustraliaToggle();
   });
 }
