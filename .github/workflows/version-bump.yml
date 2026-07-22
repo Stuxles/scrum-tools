@@ -68,4 +68,5 @@ jobs:
 
       - name: Skip (no feat/fix commits in this push)
         if: steps.bump.outputs.type == 'none'
-        run: echo "No feat:/fix: commits found - version left unchanged."
+        run: |
+          echo "No feat/fix commits found - version left unchanged."
