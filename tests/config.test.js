@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy,
+  DECKS, APP_NAME, APP_VERSION, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy,
   PARTICIPANT_GRACE_MS, parseParticipantGraceMinutes,
   SOCKET_RATE_LIMIT_MAX, SOCKET_RATE_LIMIT_WINDOW_MS,
   REST_RATE_LIMIT_GLOBAL_MAX, REST_RATE_LIMIT_GLOBAL_WINDOW_MS,
@@ -27,6 +27,7 @@ describe('Config & i18n Dictionary verification', () => {
 
   test('Config constants should have sensible defaults', () => {
     assert.ok(APP_NAME, 'APP_NAME must be defined');
+    assert.match(APP_VERSION, /^\d+\.\d+\.\d+$/, 'APP_VERSION must be sourced from package.json and look like semver');
     assert.ok(typeof PORT === 'number' || typeof PORT === 'string', 'PORT must be set');
     assert.ok(CORS_ORIGIN, 'CORS_ORIGIN must be defined');
     assert.strictEqual(RECONNECT_GRACE_PERIOD_MS, 15 * 60 * 1000, 'Grace period must be 15 minutes');

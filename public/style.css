@@ -349,6 +349,13 @@ label.field-label {
   margin-top: 2px;
 }
 
+.options-version {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-700);
+  margin-top: 14px;
+}
+
 /* ── Utility ─────────────────────────────────────────────────── */
 .hidden   { display: none !important; }
 .sr-only  { position:absolute; width:1px; height:1px; clip:rect(0,0,0,0); overflow:hidden; }

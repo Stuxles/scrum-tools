@@ -6,7 +6,7 @@ import { Router } from 'express';
 import QRCode     from 'qrcode';
 import { rooms }  from '../store/rooms.js';
 import {
-  PUBLIC_URL, APP_NAME,
+  PUBLIC_URL, APP_NAME, APP_VERSION,
   REST_RATE_LIMIT_GLOBAL_MAX, REST_RATE_LIMIT_GLOBAL_WINDOW_MS,
   REST_RATE_LIMIT_ROOM_MAX, REST_RATE_LIMIT_ROOM_WINDOW_MS,
   QR_CODE_SIZE_PX, QR_CODE_MARGIN,
@@ -35,7 +35,7 @@ const roomLimiter = createRateLimiter({
 });
 
 // ─── Config info ──────────────────────────────────────────────────────────────
-router.get('/config', (_req, res) => res.json({ appName: APP_NAME }));
+router.get('/config', (_req, res) => res.json({ appName: APP_NAME, version: APP_VERSION }));
 
 // ─── Room info ────────────────────────────────────────────────────────────────
 router.get('/rooms/:id', roomLimiter, (req, res) => {
