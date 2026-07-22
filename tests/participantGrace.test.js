@@ -184,6 +184,48 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     assert.strictEqual(bobInJoined.connected, true);
   });
 
+  test('race: a new connection joining before the old one is marked disconnected does not create a duplicate', async () => {
+    // Simulates a flaky connection: the client reconnects with a fresh
+    // socket BEFORE the server's ping-timeout has caught the old socket
+    // dying (old entry still reads connected:true). No explicit
+    // voter.disconnect() call here — that's the point of the race.
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    voter.emit('vote', { roomId, vote: '5' });
+    await waitForRoomState(master, (room) => {
+      const bob = room.participants.find(p => p.name === 'Bob');
+      return bob && bob.hasVoted;
+    });
+
+    const oldBobId = voter.id;
+    assert.strictEqual(rooms[roomId].participants[oldBobId].connected, true, 'old socket is still "connected" server-side');
+
+    const kickedPromise = onceEvent(voter, 'kicked');
+    const reconnectedBob = createClient();
+    await waitForConnect(reconnectedBob);
+    reconnectedBob.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(reconnectedBob, 'room-joined');
+
+    await kickedPromise; // the stale old connection gets evicted
+    await new Promise(r => setTimeout(r, 100));
+
+    const bobEntries = Object.values(rooms[roomId].participants).filter(p => p.name === 'Bob');
+    assert.strictEqual(bobEntries.length, 1, 'exactly one Bob, no duplicate row');
+    assert.strictEqual(bobEntries[0].id, reconnectedBob.id);
+    assert.strictEqual(bobEntries[0].vote, '5', 'vote carried over despite the race');
+    assert.strictEqual(rooms[roomId].participants[oldBobId], undefined, 'old entry cleaned up');
+  });
+
   test('expireParticipantGrace removes a still-away participant but leaves a reconnected one alone', async () => {
     const master = createClient();
     const voter = createClient();

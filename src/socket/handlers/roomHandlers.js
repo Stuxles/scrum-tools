@@ -51,8 +51,11 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
   console.log(`[room] ${roomId} aangemaakt door ${name}`);
 }
 
-/** @param {import('socket.io').Socket} socket */
-export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
+/**
+ * @param {import('socket.io').Server} io
+ * @param {import('socket.io').Socket} socket
+ */
+export function handleJoinRoom(io, socket, { roomId, name, isSpectator }) {
   roomId = normalizeRoomId(roomId);
   name   = (name   || 'Anoniem').trim().slice(0, 40);
 
@@ -92,12 +95,27 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
   // their old (still-graced) seat — vote, role, spectator state — to the
   // new id by matching display name, instead of losing it and starting
   // fresh. Mirrors the master-reclaim-by-name pattern above.
+  //
+  // Match on name regardless of `connected` — not just already-away
+  // entries. A flaky connection can have the client reconnect BEFORE the
+  // server's ping-timeout notices the old socket died, so the old entry
+  // may still read connected:true at this point. Gating on connected===false
+  // alone would miss that race and leave two rows for the same person.
   const staleEntry = Object.entries(room.participants).find(
-    ([id, p]) => id !== socket.id && p.connected === false
+    ([id, p]) => id !== socket.id
       && p.name.trim().toLowerCase() === name.trim().toLowerCase(),
   );
   if (staleEntry) {
     const [oldId, oldParticipant] = staleEntry;
+    if (oldParticipant.connected !== false) {
+      // Old socket hasn't been marked away yet — evict it so it can't
+      // coexist with the new connection claiming the same identity.
+      const oldSocket = io.sockets.sockets.get(oldId);
+      if (oldSocket) {
+        oldSocket.emit('kicked', {});
+        oldSocket.disconnect(true);
+      }
+    }
     if (room.participantGraceTimers?.[oldId]) {
       clearTimeout(room.participantGraceTimers[oldId]);
       delete room.participantGraceTimers[oldId];

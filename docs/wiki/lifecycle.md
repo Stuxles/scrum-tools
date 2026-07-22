@@ -71,9 +71,10 @@ Previously, **any** disconnect removed a participant from `room.participants` im
 
 1. **Disconnect**: the participant is marked `connected: false` with a `disconnectedAt` timestamp — **not deleted**. Their vote, `hasVoted`, role and spectator state are all preserved. A per-participant `setTimeout` (`room.participantGraceTimers[socketId]`) starts, default **10 minutes**.
 2. **While away**: they still appear in the participant list (dimmed in the UI, "away" tooltip) and still count toward the voting total — the round doesn't silently shrink around them.
-3. **Reconnect (within the window)**: a new connection always gets a **new** `socket.id`, so `handleJoinRoom` migrates the old (still-graced) entry to the new id by matching the **display name** — vote, `hasVoted`, role and spectator state all transfer over, and the stale entry + its timer are removed. Same trust model as the SM name-match reclaim below.
-4. **Expiry**: if the window elapses with no reconnect, `expireParticipantGrace()` deletes the participant for good and broadcasts the updated room.
-5. **Explicit removal**: the Scrum Master can `kick-user` an away participant at any time, bypassing the grace window entirely.
+3. **Reconnect (within the window)**: a new connection always gets a **new** `socket.id`, so `handleJoinRoom` migrates the old entry to the new id by matching the **display name** — vote, `hasVoted`, role and spectator state all transfer over, and the stale entry + its timer are removed. Same trust model as the SM name-match reclaim below.
+4. **Connection-race handling**: matching is **not** gated on the old entry already being `connected: false`. A flaky connection can have the client reconnect *before* the server's ping-timeout notices the old socket died, so the old entry may still read `connected: true` at that moment. If so, `handleJoinRoom` force-evicts the old live socket (`socket.disconnect(true)`, with a `kicked` event so that connection — if anyone's still watching it — gets the same "removed" messaging as an SM kick) before migrating, so a name never ends up with two simultaneous rows.
+5. **Expiry**: if the window elapses with no reconnect, `expireParticipantGrace()` deletes the participant for good and broadcasts the updated room.
+6. **Explicit removal**: the Scrum Master can `kick-user` an away participant at any time, bypassing the grace window entirely.
 
 Override the default via the `PARTICIPANT_GRACE_MINUTES` env var (see README). Transferring the Scrum Master role to an away participant is rejected — the target must be currently connected.
 

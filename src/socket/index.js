@@ -41,7 +41,7 @@ export function initSocketHandlers(io) {
 
     // ── Room events ──────────────────────────────────────────────────────────
     on('create-room',      (data) => handleCreateRoom(socket, data));
-    on('join-room',        (data) => handleJoinRoom(socket, data));
+    on('join-room',        (data) => handleJoinRoom(io, socket, data));
     on('vote',             (data) => handleVote(socket, data));
     on('toggle-spectator', (data) => handleToggleSpectator(socket, data));
     on('claim-master',     (data) => handleClaimMaster(socket, data));
