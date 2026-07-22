@@ -17,7 +17,7 @@ Examples:
 
 ### Why this actually matters here (not just tidiness)
 
-`.github/workflows/version-bump.yml` reads commit messages on every merge to `main` and auto-bumps `package.json`'s version:
+The `version-bump` job in `.github/workflows/docker-build.yml` reads commit messages on every merge to `main` and auto-bumps `package.json`'s version:
 
 - `feat:` → minor bump
 - `fix:` → patch bump
@@ -30,7 +30,7 @@ Get the prefix wrong (or skip it) and the automation silently does nothing — t
 
 ## Before pushing a new/changed GitHub Actions workflow
 
-Validate the YAML locally first — GitHub's own error messages for workflow syntax errors are terse and the mistake is easy to make (see `fix(ci): fix invalid YAML in version-bump.yml`, PR #16, where a colon+space inside an unquoted `run:` value broke the parse). Quick check:
+Validate the YAML locally first — GitHub's own error messages for workflow syntax errors are terse and the mistake is easy to make (see `fix(ci): fix invalid YAML in version-bump.yml`, PR #16, where a colon+space inside an unquoted `run:` value broke the parse — that job now lives merged into `docker-build.yml`, see PR #18). Quick check:
 
 ```bash
 python -c "import yaml; yaml.safe_load(open('.github/workflows/YOUR_FILE.yml'))"
