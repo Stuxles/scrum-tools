@@ -88,11 +88,33 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
     room.masterName = name;
   }
 
+  // Reconnect: a disconnected participant gets a NEW socket.id, so migrate
+  // their old (still-graced) seat — vote, role, spectator state — to the
+  // new id by matching display name, instead of losing it and starting
+  // fresh. Mirrors the master-reclaim-by-name pattern above.
+  const staleEntry = Object.entries(room.participants).find(
+    ([id, p]) => id !== socket.id && p.connected === false
+      && p.name.trim().toLowerCase() === name.trim().toLowerCase(),
+  );
+  if (staleEntry) {
+    const [oldId, oldParticipant] = staleEntry;
+    if (room.participantGraceTimers?.[oldId]) {
+      clearTimeout(room.participantGraceTimers[oldId]);
+      delete room.participantGraceTimers[oldId];
+    }
+    delete room.participants[oldId];
+    room.participants[socket.id] = { ...oldParticipant, id: socket.id };
+    if (room.masterId === oldId) room.masterId = socket.id;
+    console.log(`[reconnect] ${name} zit weer in room ${roomId} (stem/rol hersteld)`);
+  }
+
   // Allow rejoin (e.g. page refresh) — only create entry if absent
   room.participants[socket.id] = room.participants[socket.id] || {
     id: socket.id, name, vote: null, hasVoted: false, isSpectator: Boolean(isSpectator),
   };
-  room.participants[socket.id].name = name;
+  room.participants[socket.id].name        = name;
+  room.participants[socket.id].connected   = true;
+  room.participants[socket.id].disconnectedAt = null;
   if (isSpectator !== undefined) {
     room.participants[socket.id].isSpectator = Boolean(isSpectator);
     if (room.participants[socket.id].isSpectator) {
@@ -182,7 +204,8 @@ export function handleClaimMaster(socket, { roomId } = {}) {
 export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id || !targetId || !room.participants[targetId] || targetId === socket.id) return;
+  if (!room || room.masterId !== socket.id || !targetId || targetId === socket.id) return;
+  if (!room.participants[targetId] || room.participants[targetId].connected === false) return;
 
   if (room.masterGraceTimer) {
     clearTimeout(room.masterGraceTimer);

@@ -32,7 +32,7 @@ scrum-poker-collab/
 │   ├── 📁 socket/
 │   │   ├── 📄 index.js                   # Socket.IO bootstrap, safe dispatch (payload guard + error isolation) & 35 req/sec rate limiter
 │   │   └── 📁 handlers/
-│   │       ├── 📄 connectionHandlers.js  # Disconnect grace period (`RECONNECT_GRACE_PERIOD_MS`) & kick-user
+│   │       ├── 📄 connectionHandlers.js  # Per-participant reconnect grace (`PARTICIPANT_GRACE_MS`), empty-room grace (`RECONNECT_GRACE_PERIOD_MS`) & kick-user
 │   │       ├── 📄 roomHandlers.js        # `create-room`, `join-room`, `vote`, `toggle-spectator`, `claim-master`, `sm-transfer-master`
 │   │       └── 📄 smHandlers.js          # Scrum Master commands (`reveal`, `reset`, `change-deck`, `update-story-title`)
 │   ├── 📁 store/

@@ -38,7 +38,7 @@ graph TD
         ServerEntry["server.js / src/socket/index.js (Safe Dispatch + Rate Limiter: 35 req/s)"]
         RoomHandlers["roomHandlers.js (create, join, vote, toggle-spectator, claim/transfer-master)"]
         SMHandlers["smHandlers.js (reveal, reset, change-deck, update-story)"]
-        ConnHandlers["connectionHandlers.js (kick-user, disconnect, 15m Grace Timer)"]
+        ConnHandlers["connectionHandlers.js (kick-user, 10m participant grace, 15m empty-room grace)"]
         Broadcast["broadcast.js (broadcastRoomState, 24h Cleanup)"]
         RoomsStore["src/store/rooms.js (Null-Prototype Rooms Dictionary & sanitizeRoom)"]
     end

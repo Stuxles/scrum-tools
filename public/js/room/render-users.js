@@ -14,9 +14,12 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
   participantsList.innerHTML = '';
 
   for (const p of room.participants) {
+    const isAway = p.connected === false;
+
     const li = document.createElement('li');
-    li.className  = 'participant-item';
+    li.className  = 'participant-item' + (isAway ? ' is-away' : '');
     li.dataset.id = p.id;
+    if (isAway) li.title = t('participant-away-title');
 
     const initial = escHtml((p.name || '?')[0].toUpperCase());
     const roleText = p.isMaster ? 'Scrum Master' : (p.isSpectator ? t('role-spectator') : t('role-participant'));

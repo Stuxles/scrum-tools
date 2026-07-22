@@ -73,6 +73,7 @@ docker-compose up -d --build
 | `PUBLIC_URL` | *(Auto-detected LAN IP)* | The base URL embedded inside generated QR codes. **Note**: When deploying inside Docker/Unraid on your network, set this explicitly to your server's address, e.g., `http://192.168.1.100:3000` or custom domain. |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins (comma-separated if restricted). |
 | `TRUST_PROXY` | *(off)* | Express `trust proxy` setting. Set this when the app sits behind a reverse proxy you control (nginx, Traefik, Cloudflare Tunnel) so the REST rate limiter sees each client's real IP instead of the proxy's. **Only** enable this if that proxy strips/overwrites client-supplied `X-Forwarded-For` — otherwise a client can spoof its IP and bypass rate limiting. Accepts `true`, a hop count (`1`, `2`, …), or an [Express-recognized value](https://expressjs.com/en/guide/behind-proxies.html) like `loopback`. |
+| `PARTICIPANT_GRACE_MINUTES` | `10` | How long a disconnected participant's seat (vote, role, spectator state) is kept before being fully removed from a room. Covers brief network drops — e.g. a phone locking its screen — so reconnecting with the same display name within this window restores everything instead of starting over. |
 
 ---
 

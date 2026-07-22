@@ -5,9 +5,12 @@
  *             deckType: string, deck: string[], revealed: boolean,
  *             participants: Record<string,Participant>, createdAt: number,
  *             disconnectTimer?: ReturnType<typeof setTimeout>,
- *             cleanupTimer?: ReturnType<typeof setTimeout> }} Room
+ *             cleanupTimer?: ReturnType<typeof setTimeout>,
+ *             masterGraceTimer?: ReturnType<typeof setTimeout>,
+ *             participantGraceTimers?: Record<string, ReturnType<typeof setTimeout>> }} Room
  *
- * @typedef {{ id: string, name: string, vote: string|null, hasVoted: boolean }} Participant
+ * @typedef {{ id: string, name: string, vote: string|null, hasVoted: boolean,
+ *             connected?: boolean, disconnectedAt?: number|null }} Participant
  */
 
 /**
@@ -27,6 +30,9 @@ export function deleteRoom(roomId) {
   if (room.cleanupTimer)    clearTimeout(room.cleanupTimer);
   if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
   if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);
+  if (room.participantGraceTimers) {
+    for (const timer of Object.values(room.participantGraceTimers)) clearTimeout(timer);
+  }
   delete rooms[roomId];
 }
 
@@ -55,6 +61,7 @@ export function sanitizeRoom(room, viewerSocketId = null) {
       vote:        (room.revealed || (viewerSocketId && p.id === viewerSocketId)) ? p.vote : null,
       isMaster:    p.id === room.masterId,
       isSpectator: Boolean(p.isSpectator),
+      connected:   p.connected !== false,
     })),
   };
 }

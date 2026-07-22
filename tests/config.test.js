@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy } from '../src/config.js';
+import { DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy, PARTICIPANT_GRACE_MS, parseParticipantGraceMinutes } from '../src/config.js';
 import { translations } from '../public/js/utils/i18n.js';
 
 describe('Config & i18n Dictionary verification', () => {
@@ -23,6 +23,17 @@ describe('Config & i18n Dictionary verification', () => {
     assert.ok(CORS_ORIGIN, 'CORS_ORIGIN must be defined');
     assert.strictEqual(RECONNECT_GRACE_PERIOD_MS, 15 * 60 * 1000, 'Grace period must be 15 minutes');
     assert.strictEqual(TRUST_PROXY, false, 'TRUST_PROXY must default to false when the env var is unset');
+    assert.strictEqual(PARTICIPANT_GRACE_MS, 10 * 60 * 1000, 'Participant grace must default to 10 minutes');
+  });
+
+  test('parseParticipantGraceMinutes: safe default and env override forms', () => {
+    assert.strictEqual(parseParticipantGraceMinutes(undefined), 10, 'unset -> 10 minute default');
+    assert.strictEqual(parseParticipantGraceMinutes(''), 10);
+    assert.strictEqual(parseParticipantGraceMinutes('0'), 10, 'zero is not a valid override, falls back to default');
+    assert.strictEqual(parseParticipantGraceMinutes('-5'), 10, 'negative is not valid, falls back to default');
+    assert.strictEqual(parseParticipantGraceMinutes('not-a-number'), 10);
+    assert.strictEqual(parseParticipantGraceMinutes('5'), 5, 'valid override is honored');
+    assert.strictEqual(parseParticipantGraceMinutes('30'), 30);
   });
 
   test('parseTrustProxy: safe default and Express-recognized value forms', () => {

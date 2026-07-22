@@ -627,8 +627,9 @@ label.field-label {
   gap: 10px;
   padding: 10px 12px;
   border-radius: var(--r-md);
-  transition: background 0.15s;
+  transition: background 0.15s, opacity 0.15s;
 }
+.participant-item.is-away { opacity: 0.5; }
 .participant-item:hover { background: var(--glass); }
 
 .participant-avatar {
