@@ -6,6 +6,7 @@ import {
   scheduleRoomCleanup,
 } from '../../utils/broadcast.js';
 import { applyAutoReveal }     from '../../utils/autoReveal.js';
+import { info }                from '../../utils/logger.js';
 
 /** @param {import('socket.io').Socket} socket */
 export function handleCreateRoom(socket, { name, deckType, customCards, roomName }) {
@@ -48,7 +49,7 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
 
   scheduleRoomCleanup(roomId);
   socket.emit('room-created', { roomId });
-  console.log(`[room] ${roomId} aangemaakt door ${name}`);
+  info('room', `${roomId} aangemaakt door ${name}`);
 }
 
 /**
@@ -85,7 +86,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator }) {
     room.masterGraceTimer = null;
     room.masterId   = socket.id;
     room.masterName = name;
-    console.log(`[master-grace] ${name} reclaimed SM by name match in room ${roomId}`);
+    info('master-grace', `${name} reclaimed SM by name match in room ${roomId}`);
   } else if (!room.masterId || (!room.participants[room.masterId] && !room.masterGraceTimer)) {
     room.masterId   = socket.id;
     room.masterName = name;
@@ -123,7 +124,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator }) {
     delete room.participants[oldId];
     room.participants[socket.id] = { ...oldParticipant, id: socket.id };
     if (room.masterId === oldId) room.masterId = socket.id;
-    console.log(`[reconnect] ${name} zit weer in room ${roomId} (stem/rol hersteld)`);
+    info('reconnect', `${name} zit weer in room ${roomId} (stem/rol hersteld)`);
   }
 
   // Allow rejoin (e.g. page refresh) — only create entry if absent
@@ -147,7 +148,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator }) {
   socket.emit('room-joined', { room: sanitizeRoom(room, socket.id), isMaster });
   broadcastRoomState(roomId);
 
-  console.log(`[join] ${name} → ${roomId}`);
+  info('join', `${name} → ${roomId}`);
 }
 
 /** @param {import('socket.io').Socket} socket */
@@ -210,7 +211,7 @@ export function handleClaimMaster(socket, { roomId } = {}) {
   room.masterName = room.participants[socket.id].name;
   socket.emit('became-master', {});
   broadcastRoomState(roomId);
-  console.log(`[claim-master] ${room.masterName} claimed SM in room ${roomId}`);
+  info('claim-master', `${room.masterName} claimed SM in room ${roomId}`);
 }
 
 /**
@@ -234,5 +235,5 @@ export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
   room.masterName = room.participants[targetId].name;
   io.to(targetId).emit('became-master', {});
   broadcastRoomState(roomId);
-  console.log(`[transfer-master] SM transferred from ${socket.id} to ${targetId} in room ${roomId}`);
+  info('transfer-master', `SM transferred from ${socket.id} to ${targetId} in room ${roomId}`);
 }

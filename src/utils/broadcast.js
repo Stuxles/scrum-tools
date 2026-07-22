@@ -4,6 +4,7 @@
  */
 
 import { rooms, sanitizeRoom, deleteRoom } from '../store/rooms.js';
+import { info } from './logger.js';
 
 /** @type {import('socket.io').Server} */
 let _io;
@@ -46,11 +47,11 @@ export function scheduleRoomCleanup(roomId) {
     const r = rooms[roomId];
     if (!r) return;
     if (Object.keys(r.participants).length > 0) {
-      console.log(`[cleanup] Room ${roomId} nog in gebruik na 24u, verlengd met 1u.`);
+      info('cleanup', `Room ${roomId} nog in gebruik na 24u, verlengd met 1u.`);
       scheduleRoomCleanup(roomId);
       return;
     }
     deleteRoom(roomId);
-    console.log(`[cleanup] Room ${roomId} verwijderd na 24u inactiviteit.`);
+    info('cleanup', `Room ${roomId} verwijderd na 24u inactiviteit.`);
   }, 24 * 60 * 60 * 1000);
 }

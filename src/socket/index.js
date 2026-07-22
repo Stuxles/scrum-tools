@@ -6,11 +6,12 @@
 import { handleCreateRoom, handleJoinRoom, handleVote, handleToggleSpectator, handleClaimMaster, handleTransferMaster } from './handlers/roomHandlers.js';
 import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle, handleToggleAutoReveal } from './handlers/smHandlers.js';
 import { handleKickUser, handleDisconnect }              from './handlers/connectionHandlers.js';
+import { info, warn, error as logError }                 from '../utils/logger.js';
 
 /** @param {import('socket.io').Server} io */
 export function initSocketHandlers(io) {
   io.on('connection', (socket) => {
-    console.log(`[+] ${socket.id}`);
+    info('connect', socket.id);
 
     // ── Per-socket rate limiter (max 35 events/sec) ──────────────────────────
     let eventCount = 0;
@@ -20,6 +21,7 @@ export function initSocketHandlers(io) {
       const now = Date.now();
       if (now - lastReset > 1000) { eventCount = 0; lastReset = now; }
       if (++eventCount > 35) {
+        warn('rate-limit', `socket ${socket.id} exceeded 35 events/sec`);
         socket.emit('error', { message: 'Te veel acties achter elkaar. Wacht een seconde.' });
         return;
       }
@@ -33,7 +35,7 @@ export function initSocketHandlers(io) {
         try {
           handler(data || {});
         } catch (err) {
-          console.error(`[handler:${event}] ${socket.id}`, err);
+          logError(`handler:${event}`, socket.id, err);
           socket.emit('error', { message: 'Er ging iets mis. Probeer het opnieuw.' });
         }
       });

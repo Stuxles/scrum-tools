@@ -3,6 +3,7 @@ import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
 import { applyAutoReveal }    from '../../utils/autoReveal.js';
 import { RECONNECT_GRACE_PERIOD_MS, PARTICIPANT_GRACE_MS } from '../../config.js';
+import { info }                from '../../utils/logger.js';
 
 /**
  * @param {import('socket.io').Server}  io
@@ -46,7 +47,7 @@ export function expireParticipantGrace(roomId, socketId) {
   if (room.participantGraceTimers) delete room.participantGraceTimers[socketId];
   applyAutoReveal(room);
   broadcastRoomState(roomId);
-  console.log(`[grace] ${socketId} verwijderd uit room ${roomId} na ${PARTICIPANT_GRACE_MS / 60000}m zonder reconnect.`);
+  info('grace', `${socketId} verwijderd uit room ${roomId} na ${PARTICIPANT_GRACE_MS / 60000}m zonder reconnect.`);
 }
 
 /**
@@ -54,7 +55,7 @@ export function expireParticipantGrace(roomId, socketId) {
  * @param {import('socket.io').Socket} socket
  */
 export function handleDisconnect(io, socket) {
-  console.log(`[-] ${socket.id}`);
+  info('disconnect', socket.id);
 
   for (const [roomId, room] of Object.entries(rooms)) {
     const participant = room.participants[socket.id];
@@ -85,7 +86,7 @@ export function handleDisconnect(io, socket) {
         const r = rooms[roomId];
         if (r && Object.values(r.participants).every(p => p.connected === false)) {
           deleteRoom(roomId);
-          console.log(`[cleanup] Room ${roomId} deleted after ${RECONNECT_GRACE_PERIOD_MS / 60000}m inactivity.`);
+          info('cleanup', `Room ${roomId} deleted after ${RECONNECT_GRACE_PERIOD_MS / 60000}m inactivity.`);
         }
       }, RECONNECT_GRACE_PERIOD_MS);
       broadcastRoomState(roomId);
@@ -106,7 +107,7 @@ export function handleDisconnect(io, socket) {
             rooms[roomId].masterName = newMaster.name;
             io.to(newMasterId).emit('became-master', {});
             broadcastRoomState(roomId);
-            console.log(`[master-grace] Assigned new Scrum Master (${newMasterId}) after 30s timeout in room ${roomId}`);
+            info('master-grace', `Assigned new Scrum Master (${newMasterId}) after 30s timeout in room ${roomId}`);
           }
         }
       }, 30000);
