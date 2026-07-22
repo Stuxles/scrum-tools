@@ -7,21 +7,22 @@ import { handleCreateRoom, handleJoinRoom, handleVote, handleToggleSpectator, ha
 import { handleReveal, handleReset, handleChangeDeck, handleUpdateName, handleUpdateStoryTitle, handleToggleAutoReveal } from './handlers/smHandlers.js';
 import { handleKickUser, handleDisconnect }              from './handlers/connectionHandlers.js';
 import { info, warn, error as logError }                 from '../utils/logger.js';
+import { SOCKET_RATE_LIMIT_MAX, SOCKET_RATE_LIMIT_WINDOW_MS } from '../config.js';
 
 /** @param {import('socket.io').Server} io */
 export function initSocketHandlers(io) {
   io.on('connection', (socket) => {
     info('connect', socket.id);
 
-    // ── Per-socket rate limiter (max 35 events/sec) ──────────────────────────
+    // ── Per-socket rate limiter ───────────────────────────────────────────────
     let eventCount = 0;
     let lastReset  = Date.now();
 
     socket.use((_packet, next) => {
       const now = Date.now();
-      if (now - lastReset > 1000) { eventCount = 0; lastReset = now; }
-      if (++eventCount > 35) {
-        warn('rate-limit', `socket ${socket.id} exceeded 35 events/sec`);
+      if (now - lastReset > SOCKET_RATE_LIMIT_WINDOW_MS) { eventCount = 0; lastReset = now; }
+      if (++eventCount > SOCKET_RATE_LIMIT_MAX) {
+        warn('rate-limit', `socket ${socket.id} exceeded ${SOCKET_RATE_LIMIT_MAX} events/${SOCKET_RATE_LIMIT_WINDOW_MS / 1000}s`);
         socket.emit('error', { message: 'Te veel acties achter elkaar. Wacht een seconde.' });
         return;
       }

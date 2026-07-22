@@ -5,7 +5,12 @@
 import { Router } from 'express';
 import QRCode     from 'qrcode';
 import { rooms }  from '../store/rooms.js';
-import { PUBLIC_URL, APP_NAME } from '../config.js';
+import {
+  PUBLIC_URL, APP_NAME, APP_VERSION,
+  REST_RATE_LIMIT_GLOBAL_MAX, REST_RATE_LIMIT_GLOBAL_WINDOW_MS,
+  REST_RATE_LIMIT_ROOM_MAX, REST_RATE_LIMIT_ROOM_WINDOW_MS,
+  QR_CODE_SIZE_PX, QR_CODE_MARGIN,
+} from '../config.js';
 import { createRateLimiter }    from '../utils/rateLimiter.js';
 
 const router = Router();
@@ -21,16 +26,16 @@ router.get('/health', (_req, res) => res.json({ status: 'ok' }));
 //   2. A tighter per-(IP, room) limit on the room-specific endpoints, so
 //      unrelated rooms behind the same apparent IP don't share one budget,
 //      while a single room/QR endpoint still can't be hammered.
-router.use(createRateLimiter({ windowMs: 60_000, max: 300 }));
+router.use(createRateLimiter({ windowMs: REST_RATE_LIMIT_GLOBAL_WINDOW_MS, max: REST_RATE_LIMIT_GLOBAL_MAX }));
 
 const roomLimiter = createRateLimiter({
-  windowMs: 60_000,
-  max: 120,
+  windowMs: REST_RATE_LIMIT_ROOM_WINDOW_MS,
+  max: REST_RATE_LIMIT_ROOM_MAX,
   keyFn: (req) => `${req.ip || req.socket?.remoteAddress || 'unknown'}:${req.params.id}`,
 });
 
 // ─── Config info ──────────────────────────────────────────────────────────────
-router.get('/config', (_req, res) => res.json({ appName: APP_NAME }));
+router.get('/config', (_req, res) => res.json({ appName: APP_NAME, version: APP_VERSION }));
 
 // ─── Room info ────────────────────────────────────────────────────────────────
 router.get('/rooms/:id', roomLimiter, (req, res) => {
@@ -54,7 +59,7 @@ router.get('/rooms/:id/qr', roomLimiter, async (req, res) => {
     : { dark: '#a78bfa', light: '#0d0d1a' };
 
   try {
-    const qr = await QRCode.toDataURL(url, { width: 280, margin: 2, color });
+    const qr = await QRCode.toDataURL(url, { width: QR_CODE_SIZE_PX, margin: QR_CODE_MARGIN, color });
     res.json({ qr, url });
   } catch {
     res.status(500).json({ error: 'QR generatie mislukt' });

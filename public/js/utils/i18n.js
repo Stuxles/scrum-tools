@@ -63,6 +63,7 @@ export const translations = {
     'options-label-theme': 'Thema',
     'options-sub-theme': 'Donkere of lichte modus',
     'options-theme-btn': 'Licht',
+    'options-version-label': 'Versie',
 
     // ── Room Page UI ──
     'panel-title-participants': 'Deelnemers',
@@ -219,6 +220,7 @@ export const translations = {
     'options-label-theme': 'Theme',
     'options-sub-theme': 'Dark or light mode',
     'options-theme-btn': 'Light',
+    'options-version-label': 'Version',
 
     // ── Room Page UI ──
     'panel-title-participants': 'Participants',

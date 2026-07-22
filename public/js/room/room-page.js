@@ -49,6 +49,7 @@ export function initRoomPage(socket, urlRoomId) {
   const optionsCurrentRole = document.getElementById('options-current-role');
   const optionsRowClaimSm  = document.getElementById('options-row-claim-sm');
   const optionsRowSpectator = document.getElementById('options-row-spectator');
+  const optionsVersion   = document.getElementById('options-version');
 
   const btnClaimSm       = document.getElementById('btn-claim-sm');
   const headerSpectatorBtn  = document.getElementById('header-spectator-btn');
@@ -450,6 +451,22 @@ export function initRoomPage(socket, urlRoomId) {
     }
   });
 
+  // ── App version (shown in the options modal) ────────────────────────────────
+  let appVersion = null;
+  function renderVersion() {
+    if (optionsVersion && appVersion) {
+      optionsVersion.textContent = `${t('options-version-label')} ${appVersion}`;
+    }
+  }
+  if (optionsVersion) {
+    fetch('/api/config')
+      .then(r => r.json())
+      .then(data => {
+        if (data.version) { appVersion = data.version; renderVersion(); }
+      })
+      .catch(() => {});
+  }
+
   // ── Join flow ─────────────────────────────────────────────────────────────
   fetch(`/api/rooms/${urlRoomId}`)
     .then(r => r.json())
@@ -541,5 +558,6 @@ export function initRoomPage(socket, urlRoomId) {
 
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);
+    renderVersion();
   });
 }

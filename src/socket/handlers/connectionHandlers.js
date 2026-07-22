@@ -2,7 +2,7 @@ import { rooms, deleteRoom }  from '../../store/rooms.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
 import { applyAutoReveal }    from '../../utils/autoReveal.js';
-import { RECONNECT_GRACE_PERIOD_MS, PARTICIPANT_GRACE_MS } from '../../config.js';
+import { RECONNECT_GRACE_PERIOD_MS, PARTICIPANT_GRACE_MS, MASTER_GRACE_MS } from '../../config.js';
 import { info }                from '../../utils/logger.js';
 
 /**
@@ -107,10 +107,10 @@ export function handleDisconnect(io, socket) {
             rooms[roomId].masterName = newMaster.name;
             io.to(newMasterId).emit('became-master', {});
             broadcastRoomState(roomId);
-            info('master-grace', `Assigned new Scrum Master (${newMasterId}) after 30s timeout in room ${roomId}`);
+            info('master-grace', `Assigned new Scrum Master (${newMasterId}) after ${MASTER_GRACE_MS / 1000}s timeout in room ${roomId}`);
           }
         }
-      }, 30000);
+      }, MASTER_GRACE_MS);
     }
 
     broadcastRoomState(roomId);

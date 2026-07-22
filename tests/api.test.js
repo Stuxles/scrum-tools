@@ -4,6 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import apiRouter from '../src/routes/api.js';
 import { rooms, deleteRoom } from '../src/store/rooms.js';
+import { APP_VERSION } from '../src/config.js';
 
 const app = express();
 app.use(express.json());
@@ -23,10 +24,12 @@ describe('REST API Routes (/api & /health)', () => {
     }
   });
 
-  test('GET /api/config should return app name', async () => {
+  test('GET /api/config should return app name and version', async () => {
     const res = await request(app).get('/api/config');
     assert.strictEqual(res.status, 200);
     assert.ok(res.body.appName);
+    assert.strictEqual(res.body.version, APP_VERSION);
+    assert.match(res.body.version, /^\d+\.\d+\.\d+$/, 'version must look like semver');
   });
 
   test('GET /health should return ok status', async () => {

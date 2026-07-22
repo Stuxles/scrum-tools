@@ -5,6 +5,7 @@
 
 import { rooms, sanitizeRoom, deleteRoom } from '../store/rooms.js';
 import { info } from './logger.js';
+import { ROOM_CLEANUP_INTERVAL_MS } from '../config.js';
 
 /** @type {import('socket.io').Server} */
 let _io;
@@ -53,5 +54,5 @@ export function scheduleRoomCleanup(roomId) {
     }
     deleteRoom(roomId);
     info('cleanup', `Room ${roomId} verwijderd na 24u inactiviteit.`);
-  }, 24 * 60 * 60 * 1000);
+  }, ROOM_CLEANUP_INTERVAL_MS);
 }

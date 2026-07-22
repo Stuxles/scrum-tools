@@ -1,12 +1,16 @@
 /**
- * Centralized configuration.
- * All environment variables and deck definitions in one place.
+ * Centralized configuration — the single place to look for or change any
+ * server-side setting: environment variables, rate limits, timers (grace
+ * periods, cleanup intervals), QR code options, and deck definitions.
+ * Nothing that's tunable should be hardcoded outside this file.
  */
 
 import os from 'os';
 import { APP_NAME as SHARED_APP_NAME } from '../public/js/config.js';
+import pkg from '../package.json' with { type: 'json' };
 
-export const APP_NAME   = process.env.APP_NAME || SHARED_APP_NAME;
+export const APP_NAME    = process.env.APP_NAME || SHARED_APP_NAME;
+export const APP_VERSION = pkg.version;
 export const PORT       = Number(process.env.PORT) || 3000;
 export const CORS_ORIGIN = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
@@ -51,6 +55,32 @@ export function parseTrustProxy(raw) {
   return raw;
 }
 export const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY);
+
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+/** Per-socket event limiter (src/socket/index.js). */
+export const SOCKET_RATE_LIMIT_MAX       = 35;
+export const SOCKET_RATE_LIMIT_WINDOW_MS = 1000;
+
+/** REST per-IP ceiling across all endpoints (src/routes/api.js). */
+export const REST_RATE_LIMIT_GLOBAL_MAX       = 300;
+export const REST_RATE_LIMIT_GLOBAL_WINDOW_MS = 60_000;
+
+/** REST per-(IP, room) budget on room-specific endpoints (src/routes/api.js). */
+export const REST_RATE_LIMIT_ROOM_MAX       = 120;
+export const REST_RATE_LIMIT_ROOM_WINDOW_MS = 60_000;
+
+// ─── Timers ───────────────────────────────────────────────────────────────────
+/** How long a departed Scrum Master's role stays reserved before falling to
+ *  the next participant (connectionHandlers.js). */
+export const MASTER_GRACE_MS = 30 * 1000;
+
+/** Interval at which a still-occupied room's 24h hard cleanup is re-checked
+ *  and extended (utils/broadcast.js). */
+export const ROOM_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+// ─── QR Code ──────────────────────────────────────────────────────────────────
+export const QR_CODE_SIZE_PX = 280;
+export const QR_CODE_MARGIN  = 2;
 
 // ─── Deck Definitions ────────────────────────────────────────────────────────
 export const DECKS = {
