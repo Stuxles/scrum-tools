@@ -1,0 +1,71 @@
+name: Auto Version Bump
+
+# Runs after code lands on main (PR merge, squash-merge, or a direct push)
+# and bumps package.json's version according to Conventional Commits:
+#   feat:              -> minor
+#   fix:               -> patch
+#   BREAKING CHANGE / feat!: / fix!:  -> major
+#   anything else (chore/docs/test/refactor/style/ci) -> no bump
+#
+# The bump commit is tagged "[skip ci]" so GitHub does not re-trigger any
+# workflow (including this one) on the push it creates - no infinite loop,
+# and no wasted test/Docker-build run for a version-only commit.
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  bump:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine bump type from the merged commit(s)
+        id: bump
+        run: |
+          # A real merge commit (default "Create a merge commit" strategy)
+          # has a second parent; read every commit it brought in. Otherwise
+          # (squash/rebase merge, or a direct push) fall back to the single
+          # head commit's own message.
+          # %B = full message (subject + body), not just %s (subject only),
+          # so a BREAKING CHANGE footer declared in the body is also caught.
+          if git rev-parse HEAD^2 >/dev/null 2>&1; then
+            MESSAGES=$(git log HEAD^1..HEAD^2 --pretty=%B)
+          else
+            MESSAGES=$(git log -1 --pretty=%B)
+          fi
+
+          echo "Commit messages considered for this bump:"
+          echo "$MESSAGES"
+
+          if echo "$MESSAGES" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$MESSAGES" | grep -qE '^feat(\([^)]*\))?:'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          elif echo "$MESSAGES" | grep -qE '^fix(\([^)]*\))?:'; then
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version, commit, and tag
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          npm version "${{ steps.bump.outputs.type }}" -m "chore(release): v%s [skip ci]"
+          git push origin HEAD:main
+          git push origin --tags
+
+      - name: Skip (no feat/fix commits in this push)
+        if: steps.bump.outputs.type == 'none'
+        run: echo "No feat:/fix: commits found - version left unchanged."
