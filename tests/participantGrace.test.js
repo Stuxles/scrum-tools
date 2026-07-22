@@ -105,6 +105,43 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     assert.strictEqual(bobStored.hasVoted, true);
   });
 
+  test('a card revealed before disconnect stays visible to others while the voter is away', async () => {
+    const master = createClient();
+    const voter = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    voter.emit('vote', { roomId, vote: '12' });
+    await waitForRoomState(master, (room) => {
+      const bob = room.participants.find(p => p.name === 'Bob');
+      return bob && bob.hasVoted;
+    });
+
+    master.emit('reveal', { roomId });
+    await waitForRoomState(master, (room) => room.revealed === true);
+
+    // Bob goes away AFTER the reveal.
+    const awayPromise = waitForRoomState(master, (room) => {
+      const bob = room.participants.find(p => p.name === 'Bob');
+      return bob && bob.connected === false;
+    });
+    voter.disconnect();
+    const stateWhileAway = await awayPromise;
+
+    const bob = stateWhileAway.participants.find(p => p.name === 'Bob');
+    assert.strictEqual(bob.connected, false, 'Bob is marked away');
+    assert.strictEqual(stateWhileAway.revealed, true, 'room stays revealed');
+    assert.strictEqual(bob.vote, '12', "Bob's revealed card must stay visible to other viewers while he is away");
+    assert.strictEqual(bob.hasVoted, true);
+  });
+
   test('reconnecting with the same name restores the seat and vote under the new socket id', async () => {
     const master = createClient();
     const voter = createClient();
