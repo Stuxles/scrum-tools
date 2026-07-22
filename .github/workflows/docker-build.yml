@@ -1,4 +1,14 @@
-name: Test, Build and Publish Docker Image
+name: Test, Bump Version, and Build/Publish Docker Image
+
+# Single workflow so job order is guaranteed via `needs:` (two separate
+# workflow files triggered by the same push event run in parallel with no
+# ordering guarantee between them - that was the original bug: the Docker
+# image could be built and published from the pre-bump package.json,
+# and the bump commit's [skip ci] meant nothing ever rebuilt it afterward).
+#
+# Order on a push to main: test -> version-bump -> build-and-push-image.
+# build-and-push-image explicitly re-checks-out `main` (not the original
+# triggering SHA) so it always picks up the bump commit if one happened.
 
 on:
   push:
@@ -30,15 +40,99 @@ jobs:
       - name: Run test suite
         run: npm test
 
+  # ── Auto Version Bump ─────────────────────────────────────────────────────
+  # Bumps package.json's version according to Conventional Commits:
+  #   feat:              -> minor
+  #   fix:               -> patch
+  #   BREAKING CHANGE / feat!: / fix!:  -> major
+  #   anything else (chore/docs/test/refactor/style/ci) -> no bump
+  #
+  # Only runs for a real push to main/master (not PR builds), and skips
+  # entirely on the bump commit's own push ([skip ci] short-circuits the
+  # whole workflow run before any job starts, so that self-skip condition
+  # below is actually a second, redundant safety net - kept for clarity).
+  version-bump:
+    needs: test
+    if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine bump type from the merged commit(s)
+        id: bump
+        run: |
+          # A real merge commit (default "Create a merge commit" strategy)
+          # has a second parent; read every commit it brought in. Otherwise
+          # (squash/rebase merge, or a direct push) fall back to the single
+          # head commit's own message.
+          # %B = full message (subject + body), not just %s (subject only),
+          # so a BREAKING CHANGE footer declared in the body is also caught.
+          if git rev-parse HEAD^2 >/dev/null 2>&1; then
+            MESSAGES=$(git log HEAD^1..HEAD^2 --pretty=%B)
+          else
+            MESSAGES=$(git log -1 --pretty=%B)
+          fi
+
+          echo "Commit messages considered for this bump:"
+          echo "$MESSAGES"
+
+          if echo "$MESSAGES" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$MESSAGES" | grep -qE '^feat(\([^)]*\))?:'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          elif echo "$MESSAGES" | grep -qE '^fix(\([^)]*\))?:'; then
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version, commit, and tag
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          npm version "${{ steps.bump.outputs.type }}" -m "chore(release): v%s [skip ci]"
+          git push origin HEAD:main
+          git push origin --tags
+
+      - name: Skip (no feat/fix commits in this push)
+        if: steps.bump.outputs.type == 'none'
+        run: |
+          echo "No feat/fix commits found - version left unchanged."
+
   build-and-push-image:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [ test, version-bump ]
+    # Run whenever tests passed, regardless of whether version-bump ran
+    # (it's skipped entirely for PR builds) or bumped anything (skipped
+    # result is fine; only a hard *failure* of version-bump blocks this).
+    if: |
+      always() &&
+      needs.test.result == 'success' &&
+      (needs.version-bump.result == 'success' || needs.version-bump.result == 'skipped')
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout repository
+      # Push events: re-checkout main fresh, so a version bump that just
+      # landed (previous job) is included in the image we build.
+      - name: Checkout latest main (post-bump, if any)
+        if: github.event_name == 'push'
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      # PR events: build the PR's own proposed changes, not main.
+      - name: Checkout PR branch
+        if: github.event_name != 'push'
         uses: actions/checkout@v7
 
       - name: Set up QEMU
