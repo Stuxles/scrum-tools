@@ -1,6 +1,14 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy, PARTICIPANT_GRACE_MS, parseParticipantGraceMinutes } from '../src/config.js';
+import {
+  DECKS, APP_NAME, PORT, CORS_ORIGIN, RECONNECT_GRACE_PERIOD_MS, TRUST_PROXY, parseTrustProxy,
+  PARTICIPANT_GRACE_MS, parseParticipantGraceMinutes,
+  SOCKET_RATE_LIMIT_MAX, SOCKET_RATE_LIMIT_WINDOW_MS,
+  REST_RATE_LIMIT_GLOBAL_MAX, REST_RATE_LIMIT_GLOBAL_WINDOW_MS,
+  REST_RATE_LIMIT_ROOM_MAX, REST_RATE_LIMIT_ROOM_WINDOW_MS,
+  MASTER_GRACE_MS, ROOM_CLEANUP_INTERVAL_MS,
+  QR_CODE_SIZE_PX, QR_CODE_MARGIN,
+} from '../src/config.js';
 import { translations } from '../public/js/utils/i18n.js';
 
 describe('Config & i18n Dictionary verification', () => {
@@ -24,6 +32,27 @@ describe('Config & i18n Dictionary verification', () => {
     assert.strictEqual(RECONNECT_GRACE_PERIOD_MS, 15 * 60 * 1000, 'Grace period must be 15 minutes');
     assert.strictEqual(TRUST_PROXY, false, 'TRUST_PROXY must default to false when the env var is unset');
     assert.strictEqual(PARTICIPANT_GRACE_MS, 10 * 60 * 1000, 'Participant grace must default to 10 minutes');
+  });
+
+  test('centralized rate-limit, timer, and QR settings have sensible values', () => {
+    assert.strictEqual(SOCKET_RATE_LIMIT_MAX, 35);
+    assert.strictEqual(SOCKET_RATE_LIMIT_WINDOW_MS, 1000);
+
+    assert.strictEqual(REST_RATE_LIMIT_GLOBAL_MAX, 300);
+    assert.strictEqual(REST_RATE_LIMIT_GLOBAL_WINDOW_MS, 60_000);
+
+    assert.strictEqual(REST_RATE_LIMIT_ROOM_MAX, 120);
+    assert.strictEqual(REST_RATE_LIMIT_ROOM_WINDOW_MS, 60_000);
+    assert.ok(
+      REST_RATE_LIMIT_ROOM_MAX < REST_RATE_LIMIT_GLOBAL_MAX,
+      'the per-room budget must stay tighter than the global per-IP ceiling',
+    );
+
+    assert.strictEqual(MASTER_GRACE_MS, 30 * 1000, 'SM role grace must be 30 seconds');
+    assert.strictEqual(ROOM_CLEANUP_INTERVAL_MS, 24 * 60 * 60 * 1000, 'Room cleanup check must be 24 hours');
+
+    assert.strictEqual(QR_CODE_SIZE_PX, 280);
+    assert.strictEqual(QR_CODE_MARGIN, 2);
   });
 
   test('parseParticipantGraceMinutes: safe default and env override forms', () => {

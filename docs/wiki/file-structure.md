@@ -26,7 +26,7 @@ scrum-poker-collab/
 │   └── file-structure.md                 # (This file) Comprehensive directory & module breakdown
 │
 ├── 📁 src/                               # ⚙️ Backend Node.js / Express / Socket.IO Source Code
-│   ├── 📄 config.js                      # Central server configuration (ports, CORS, TRUST_PROXY, 15m timeout, decks)
+│   ├── 📄 config.js                      # Single source of truth for ALL server settings: env vars, rate limits, timers (grace/cleanup/QR), decks
 │   ├── 📁 routes/
 │   │   └── 📄 api.js                     # RESTful API endpoints (`/api/rooms/:id` verification, `/health`), per-IP rate limited
 │   ├── 📁 socket/

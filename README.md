@@ -140,7 +140,7 @@ For deep-dive documentation on system design, state management, security (`sanit
 │   ├── style.css            # Styling, themes & animations
 │   └── js/                  # Client-side ES Modules (room, i18n, utils)
 ├── src/
-│   ├── config.js            # Ports, network detection & deck definitions
+│   ├── config.js            # ALL server settings in one place: env vars, rate limits, timers, decks
 │   ├── store/rooms.js       # In-memory room state management
 │   ├── socket/              # Socket.IO handlers (room, sm, vote, chat)
 │   └── routes/              # RESTful API endpoints (/api/rooms, /health)
