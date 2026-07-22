@@ -14,7 +14,7 @@ Afgeronde items staan onderaan.
 - Zichtbaar in een paneel of modal voor de Scrum Master.
 - Knop "Kopieer als Markdown" / "Download als CSV" voor in de sprint-notulen.
 - Sluit direct aan op de bestaande `storyTitle`-functie.
-- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #5).
+- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #6).
 
 ### 2. Consensus- en outlier-indicatie
 **Waarde: hoog.** De stats tonen gemiddelde/mediaan/verdeling, maar niet het meest bruikbare voor de facilitator: *is er onenigheid?*
@@ -29,11 +29,24 @@ Afgeronde items staan onderaan.
 - Optionele aftelklok die de SM start; zichtbaar voor iedereen.
 - Eventueel automatisch onthullen bij 0 (combineert met auto-reveal).
 
+### 4. Consensus-animatie bij unanieme stem
+**Waarde: gemiddeld.** Leuke, motiverende afsluiter van een ronde: als iedereen exact hetzelfde kaartje heeft gekozen, toon een korte animatie/confetti bij de reveal.
+
+- Check: alle stemmen (excl. SM/toeschouwer) identiek na reveal.
+- Hangt samen met #2 (consensus-indicatie) — kan dezelfde detectielogica hergebruiken.
+
 ---
 
 ## 🔧 Technisch
 
-### 4. State overleeft geen herstart
+### 5. Persoonlijke reconnect-grace bij verbindingsverlies (bijv. scherm uit)
+**Waarde: hoog.** Bevestigd in de code: `handleDisconnect` (`src/socket/handlers/connectionHandlers.js`) verwijdert een deelnemer **direct** uit `room.participants` zodra de socket disconnect, ongeacht de reden. Een telefoon die het scherm uitzet kan de verbinding verliezen (browser suspendeert de tab / OS pauzeert het netwerk), waardoor iemand meteen uit de deelnemerslijst valt en zijn stem kwijtraakt — moet daarna helemaal opnieuw joinen.
+
+- Er bestaat al een 15-minuten grace period, maar alleen voor een **lege room** (`RECONNECT_GRACE_PERIOD_MS`, `connectionHandlers.js`), en een 30s grace voor de **Scrum Master-rol** (`masterGraceTimer`) — geen van beide beschermt een gewone deelnemer die zelf disconnect terwijl anderen aanwezig blijven.
+- Voorstel: bij disconnect de deelnemer niet direct verwijderen, maar kort (bijv. 30-60s) als "afwezig" markeren (`vote`/`hasVoted` behouden) en pas bij daadwerkelijk verlopen van die periode verwijderen. Bij reconnect met dezelfde naam/sessie: staat direct hersteld.
+- Sluit aan op het bestaande reconnect-patroon in `helpers.js` (`visibilitychange` → automatische `join-room` bij terugkeer).
+
+### 6. State overleeft geen herstart
 **Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
 
 - Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
