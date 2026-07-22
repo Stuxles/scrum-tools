@@ -11,6 +11,9 @@
     (function(){
       var t = localStorage.getItem('scrumpoker_theme') || localStorage.getItem('stuxpoker_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', t);
+      if (localStorage.getItem('scrum_australia_mode') === 'true') {
+        document.documentElement.classList.add('australia-mode');
+      }
     })();
   </script>
   <script type="module">

@@ -1,6 +1,6 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI } from '../public/js/utils/helpers.js';
+import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI, getAustraliaModeEnabled, setAustraliaModeEnabled, LS_AUSTRALIA } from '../public/js/utils/helpers.js';
 
 describe('escHtml (XSS-prevention HTML escaping)', () => {
   test('escapes all special characters', () => {
@@ -76,5 +76,46 @@ describe('confetti "no fun mode" preference (getConfettiEnabled/setConfettiEnabl
     assert.strictEqual(getConfettiEnabled(), true);
     store.set(LS_CONFETTI, 'garbage');
     assert.strictEqual(getConfettiEnabled(), true, 'defensive: unexpected stored value does not silently disable');
+  });
+});
+
+describe('Australia mode preference (getAustraliaModeEnabled/setAustraliaModeEnabled)', () => {
+  let originalLocalStorage;
+  let store;
+
+  beforeEach(() => {
+    originalLocalStorage = globalThis.localStorage;
+    store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+    };
+  });
+
+  afterEach(() => {
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  test('defaults to disabled (false, right-side up) when never set', () => {
+    assert.strictEqual(getAustraliaModeEnabled(), false);
+  });
+
+  test('setAustraliaModeEnabled(true) persists and getAustraliaModeEnabled reflects it', () => {
+    setAustraliaModeEnabled(true);
+    assert.strictEqual(store.get(LS_AUSTRALIA), 'true');
+    assert.strictEqual(getAustraliaModeEnabled(), true);
+  });
+
+  test('setAustraliaModeEnabled(false) after being on turns it back off', () => {
+    setAustraliaModeEnabled(true);
+    setAustraliaModeEnabled(false);
+    assert.strictEqual(getAustraliaModeEnabled(), false);
+  });
+
+  test('opt-in semantics: only the literal string "true" enables it — any other stored value stays disabled', () => {
+    store.set(LS_AUSTRALIA, 'false');
+    assert.strictEqual(getAustraliaModeEnabled(), false);
+    store.set(LS_AUSTRALIA, 'garbage');
+    assert.strictEqual(getAustraliaModeEnabled(), false, 'defensive: fail closed (right-side up) on an unexpected stored value');
   });
 });

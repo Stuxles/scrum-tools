@@ -68,6 +68,9 @@ export const translations = {
     'confetti-btn-title': 'Confetti aan/uit',
     'confetti-on': 'Aan',
     'confetti-off': 'Uit',
+    'options-label-australia': 'Australië-modus',
+    'options-sub-australia': 'Alles ondersteboven 🇦🇺',
+    'australia-btn-title': 'Australië-modus aan/uit',
     'options-version-label': 'Versie',
 
     // ── Room Page UI ──
@@ -230,6 +233,9 @@ export const translations = {
     'confetti-btn-title': 'Toggle confetti',
     'confetti-on': 'On',
     'confetti-off': 'Off',
+    'options-label-australia': 'Australia Mode',
+    'options-sub-australia': 'Everything upside down 🇦🇺',
+    'australia-btn-title': 'Toggle Australia mode',
     'options-version-label': 'Version',
 
     // ── Room Page UI ──
