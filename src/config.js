@@ -12,7 +12,21 @@ export const CORS_ORIGIN = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
   : '*';
 
-export const RECONNECT_GRACE_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
+export const RECONNECT_GRACE_PERIOD_MS = 15 * 60 * 1000; // 15 minutes (empty room)
+
+/**
+ * How long a disconnected participant's seat (vote, role, spectator state)
+ * is kept before being fully removed from a room. Covers brief network
+ * drops — e.g. a phone locking its screen suspends the tab/connection, but
+ * the person is still "in" the session and picks up where they left off
+ * if they reconnect (same display name) within this window.
+ * Override via PARTICIPANT_GRACE_MINUTES (minutes). Default: 10 minutes.
+ */
+export function parseParticipantGraceMinutes(raw) {
+  const n = Number(raw);
+  return n > 0 ? n : 10;
+}
+export const PARTICIPANT_GRACE_MS = parseParticipantGraceMinutes(process.env.PARTICIPANT_GRACE_MINUTES) * 60 * 1000;
 
 /**
  * Express `trust proxy` setting, off by default. Set the TRUST_PROXY env var

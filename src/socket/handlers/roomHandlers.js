@@ -6,6 +6,7 @@ import {
   scheduleRoomCleanup,
 } from '../../utils/broadcast.js';
 import { applyAutoReveal }     from '../../utils/autoReveal.js';
+import { info }                from '../../utils/logger.js';
 
 /** @param {import('socket.io').Socket} socket */
 export function handleCreateRoom(socket, { name, deckType, customCards, roomName }) {
@@ -48,11 +49,14 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
 
   scheduleRoomCleanup(roomId);
   socket.emit('room-created', { roomId });
-  console.log(`[room] ${roomId} aangemaakt door ${name}`);
+  info('room', `${roomId} aangemaakt door ${name}`);
 }
 
-/** @param {import('socket.io').Socket} socket */
-export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
+/**
+ * @param {import('socket.io').Server} io
+ * @param {import('socket.io').Socket} socket
+ */
+export function handleJoinRoom(io, socket, { roomId, name, isSpectator }) {
   roomId = normalizeRoomId(roomId);
   name   = (name   || 'Anoniem').trim().slice(0, 40);
 
@@ -82,17 +86,54 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
     room.masterGraceTimer = null;
     room.masterId   = socket.id;
     room.masterName = name;
-    console.log(`[master-grace] ${name} reclaimed SM by name match in room ${roomId}`);
+    info('master-grace', `${name} reclaimed SM by name match in room ${roomId}`);
   } else if (!room.masterId || (!room.participants[room.masterId] && !room.masterGraceTimer)) {
     room.masterId   = socket.id;
     room.masterName = name;
+  }
+
+  // Reconnect: a disconnected participant gets a NEW socket.id, so migrate
+  // their old (still-graced) seat — vote, role, spectator state — to the
+  // new id by matching display name, instead of losing it and starting
+  // fresh. Mirrors the master-reclaim-by-name pattern above.
+  //
+  // Match on name regardless of `connected` — not just already-away
+  // entries. A flaky connection can have the client reconnect BEFORE the
+  // server's ping-timeout notices the old socket died, so the old entry
+  // may still read connected:true at this point. Gating on connected===false
+  // alone would miss that race and leave two rows for the same person.
+  const staleEntry = Object.entries(room.participants).find(
+    ([id, p]) => id !== socket.id
+      && p.name.trim().toLowerCase() === name.trim().toLowerCase(),
+  );
+  if (staleEntry) {
+    const [oldId, oldParticipant] = staleEntry;
+    if (oldParticipant.connected !== false) {
+      // Old socket hasn't been marked away yet — evict it so it can't
+      // coexist with the new connection claiming the same identity.
+      const oldSocket = io.sockets.sockets.get(oldId);
+      if (oldSocket) {
+        oldSocket.emit('kicked', {});
+        oldSocket.disconnect(true);
+      }
+    }
+    if (room.participantGraceTimers?.[oldId]) {
+      clearTimeout(room.participantGraceTimers[oldId]);
+      delete room.participantGraceTimers[oldId];
+    }
+    delete room.participants[oldId];
+    room.participants[socket.id] = { ...oldParticipant, id: socket.id };
+    if (room.masterId === oldId) room.masterId = socket.id;
+    info('reconnect', `${name} zit weer in room ${roomId} (stem/rol hersteld)`);
   }
 
   // Allow rejoin (e.g. page refresh) — only create entry if absent
   room.participants[socket.id] = room.participants[socket.id] || {
     id: socket.id, name, vote: null, hasVoted: false, isSpectator: Boolean(isSpectator),
   };
-  room.participants[socket.id].name = name;
+  room.participants[socket.id].name        = name;
+  room.participants[socket.id].connected   = true;
+  room.participants[socket.id].disconnectedAt = null;
   if (isSpectator !== undefined) {
     room.participants[socket.id].isSpectator = Boolean(isSpectator);
     if (room.participants[socket.id].isSpectator) {
@@ -107,7 +148,7 @@ export function handleJoinRoom(socket, { roomId, name, isSpectator }) {
   socket.emit('room-joined', { room: sanitizeRoom(room, socket.id), isMaster });
   broadcastRoomState(roomId);
 
-  console.log(`[join] ${name} → ${roomId}`);
+  info('join', `${name} → ${roomId}`);
 }
 
 /** @param {import('socket.io').Socket} socket */
@@ -170,7 +211,7 @@ export function handleClaimMaster(socket, { roomId } = {}) {
   room.masterName = room.participants[socket.id].name;
   socket.emit('became-master', {});
   broadcastRoomState(roomId);
-  console.log(`[claim-master] ${room.masterName} claimed SM in room ${roomId}`);
+  info('claim-master', `${room.masterName} claimed SM in room ${roomId}`);
 }
 
 /**
@@ -182,7 +223,8 @@ export function handleClaimMaster(socket, { roomId } = {}) {
 export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id || !targetId || !room.participants[targetId] || targetId === socket.id) return;
+  if (!room || room.masterId !== socket.id || !targetId || targetId === socket.id) return;
+  if (!room.participants[targetId] || room.participants[targetId].connected === false) return;
 
   if (room.masterGraceTimer) {
     clearTimeout(room.masterGraceTimer);
@@ -193,5 +235,5 @@ export function handleTransferMaster(io, socket, { roomId, targetId } = {}) {
   room.masterName = room.participants[targetId].name;
   io.to(targetId).emit('became-master', {});
   broadcastRoomState(roomId);
-  console.log(`[transfer-master] SM transferred from ${socket.id} to ${targetId} in room ${roomId}`);
+  info('transfer-master', `SM transferred from ${socket.id} to ${targetId} in room ${roomId}`);
 }

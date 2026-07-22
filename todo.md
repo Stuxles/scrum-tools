@@ -14,7 +14,7 @@ Afgeronde items staan onderaan.
 - Zichtbaar in een paneel of modal voor de Scrum Master.
 - Knop "Kopieer als Markdown" / "Download als CSV" voor in de sprint-notulen.
 - Sluit direct aan op de bestaande `storyTitle`-functie.
-- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #6).
+- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #5).
 
 ### 2. Consensus- en outlier-indicatie
 **Waarde: hoog.** De stats tonen gemiddelde/mediaan/verdeling, maar niet het meest bruikbare voor de facilitator: *is er onenigheid?*
@@ -39,14 +39,7 @@ Afgeronde items staan onderaan.
 
 ## 🔧 Technisch
 
-### 5. Persoonlijke reconnect-grace bij verbindingsverlies (bijv. scherm uit)
-**Waarde: hoog.** Bevestigd in de code: `handleDisconnect` (`src/socket/handlers/connectionHandlers.js`) verwijdert een deelnemer **direct** uit `room.participants` zodra de socket disconnect, ongeacht de reden. Een telefoon die het scherm uitzet kan de verbinding verliezen (browser suspendeert de tab / OS pauzeert het netwerk), waardoor iemand meteen uit de deelnemerslijst valt en zijn stem kwijtraakt — moet daarna helemaal opnieuw joinen.
-
-- Er bestaat al een 15-minuten grace period, maar alleen voor een **lege room** (`RECONNECT_GRACE_PERIOD_MS`, `connectionHandlers.js`), en een 30s grace voor de **Scrum Master-rol** (`masterGraceTimer`) — geen van beide beschermt een gewone deelnemer die zelf disconnect terwijl anderen aanwezig blijven.
-- Voorstel: bij disconnect de deelnemer niet direct verwijderen, maar kort (bijv. 30-60s) als "afwezig" markeren (`vote`/`hasVoted` behouden) en pas bij daadwerkelijk verlopen van die periode verwijderen. Bij reconnect met dezelfde naam/sessie: staat direct hersteld.
-- Sluit aan op het bestaande reconnect-patroon in `helpers.js` (`visibilitychange` → automatische `join-room` bij terugkeer).
-
-### 6. State overleeft geen herstart
+### 5. State overleeft geen herstart
 **Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
 
 - Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
@@ -67,3 +60,4 @@ Afgeronde items staan onderaan.
 - **Rate limiting op de REST-endpoints** — per-IP limiter (60 req/min) op `/api/*`; `/health` blijft uitgezonderd zodat de Docker-healthcheck nooit geraakt wordt.
 - **Room-code alfabet verbeterd** — Crockford Base32 (32 tekens, geen I/L/O/U), crypto-random zonder modulo-bias, ~64x meer combinaties dan het oude hex-only alfabet. De `uuid`-dependency is niet meer nodig en verwijderd.
 - **Frontend-tests** — `computeVoteStats` (uit `render-results.js`), `escHtml`, `generateRoomId`/`normalizeRoomId` en de rate limiter zijn nu allemaal los getest als pure functies (geen jsdom nodig).
+- **Persoonlijke reconnect-grace** — een deelnemer die disconnect (bijv. scherm uit) wordt niet meer direct verwijderd, maar 10 minuten (override via `PARTICIPANT_GRACE_MINUTES`) als "afwezig" bewaard met stem/rol intact; reconnect met dezelfde naam herstelt de plek direct. SM kan een afwezige alsnog meteen kicken; master-overdracht naar een afwezige wordt geweigerd.

@@ -20,6 +20,19 @@ stateDiagram-v2
         RevealedPhase --> VotingPhase : SM clicks New Round
     }
 
+    RoomCreated --> ParticipantGrace : Any participant disconnects (others remain)
+
+    state ParticipantGrace {
+        [*] --> PTimerRunning : setTimeout PARTICIPANT_GRACE_MS (default 10m)
+        PTimerRunning --> PReclaimed : Same name rejoins -> seat/vote restored
+        PTimerRunning --> PExpired : Grace window elapsed
+        PTimerRunning --> PKicked : SM kicks the away participant
+        PExpired --> [*] : participant fully removed
+        PKicked --> [*]
+        PReclaimed --> [*]
+    }
+    ParticipantGrace --> RoomCreated
+
     RoomCreated --> MasterGrace30s : Scrum Master disconnects (others remain)
 
     state MasterGrace30s {
@@ -52,6 +65,21 @@ stateDiagram-v2
 
 ---
 
+## 👤 Personal Reconnect Grace for Any Participant (`PARTICIPANT_GRACE_MS`)
+
+Previously, **any** disconnect removed a participant from `room.participants` immediately — a phone locking its screen (suspending the tab/network) would drop them out of the room and lose their vote on the spot. `connectionHandlers.js` now keeps their seat for a **personal grace window** instead:
+
+1. **Disconnect**: the participant is marked `connected: false` with a `disconnectedAt` timestamp — **not deleted**. Their vote, `hasVoted`, role and spectator state are all preserved. A per-participant `setTimeout` (`room.participantGraceTimers[socketId]`) starts, default **10 minutes**.
+2. **While away**: they still appear in the participant list (dimmed in the UI, "away" tooltip) and still count toward the voting total — the round doesn't silently shrink around them.
+3. **Reconnect (within the window)**: a new connection always gets a **new** `socket.id`, so `handleJoinRoom` migrates the old entry to the new id by matching the **display name** — vote, `hasVoted`, role and spectator state all transfer over, and the stale entry + its timer are removed. Same trust model as the SM name-match reclaim below.
+4. **Connection-race handling**: matching is **not** gated on the old entry already being `connected: false`. A flaky connection can have the client reconnect *before* the server's ping-timeout notices the old socket died, so the old entry may still read `connected: true` at that moment. If so, `handleJoinRoom` force-evicts the old live socket (`socket.disconnect(true)`, with a `kicked` event so that connection — if anyone's still watching it — gets the same "removed" messaging as an SM kick) before migrating, so a name never ends up with two simultaneous rows.
+5. **Expiry**: if the window elapses with no reconnect, `expireParticipantGrace()` deletes the participant for good and broadcasts the updated room.
+6. **Explicit removal**: the Scrum Master can `kick-user` an away participant at any time, bypassing the grace window entirely.
+
+Override the default via the `PARTICIPANT_GRACE_MINUTES` env var (see README). Transferring the Scrum Master role to an away participant is rejected — the target must be currently connected.
+
+---
+
 ## 👑 The 30-Second Scrum Master Reconnect Grace (`masterGraceTimer`)
 
 When the **Scrum Master disconnects but other participants are still present**, the role is not reassigned immediately. `connectionHandlers.js` starts a **30-second** `masterGraceTimer`:
@@ -69,9 +97,9 @@ When the **Scrum Master disconnects but other participants are still present**, 
 When the last participant in a room accidentally closes their browser tab, drops Wi-Fi, or locks their smartphone screen, the room is not wiped immediately. Instead, `connectionHandlers.js` starts a countdown grace period of exactly **15 minutes (`900,000 ms`)**:
 
 1. **Disconnect Event**:  
-   The server intercepts the socket `disconnect` and checks if `Object.keys(room.participants).length === 0`.
+   The server intercepts the socket `disconnect` and checks whether any participant is still `connected` (see the personal grace period above — a lone disconnecting participant doesn't empty the room instantly, but the room-empty check runs off active connections, not raw entry count).
 2. **Start Grace Timer**:  
-   If the room is completely empty, `room.disconnectTimer = setTimeout(..., RECONNECT_GRACE_PERIOD_MS)` is initialized.
+   If no participant is actively connected, `room.disconnectTimer = setTimeout(..., RECONNECT_GRACE_PERIOD_MS)` is initialized.
 3. **Rejoin (Within 15 Minutes)**:  
    As soon as any participant opens the room URL or reconnects (`join-room`), `clearTimeout(room.disconnectTimer)` cancels the wipe. The room state, votes, and active ticket title are restored instantly without data loss.
 4. **Final Deletion (After 15 Minutes)**:  

@@ -32,7 +32,7 @@ scrum-poker-collab/
 │   ├── 📁 socket/
 │   │   ├── 📄 index.js                   # Socket.IO bootstrap, safe dispatch (payload guard + error isolation) & 35 req/sec rate limiter
 │   │   └── 📁 handlers/
-│   │       ├── 📄 connectionHandlers.js  # Disconnect grace period (`RECONNECT_GRACE_PERIOD_MS`) & kick-user
+│   │       ├── 📄 connectionHandlers.js  # Per-participant reconnect grace (`PARTICIPANT_GRACE_MS`), empty-room grace (`RECONNECT_GRACE_PERIOD_MS`) & kick-user
 │   │       ├── 📄 roomHandlers.js        # `create-room`, `join-room`, `vote`, `toggle-spectator`, `claim-master`, `sm-transfer-master`
 │   │       └── 📄 smHandlers.js          # Scrum Master commands (`reveal`, `reset`, `change-deck`, `update-story-title`)
 │   ├── 📁 store/
@@ -40,7 +40,8 @@ scrum-poker-collab/
 │   └── 📁 utils/
 │       ├── 📄 broadcast.js               # `broadcastRoomState` (with `sanitizeRoom`) & 24h cleanup timer
 │       ├── 📄 roomId.js                  # 6-character room code generator (Crockford Base32, no I/L/O/U) & `normalizeRoomId`
-│       └── 📄 rateLimiter.js             # Two-layer REST rate limiter (`createRateLimiter`): per-IP ceiling + per-(IP, room) budget
+│       ├── 📄 rateLimiter.js             # Two-layer REST rate limiter (`createRateLimiter`): per-IP ceiling + per-(IP, room) budget
+│       └── 📄 logger.js                  # Leveled, column-aligned, TTY-colored console wrapper (`info`/`warn`/`error`) used by every server log line
 │
 └── 📁 public/                            # 🎨 Client-Side Frontend (Static HTML, CSS Variables, ES Modules)
     ├── 📄 index.html                     # Landing / Home page (`/` -> create or join room)

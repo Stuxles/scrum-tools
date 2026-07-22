@@ -8,6 +8,8 @@
  * TRUST_PROXY in src/config.js for the latter).
  */
 
+import { warn } from './logger.js';
+
 const defaultKeyFn = (req) => req.ip || req.socket?.remoteAddress || 'unknown';
 
 /**
@@ -41,6 +43,7 @@ export function createRateLimiter({ windowMs, max, keyFn = defaultKeyFn }) {
     entry.count += 1;
 
     if (entry.count > max) {
+      warn('rate-limit', `${key} exceeded ${max} req/${windowMs / 1000}s on ${req.method} ${req.originalUrl}`);
       res.setHeader('Retry-After', String(Math.ceil((entry.resetAt - now) / 1000)));
       return res.status(429).json({ error: 'Te veel verzoeken. Probeer het over een minuut opnieuw.' });
     }

@@ -61,3 +61,5 @@ Reclaim is gated **only on a case-insensitive display-name match** (`handleJoinR
 - **Trade-off:** during the grace window, anyone who joins using the departed SM's name is handed the master role. This is accepted for a lightweight, account-less tool.
 
 If a room needs stronger guarantees, issue a per-session reconnect token on `room-created` / `room-joined` and verify it on rejoin instead of comparing names. If the grace timer expires without a reclaim, the role falls to the first remaining participant.
+
+The same name-match trust model applies to **any** participant reconnecting (not just the SM) — see [Personal Reconnect Grace](./lifecycle.md#-personal-reconnect-grace-for-any-participant-participant_grace_ms) in the lifecycle doc, including the forced-eviction behavior for the connection-race case.
