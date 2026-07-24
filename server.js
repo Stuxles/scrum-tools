@@ -62,8 +62,17 @@ initSocketHandlers(io);
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {
+  // Report `trust proxy` explicitly: it is off unless TRUST_PROXY is set, and
+  // when it is off behind a reverse proxy every client presents as the proxy's
+  // IP, so they all share one REST rate-limit bucket. That is invisible from
+  // the outside — worth stating rather than leaving to be guessed.
+  const proxyState = TRUST_PROXY
+    ? `aan (${TRUST_PROXY}) — req.ip komt uit X-Forwarded-For`
+    : 'uit — req.ip is de directe verbinding (achter een proxy: het proxy-IP)';
+
   console.log(`\n🃏  ${APP_NAME}`);
   console.log(`    Lokaal :  http://localhost:${PORT}`);
   console.log(`    Netwerk:  ${PUBLIC_URL}`);
+  console.log(`    Proxy  :  ${proxyState}`);
   console.log(`    (Tip: Stel PUBLIC_URL in via env-variabele voor reverse proxies of Docker bridge)\n`);
 });
