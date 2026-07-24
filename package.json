@@ -1,6 +1,6 @@
 {
   "name": "scrum-poker",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Real-time Scrum Poker web application with rooms, QR-code join, and configurable card decks",
   "type": "module",
   "main": "server.js",
