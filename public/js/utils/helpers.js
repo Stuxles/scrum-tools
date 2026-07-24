@@ -21,8 +21,8 @@ export const setConfettiEnabled = (enabled) => localStorage.setItem(LS_CONFETTI,
 
 /**
  * localStorage key for "Australia mode" — a purely cosmetic, personal
- * per-device preference that flips the whole page 180°. Applied via an
- * early inline <script> in the <head> of every page (matching the theme
+ * per-device preference that flips the whole page 180°. The class is set by
+ * an early inline <script> in the <head> of every page (matching the theme
  * pattern) so it's active before first paint, no flash-then-flip.
  */
 export const LS_AUSTRALIA = 'scrum_australia_mode';
@@ -32,6 +32,31 @@ export const getAustraliaModeEnabled = () => localStorage.getItem(LS_AUSTRALIA) 
 
 /** @param {boolean} enabled */
 export const setAustraliaModeEnabled = (enabled) => localStorage.setItem(LS_AUSTRALIA, enabled ? 'true' : 'false');
+
+/**
+ * Apply (or remove) the upside-down transform.
+ *
+ * Two mechanisms on purpose, each doing a job the other can't:
+ *
+ * - The `australia-mode` class on <html> is set by the boot script in each
+ *   page's <head>, so the CSS rule (`html.australia-mode body`) already
+ *   applies at first paint — no flash of a right-side-up page.
+ * - The inline style on <body> is what makes toggling *after* load reliable.
+ *   Style invalidation from a class change on the root element proved
+ *   unreliable in practice, so the mode could be switched on but not back
+ *   off. An inline style always applies, and it wins over the class rule,
+ *   so the two never disagree.
+ *
+ * The transform deliberately targets <body>, not <html>: a transform on the
+ * root element does not reliably recompute post-load — forcing
+ * `transform: none` on it inline still left the page rotated.
+ *
+ * @param {boolean} enabled
+ */
+export function applyAustraliaMode(enabled) {
+  document.documentElement.classList.toggle('australia-mode', enabled);
+  if (document.body) document.body.style.transform = enabled ? 'rotate(180deg)' : 'none';
+}
 
 /**
  * Escape HTML special characters to prevent XSS in innerHTML contexts.
