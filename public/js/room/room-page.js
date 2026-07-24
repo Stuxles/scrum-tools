@@ -7,7 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled } from '../utils/helpers.js';
+import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
@@ -512,14 +512,7 @@ export function initRoomPage(socket, urlRoomId) {
     australiaToggle.addEventListener('click', () => {
       const enabled = !getAustraliaModeEnabled();
       setAustraliaModeEnabled(enabled);
-      document.documentElement.classList.toggle('australia-mode', enabled);
-      // Some engines don't reliably recompute a dynamically-toggled class's
-      // transform on the root <html> element post-load (confirmed live: the
-      // class+CSSOM rule both matched, but getComputedStyle stayed identity
-      // until an inline style was also set). Setting the inline style
-      // directly is a fully reliable fallback that doesn't depend on that
-      // recalculation path.
-      document.documentElement.style.transform = enabled ? 'rotate(180deg)' : '';
+      applyAustraliaMode(enabled);
       renderAustraliaToggle();
     });
   }
