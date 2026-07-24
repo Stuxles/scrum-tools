@@ -65,4 +65,45 @@ describe('REST API Routes (/api & /health)', () => {
     assert.ok(res.body.qr.startsWith('data:image/png;base64,'), 'Should return Base64 PNG data URL');
     assert.ok(res.body.url.includes('TEST02'));
   });
+
+  test('GET /api/rooms/:id/qr honours a baseUrl that matches the requested host', async () => {
+    rooms['TEST03'] = { id: 'TEST03', name: 'QR Room', participants: {} };
+    const res = await request(app)
+      .get('/api/rooms/TEST03/qr?baseUrl=https://poker.example.com')
+      .set('Host', 'poker.example.com');
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.url, 'https://poker.example.com/room.html?id=TEST03');
+  });
+
+  test('GET /api/rooms/:id/qr ignores a baseUrl pointing at a foreign host', async () => {
+    rooms['TEST04'] = { id: 'TEST04', name: 'QR Room', participants: {} };
+    const res = await request(app)
+      .get('/api/rooms/TEST04/qr?baseUrl=https://evil.example/phish')
+      .set('Host', 'poker.example.com');
+
+    assert.strictEqual(res.status, 200);
+    assert.ok(!res.body.url.includes('evil.example'), 'must never mint a QR aimed at an untrusted host');
+    assert.strictEqual(res.body.url, 'http://poker.example.com/room.html?id=TEST04');
+  });
+
+  test('GET /api/rooms/:id/qr strips any path or query smuggled into baseUrl', async () => {
+    rooms['TEST05'] = { id: 'TEST05', name: 'QR Room', participants: {} };
+    const res = await request(app)
+      .get(`/api/rooms/TEST05/qr?baseUrl=${encodeURIComponent('https://poker.example.com/evil?x=1#y')}`)
+      .set('Host', 'poker.example.com');
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.url, 'https://poker.example.com/room.html?id=TEST05');
+  });
+
+  test('GET /api/rooms/:id/qr survives a repeated baseUrl parameter instead of throwing', async () => {
+    rooms['TEST06'] = { id: 'TEST06', name: 'QR Room', participants: {} };
+    const res = await request(app)
+      .get('/api/rooms/TEST06/qr?baseUrl=http://a.example&baseUrl=http://b.example')
+      .set('Host', 'poker.example.com');
+
+    assert.strictEqual(res.status, 200, 'an array-valued query param must not blow up the handler');
+    assert.strictEqual(res.body.url, 'http://poker.example.com/room.html?id=TEST06');
+  });
 });

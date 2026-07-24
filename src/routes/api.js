@@ -45,15 +45,67 @@ router.get('/rooms/:id', roomLimiter, (req, res) => {
 });
 
 // ─── QR code ─────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a value into a bare http(s) origin, or null if it isn't one.
+ * Drops any path/query/hash, so nothing beyond scheme+host+port survives.
+ *
+ * @param {unknown} value
+ * @returns {string|null}
+ */
+function toHttpOrigin(value) {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') ? url.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Decide which origin the QR code should point at.
+ *
+ * `?baseUrl=` exists because the browser knows the origin it was actually
+ * reached on (LAN IP, tunnel hostname, …) better than the server does. But
+ * it's attacker-controllable, so it's honoured only when its host is one we
+ * already trust for this request — otherwise anyone could have the server
+ * mint a QR code aimed at a host of their choosing. The real client always
+ * sends its own origin, so this never rejects a legitimate request.
+ *
+ * @param {import('express').Request} req
+ * @returns {string}
+ */
+function resolveQrOrigin(req) {
+  const forwardedHost  = req.headers['x-forwarded-host'];
+  const forwardedProto = req.headers['x-forwarded-proto'] || req.protocol;
+
+  const requestOrigin =
+    toHttpOrigin(`${forwardedProto}://${forwardedHost || req.headers.host || ''}`)
+    || toHttpOrigin(`${req.protocol}://${req.headers.host || ''}`)
+    || toHttpOrigin(PUBLIC_URL)
+    || PUBLIC_URL;
+
+  const trustedHosts = new Set(
+    [requestOrigin, toHttpOrigin(PUBLIC_URL)]
+      .filter(Boolean)
+      .map(origin => new URL(origin).host),
+  );
+  if (req.headers.host) trustedHosts.add(String(req.headers.host));
+  if (forwardedHost)    trustedHosts.add(String(forwardedHost));
+
+  const requested = toHttpOrigin(req.query.baseUrl);
+  if (requested && trustedHosts.has(new URL(requested).host)) return requested;
+
+  return requestOrigin;
+}
+
 router.get('/rooms/:id/qr', roomLimiter, async (req, res) => {
   const room = rooms[req.params.id];
   if (!room) return res.status(404).json({ error: 'Room niet gevonden' });
 
-  const baseUrl = req.query.baseUrl
-    || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.headers.host || PUBLIC_URL}`;
-
-  const url   = `${baseUrl.replace(/\/$/, '')}/room.html?id=${room.id}`;
-  const theme = req.query.theme || 'dark';
+  const url   = `${resolveQrOrigin(req).replace(/\/$/, '')}/room.html?id=${room.id}`;
+  const theme = req.query.theme === 'light' ? 'light' : 'dark';
   const color = theme === 'light'
     ? { dark: '#0f172a', light: '#ffffff' }
     : { dark: '#a78bfa', light: '#0d0d1a' };
