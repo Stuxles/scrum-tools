@@ -74,7 +74,7 @@ docker-compose up -d --build
 | `APP_NAME` | `Scrum Poker` | Overrides the app name everywhere — page titles, header logo, hero title, API responses, console logs. Mirrors `public/js/config.js`. |
 | `CORS_ORIGIN` | `*` | Allowed CORS origins for the Socket.IO server (comma-separated if restricted). |
 | `TRUST_PROXY` | *(off)* | Express `trust proxy` setting. Set this when the app sits behind a reverse proxy you control (nginx, Traefik, Cloudflare Tunnel) so the REST rate limiter sees each client's real IP instead of the proxy's. **Only** enable this if that proxy strips/overwrites client-supplied `X-Forwarded-For` — otherwise a client can spoof its IP and bypass rate limiting. Accepts `true`, a hop count (`1`, `2`, …), or an [Express-recognized value](https://expressjs.com/en/guide/behind-proxies.html) like `loopback`. |
-| `PARTICIPANT_GRACE_MINUTES` | `10` | How long a disconnected participant's seat (vote, role, spectator state) is kept before being fully removed from a room. Covers brief network drops — e.g. a phone locking its screen — so reconnecting with the same display name within this window restores everything instead of starting over. |
+| `PARTICIPANT_GRACE_MINUTES` | `10` | How long a disconnected participant's seat (vote, role, spectator state) is kept before being fully removed from a room. Covers brief network drops — e.g. a phone locking its screen — so reconnecting within this window restores everything instead of starting over. Identity is proven by a per-session reconnect token stored in the browser, not by the display name. |
 | `NODE_ENV` | *(unset)* | Standard Node/Express environment flag. Set to `production` in Docker (see `Dockerfile`/`docker-compose.yml`); not required for local development. |
 
 ---

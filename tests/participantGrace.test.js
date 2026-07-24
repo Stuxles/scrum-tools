@@ -142,7 +142,7 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     assert.strictEqual(bob.hasVoted, true);
   });
 
-  test('reconnecting with the same name restores the seat and vote under the new socket id', async () => {
+  test('reconnecting with the same session token restores the seat and vote under the new socket id', async () => {
     const master = createClient();
     const voter = createClient();
     await waitForConnect(master);
@@ -153,7 +153,8 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     master.emit('join-room', { roomId, name: 'SM' });
     await onceEvent(master, 'room-joined');
     voter.emit('join-room', { roomId, name: 'Bob' });
-    await onceEvent(voter, 'room-joined');
+    const bobJoined = await onceEvent(voter, 'room-joined');
+    assert.match(bobJoined.sessionToken, /^[0-9a-f]{32}$/, 'server hands out a reconnect token on join');
 
     voter.emit('vote', { roomId, vote: '5' });
     await waitForRoomState(master, (room) => {
@@ -167,11 +168,13 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
 
     assert.strictEqual(rooms[roomId].participants[oldBobId]?.connected, false);
 
-    // A fresh connection rejoins with the SAME display name.
+    // A fresh connection rejoins replaying the SAME session token.
     const reconnectedBob = createClient();
     await waitForConnect(reconnectedBob);
-    reconnectedBob.emit('join-room', { roomId, name: 'Bob' });
+    reconnectedBob.emit('join-room', { roomId, name: 'Bob', sessionToken: bobJoined.sessionToken });
     const joined = await onceEvent(reconnectedBob, 'room-joined');
+
+    assert.strictEqual(joined.sessionToken, bobJoined.sessionToken, 'the same token is handed back, not a new one');
 
     assert.strictEqual(rooms[roomId].participants[oldBobId], undefined, 'old ghost entry must be gone');
     const restored = rooms[roomId].participants[reconnectedBob.id];
@@ -199,7 +202,7 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     master.emit('join-room', { roomId, name: 'SM' });
     await onceEvent(master, 'room-joined');
     voter.emit('join-room', { roomId, name: 'Bob' });
-    await onceEvent(voter, 'room-joined');
+    const bobJoined = await onceEvent(voter, 'room-joined');
 
     voter.emit('vote', { roomId, vote: '5' });
     await waitForRoomState(master, (room) => {
@@ -213,7 +216,7 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     const kickedPromise = onceEvent(voter, 'kicked');
     const reconnectedBob = createClient();
     await waitForConnect(reconnectedBob);
-    reconnectedBob.emit('join-room', { roomId, name: 'Bob' });
+    reconnectedBob.emit('join-room', { roomId, name: 'Bob', sessionToken: bobJoined.sessionToken });
     await onceEvent(reconnectedBob, 'room-joined');
 
     await kickedPromise; // the stale old connection gets evicted

@@ -10,6 +10,24 @@ export const getSavedName = () => localStorage.getItem(LS_NAME) || localStorage.
 /** @param {string} name */
 export const saveName = (name) => { if (name) localStorage.setItem(LS_NAME, name); };
 
+/**
+ * Per-room reconnect token, minted by the server on the first join and
+ * replayed on every later join so the server recognises us as the same
+ * person (page refresh, tab wake-up, socket reconnect) instead of matching
+ * on the display name. Scoped per room so one room's token can never be
+ * replayed into another. See src/utils/sessionToken.js.
+ *
+ * @param {string} roomId
+ * @returns {string|null}
+ */
+export const getSessionToken = (roomId) =>
+  (roomId ? localStorage.getItem(`scrum_token_${roomId}`) : null) || null;
+
+/** @param {string} roomId @param {string} token */
+export const setSessionToken = (roomId, token) => {
+  if (roomId && token) localStorage.setItem(`scrum_token_${roomId}`, token);
+};
+
 /** localStorage key for the personal confetti on/off preference ("no fun mode"). */
 export const LS_CONFETTI = 'scrum_confetti_enabled';
 
@@ -143,7 +161,11 @@ if (typeof document !== 'undefined') {
         if (window._scrumSocket.disconnected) {
           window._scrumSocket.connect();
         } else {
-          window._scrumSocket.emit('join-room', { roomId: window._scrumRoomId, name: getSavedName() || 'Anoniem' });
+          window._scrumSocket.emit('join-room', {
+            roomId:       window._scrumRoomId,
+            name:         getSavedName() || 'Anoniem',
+            sessionToken: getSessionToken(window._scrumRoomId),
+          });
         }
       }
     } else if (document.visibilityState === 'hidden') {

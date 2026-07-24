@@ -153,12 +153,12 @@ sequenceDiagram
     Note over SM,S: Path 3 — Disconnect Grace (SM drops unexpectedly)
     SM--xS: socket 'disconnect' (other participants remain)
     Note over S: Start masterGraceTimer = setTimeout(30s)
-    alt Original SM rejoins by name within 30s
-        SM->>S: emit('join-room', { roomId, name })
-        Note over S: name matches masterName → reclaim role, cancel timer
-        S-->>SM: emit('room-joined', { room, isMaster: true })
+    alt Original SM rejoins with their session token within 30s
+        SM->>S: emit('join-room', { roomId, name, sessionToken })
+        Note over S: token matches masterToken → reclaim role, cancel timer
+        S-->>SM: emit('room-joined', { room, isMaster: true, sessionToken })
     else 30 seconds elapse
-        Note over S: masterId = first remaining participant
+        Note over S: masterId = first remaining connected participant
         S->>P: emit('became-master', {})
         S-->>P: broadcast('room-state', updatedRoom)
     end

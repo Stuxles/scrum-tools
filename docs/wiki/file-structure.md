@@ -41,6 +41,7 @@ scrum-poker-collab/
 │       ├── 📄 broadcast.js               # `broadcastRoomState` (with `sanitizeRoom`) & 24h cleanup timer
 │       ├── 📄 roomId.js                  # 6-character room code generator (Crockford Base32, no I/L/O/U) & `normalizeRoomId`
 │       ├── 📄 rateLimiter.js             # Two-layer REST rate limiter (`createRateLimiter`): per-IP ceiling + per-(IP, room) budget
+│       ├── 📄 sessionToken.js            # Per-session reconnect tokens — how a returning client proves identity instead of matching display names
 │       └── 📄 logger.js                  # Leveled, column-aligned, TTY-colored console wrapper (`info`/`warn`/`error`) used by every server log line
 │
 └── 📁 public/                            # 🎨 Client-Side Frontend (Static HTML, CSS Variables, ES Modules)
