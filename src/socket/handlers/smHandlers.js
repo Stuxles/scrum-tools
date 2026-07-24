@@ -42,7 +42,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
     }
     room.deck = cards;
   } else if (DECKS[deckType]) {
-    room.deck = DECKS[deckType];
+    room.deck = [...DECKS[deckType]]; // copy, never alias the shared preset
   } else {
     return;
   }

@@ -2,6 +2,7 @@
  * In-memory rooms store + sanitize helper.
  *
  * @typedef {{ id: string, name: string, masterId: string|null, masterName: string,
+ *             masterToken: string|null,
  *             deckType: string, deck: string[], revealed: boolean,
  *             participants: Record<string,Participant>, createdAt: number,
  *             disconnectTimer?: ReturnType<typeof setTimeout>,
@@ -10,7 +11,11 @@
  *             participantGraceTimers?: Record<string, ReturnType<typeof setTimeout>> }} Room
  *
  * @typedef {{ id: string, name: string, vote: string|null, hasVoted: boolean,
- *             connected?: boolean, disconnectedAt?: number|null }} Participant
+ *             sessionToken?: string, connected?: boolean,
+ *             disconnectedAt?: number|null }} Participant
+ *
+ * `sessionToken` is a per-client secret and is deliberately absent from
+ * `sanitizeRoom` output — it must never reach anyone but its owner.
  */
 
 /**

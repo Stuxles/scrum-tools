@@ -99,17 +99,26 @@ export function handleDisconnect(io, socket) {
     if (wasMaster) {
       if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);
       room.masterGraceTimer = setTimeout(() => {
-        if (rooms[roomId] && rooms[roomId].masterId === socket.id) {
-          const rem = Object.entries(rooms[roomId].participants).filter(([, p]) => p.connected !== false);
-          if (rem.length > 0) {
-            const [newMasterId, newMaster] = rem[0];
-            rooms[roomId].masterId   = newMasterId;
-            rooms[roomId].masterName = newMaster.name;
-            io.to(newMasterId).emit('became-master', {});
-            broadcastRoomState(roomId);
-            info('master-grace', `Assigned new Scrum Master (${newMasterId}) after ${MASTER_GRACE_MS / 1000}s timeout in room ${roomId}`);
-          }
-        }
+        const r = rooms[roomId];
+        if (!r) return;
+
+        // Clear the handle first, on every path. A fired-but-still-set timer
+        // reads as truthy forever, which permanently armed the reclaim branch
+        // in handleJoinRoom and permanently disabled its auto-master fallback.
+        r.masterGraceTimer = null;
+
+        if (r.masterId !== socket.id) return;
+
+        const rem = Object.entries(r.participants).filter(([, p]) => p.connected !== false);
+        if (rem.length === 0) return; // nobody to hand it to; next joiner takes it
+
+        const [newMasterId, newMaster] = rem[0];
+        r.masterId    = newMasterId;
+        r.masterName  = newMaster.name;
+        r.masterToken = newMaster.sessionToken || null;
+        io.to(newMasterId).emit('became-master', {});
+        broadcastRoomState(roomId);
+        info('master-grace', `Assigned new Scrum Master (${newMasterId}) after ${MASTER_GRACE_MS / 1000}s timeout in room ${roomId}`);
       }, MASTER_GRACE_MS);
     }
 

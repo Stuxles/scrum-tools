@@ -7,7 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
+import { getSavedName, saveName, getSessionToken, setSessionToken, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
@@ -429,8 +429,9 @@ export function initRoomPage(socket, urlRoomId) {
   }
 
   // ── Socket events ─────────────────────────────────────────────────────────
-  socket.on('room-joined', ({ room, isMaster: isM }) => {
+  socket.on('room-joined', ({ room, isMaster: isM, sessionToken }) => {
     isMaster = isM;
+    setSessionToken(urlRoomId, sessionToken);
     joinModal.classList.add('hidden');
     roomUi.classList.remove('hidden');
     applyRoomState(room); // loads the QR once, via showSMControls, if isM
@@ -465,7 +466,12 @@ export function initRoomPage(socket, urlRoomId) {
     toast(t('toast-reconnected'), 'success');
     if (urlRoomId && window._isInScrumRoom) {
       const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
-      socket.emit('join-room', { roomId: urlRoomId, name: getSavedName() || 'Anoniem', isSpectator: savedSpec });
+      socket.emit('join-room', {
+        roomId:       urlRoomId,
+        name:         getSavedName() || 'Anoniem',
+        isSpectator:  savedSpec,
+        sessionToken: getSessionToken(urlRoomId),
+      });
     }
   });
 
@@ -563,7 +569,12 @@ export function initRoomPage(socket, urlRoomId) {
     localStorage.setItem('scrum_is_spectator', isSpectator ? 'true' : 'false');
     window._scrumSocket = socket;
     window._scrumRoomId = urlRoomId;
-    socket.emit('join-room', { roomId: urlRoomId, name, isSpectator: Boolean(isSpectator) });
+    socket.emit('join-room', {
+      roomId:       urlRoomId,
+      name,
+      isSpectator:  Boolean(isSpectator),
+      sessionToken: getSessionToken(urlRoomId),
+    });
   }
 
   function toggleSpectator(targetSpec) {
