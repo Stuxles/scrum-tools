@@ -472,18 +472,20 @@ html.australia-mode body {
 /* Tabs */
 .tab-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--glass-border);
 }
 
 .tab-btn {
-  padding: 14px;
+  padding: 14px 8px;
+  white-space: nowrap;
   background: none;
   border: none;
   color: var(--text-500);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: clamp(0.78rem, 2.2vw, 0.9rem);
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s;
@@ -493,7 +495,7 @@ html.australia-mode body {
 .tab-btn.active::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 12px; right: 12px;
+  bottom: 0; left: 8px; right: 8px;
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: linear-gradient(90deg, var(--purple-500), var(--indigo-500));
@@ -1539,19 +1541,181 @@ html.australia-mode body {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PRESENTER MODE  —  Larger result cards on the shared screen
+   PRESENTER SCREEN  —  read from across the room, no controls
 ════════════════════════════════════════════════════════════════ */
-body.is-presenter .results-cards-grid { gap: 20px; }
-body.is-presenter .result-card-face {
+.presenter-page .results-cards-grid { gap: 20px; }
+.presenter-page .result-card-face {
   width: 100px;
   height: 140px;
   font-size: 2rem;
   border-radius: 16px;
 }
-body.is-presenter .result-card-name {
+.presenter-page .result-card-name {
   font-size: 0.9rem;
   max-width: 110px;
 }
-body.is-presenter .results-stats    { padding: 24px 32px; gap: 40px; }
-body.is-presenter .stat-value       { font-size: 2.4rem; }
-body.is-presenter .stat-label       { font-size: 0.85rem; }
+.presenter-page .results-stats    { padding: 24px 32px; gap: 40px; }
+.presenter-page .stat-value       { font-size: 2.4rem; }
+.presenter-page .stat-label       { font-size: 0.85rem; }
+
+.presenter-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 32px 40px;
+}
+
+.presenter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.presenter-headline { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.presenter-headline .header-brand-icon { font-size: 1.8rem; }
+.presenter-room-name {
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.presenter-header-right { display: flex; align-items: center; gap: 10px; }
+.presenter-header-right .online-indicator { font-size: 1.05rem; }
+
+.presenter-story {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.presenter-story-text {
+  font-size: clamp(1.1rem, 2vw, 1.6rem);
+  font-weight: 600;
+  color: var(--purple-200);
+}
+
+.presenter-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(280px, 24%) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.presenter-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-500);
+  margin-bottom: 12px;
+}
+
+.presenter-invite {
+  border-radius: var(--r-lg);
+  padding: 20px;
+  text-align: center;
+  position: sticky;
+  top: 24px;
+}
+.presenter-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--purple-200);
+  margin-bottom: 14px;
+}
+.presenter-qr {
+  width: 100%;
+  max-width: 260px;
+  border-radius: 14px;
+  display: block;
+  margin: 0 auto;
+}
+.presenter-qr-placeholder {
+  padding: 40px 0;
+  color: var(--text-500);
+  font-size: 0.9rem;
+}
+.presenter-url {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--text-500);
+  word-break: break-all;
+}
+
+.presenter-state { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.presenter-progress,
+.presenter-participants,
+.presenter-page .results-section {
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+}
+.presenter-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.presenter-progress-head .presenter-section-title { margin-bottom: 0; }
+.presenter-progress-text {
+  font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+  font-weight: 700;
+}
+.presenter-progress .progress-track {
+  margin-top: 14px;
+  height: 12px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.presenter-progress .progress-fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--purple-500), var(--indigo-500));
+  transition: width 0.3s ease;
+}
+
+.presenter-empty {
+  border-radius: var(--r-lg);
+  padding: 48px 24px;
+  text-align: center;
+}
+.presenter-empty-icon { font-size: 2.6rem; margin-bottom: 12px; }
+.presenter-empty-text { color: var(--text-300); font-size: 1.05rem; }
+
+.presenter-page .participants-list { gap: 8px; }
+.presenter-page .participant-item { padding: 12px 14px; }
+.presenter-page .participant-name { font-size: 1.05rem; }
+
+.presenter-closed {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7,7,15,0.86);
+}
+.presenter-closed-box {
+  border-radius: var(--r-lg);
+  padding: 40px 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .presenter-page { padding: 16px; }
+  .presenter-main { grid-template-columns: 1fr; }
+  .presenter-invite { position: static; }
+}

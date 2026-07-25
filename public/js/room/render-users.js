@@ -34,11 +34,10 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     const statusEl = document.createElement('div');
     statusEl.className = 'participant-status';
 
-    if (p.isMaster) {
-      statusEl.className  += ' presenter-mode';
-      statusEl.textContent = '🖥️';
-      statusEl.title       = t('presenter-banner-title');
-    } else if (p.isSpectator) {
+    // No special case for the host: they vote like everyone else now, and the
+    // crown next to their name already marks the role. Showing a screen icon
+    // here would hide whether they have actually voted.
+    if (p.isSpectator) {
       statusEl.className  += ' spectator-mode';
       statusEl.textContent = '👁️';
       statusEl.title       = t('role-spectator');

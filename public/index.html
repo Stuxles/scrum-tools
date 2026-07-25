@@ -65,29 +65,27 @@
                 data-i18n="tab-join">
           → Join Room
         </button>
+        <button class="tab-btn"
+                id="present-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="present-panel"
+                data-i18n="tab-present">
+          📺 Presenteer
+        </button>
       </div>
 
       <!-- CREATE PANEL -->
       <div id="create-panel" class="tab-panel" role="tabpanel" aria-labelledby="create-tab">
 
         <div class="field">
-          <label class="field-label" for="create-name" data-i18n="label-name">Jouw naam</label>
+          <label class="field-label" for="room-name" data-i18n="label-room-name">Room naam</label>
           <input class="input input-lg"
-                 id="create-name"
-                 type="text"
-                 placeholder="Bijv. Scrum Master"
-                 maxlength="40"
-                 autocomplete="nickname"
-                 required />
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="room-name">Room naam <span style="color:var(--text-700)">(optioneel)</span></label>
-          <input class="input"
                  id="room-name"
                  type="text"
                  placeholder="Bijv. Sprint 42 Planning"
-                 maxlength="60" />
+                 maxlength="60"
+                 autofocus />
         </div>
 
         <div class="field">
@@ -145,6 +143,31 @@
         <div class="field" style="margin-top:24px;">
           <button class="btn btn-primary btn-lg btn-full" id="join-room-btn" data-i18n="btn-join">
             → Meedoen
+          </button>
+        </div>
+      </div>
+
+      <!-- PRESENT PANEL -->
+      <div id="present-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="present-tab">
+
+        <p class="field-hint" data-i18n="present-hint">Toon een bestaande room op een groot scherm. Je doet zelf niet mee —
+          deelnemen doe je op je eigen apparaat.</p>
+
+        <div class="field">
+          <label class="field-label" for="present-code" data-i18n="label-room-code">Room code</label>
+          <input class="input input-lg"
+                 id="present-code"
+                 type="text"
+                 placeholder="ABC123"
+                 data-i18n-placeholder="placeholder-code"
+                 maxlength="6"
+                 autocomplete="off"
+                 style="letter-spacing:0.12em;font-family:'Courier New',monospace;text-transform:uppercase;" />
+        </div>
+
+        <div class="field" style="margin-top:24px;">
+          <button class="btn btn-primary btn-lg btn-full" id="present-room-btn" data-i18n="btn-present">
+            📺 Open presenter-scherm
           </button>
         </div>
       </div>

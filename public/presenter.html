@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Scrum Poker presenter-scherm — toon de sessie op een groot scherm." />
+  <title>Scrum Poker — Presenter</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>" />
+  <link rel="stylesheet" href="/style.css" />
+  <script>
+    (function () {
+      var t = localStorage.getItem('scrumpoker_theme') || localStorage.getItem('stuxpoker_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      if (localStorage.getItem('scrum_australia_mode') === 'true') {
+        document.documentElement.classList.add('australia-mode');
+      }
+    })();
+  </script>
+  <script type="module">
+    import { APP_NAME } from '/js/config.js';
+    const suffix = document.title.includes('—') ? ` — ${document.title.split('—')[1].trim()}` : '';
+    document.title = `${APP_NAME}${suffix}`;
+    document.querySelectorAll('[data-app-name="true"]').forEach(el => { el.textContent = APP_NAME; });
+  </script>
+</head>
+
+<body>
+
+  <div class="bg-gradient" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+  <div id="toast-container" role="alert" aria-live="polite"></div>
+
+  <div id="presenter-ui" class="presenter-page">
+
+    <header class="presenter-header" role="banner">
+      <div class="presenter-headline">
+        <span class="header-brand-icon" aria-hidden="true">🃏</span>
+        <h1 class="presenter-room-name" id="presenter-room-name">&nbsp;</h1>
+      </div>
+      <div class="presenter-header-right">
+        <div class="online-indicator" aria-label="Verbonden deelnemers">
+          <div class="online-dot" aria-hidden="true"></div>
+          <span id="presenter-online-count">0</span>
+        </div>
+        <button class="btn btn-secondary btn-icon" id="lang-toggle" title="Taal / Language">NL</button>
+        <button class="btn btn-secondary btn-icon" id="theme-toggle" title="Wissel thema"
+          data-i18n-title="theme-toggle-title" aria-label="Thema">
+          <span id="theme-icon">☀️</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="presenter-story hidden" id="presenter-story">
+      <span class="story-banner-label" data-i18n="story-label">Actueel Issue:</span>
+      <span class="presenter-story-text" id="presenter-story-text"></span>
+    </div>
+
+    <main class="presenter-main">
+
+      <!-- ── Invite ─────────────────────────────────────────────── -->
+      <section class="presenter-invite glass" aria-labelledby="presenter-invite-title">
+        <h2 class="presenter-section-title" id="presenter-invite-title" data-i18n="presenter-join-title">Doe mee</h2>
+        <div class="presenter-code" id="presenter-code">——</div>
+        <img class="presenter-qr hidden" id="presenter-qr" src="" alt="QR-code om mee te doen" />
+        <div class="presenter-qr-placeholder" id="presenter-qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
+        <p class="presenter-url" id="presenter-url"></p>
+      </section>
+
+      <!-- ── Live state ─────────────────────────────────────────── -->
+      <section class="presenter-state" aria-live="polite">
+
+        <div class="presenter-progress glass" id="presenter-progress-wrap">
+          <div class="presenter-progress-head">
+            <h2 class="presenter-section-title" data-i18n="sm-section-progress">Voortgang</h2>
+            <span class="presenter-progress-text" id="presenter-progress-text">0 / 0</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="presenter-progress-fill"></div></div>
+        </div>
+
+        <div class="presenter-empty glass" id="presenter-empty">
+          <div class="presenter-empty-icon" aria-hidden="true">📺</div>
+          <p class="presenter-empty-text" data-i18n="presenter-empty">Nog niemand in de room. Scan de QR-code om mee te doen.</p>
+        </div>
+
+        <div class="presenter-participants glass" id="presenter-participants-wrap">
+          <h2 class="presenter-section-title" data-i18n="panel-title-participants">Deelnemers</h2>
+          <ul class="participants-list" id="participants-list" role="list"></ul>
+        </div>
+
+        <div id="voting-phase" class="hidden"></div>
+
+        <div id="results-phase" class="results-section glass hidden">
+          <h2 class="presenter-section-title" data-i18n="results-phase-title">🎉 Resultaten</h2>
+          <p class="phase-subtitle" id="results-subtitle"></p>
+          <div class="results-cards-grid" id="results-cards-grid" role="list"></div>
+          <div class="results-stats" id="results-stats" role="region" aria-label="Statistieken"></div>
+        </div>
+
+      </section>
+    </main>
+
+    <div class="presenter-closed hidden" id="presenter-closed">
+      <div class="presenter-closed-box glass">
+        <div class="presenter-empty-icon" aria-hidden="true">🚪</div>
+        <p data-i18n="presenter-closed">Deze room bestaat niet meer.</p>
+        <a href="/" class="btn btn-primary" data-i18n="modal-back-btn">← Terug naar home</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+
+</html>

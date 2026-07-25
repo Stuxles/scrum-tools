@@ -68,7 +68,6 @@ export function initRoomPage(socket, urlRoomId) {
 
   const participantsList = document.getElementById('participants-list');
   const cardDeck         = document.getElementById('card-deck');
-  const presenterBanner  = document.getElementById('presenter-banner');
   const deckWrapper      = document.getElementById('deck-wrapper');
 
   const storyBanner        = document.getElementById('story-banner');
@@ -143,19 +142,19 @@ export function initRoomPage(socket, urlRoomId) {
   // (which fires on every vote, join, kick, etc. from anyone in the room).
   let smControlsVisible = false;
 
+  // Host controls only. Presenting is a separate page now (presenter.html),
+  // so holding the role no longer changes how the round itself is displayed —
+  // the host sees the same deck and the same cards as anyone else.
   function showSMControls() {
     smPanel.classList.remove('hidden');
     mobileSMBar.classList.remove('hidden');
     if (headerQrBtn) headerQrBtn.classList.remove('hidden');
     if (btnClaimSm) btnClaimSm.classList.add('hidden');
     if (optionsRowClaimSm) optionsRowClaimSm.classList.add('hidden');
-    if (headerSpectatorBtn) headerSpectatorBtn.classList.add('hidden');
-    if (optionsRowSpectator) optionsRowSpectator.classList.add('hidden');
     headerDeckBtn.classList.add('hidden');
     if (storyBanner) storyBanner.classList.remove('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.remove('hidden');
     if (storyTitleDisplay) storyTitleDisplay.classList.add('hidden');
-    document.body.classList.add('is-presenter');
     if (!smControlsVisible) {
       qr.loadQR();
       smControlsVisible = true;
@@ -167,13 +166,10 @@ export function initRoomPage(socket, urlRoomId) {
     if (headerQrBtn) headerQrBtn.classList.add('hidden');
     if (btnClaimSm) btnClaimSm.classList.remove('hidden');
     if (optionsRowClaimSm) optionsRowClaimSm.classList.remove('hidden');
-    if (headerSpectatorBtn) headerSpectatorBtn.classList.remove('hidden');
-    if (optionsRowSpectator) optionsRowSpectator.classList.remove('hidden');
     headerDeckBtn.classList.add('hidden');
     if (storyBanner) storyBanner.classList.remove('hidden');
     if (storyBannerEditor) storyBannerEditor.classList.add('hidden');
     if (storyTitleDisplay) storyTitleDisplay.classList.remove('hidden');
-    document.body.classList.remove('is-presenter');
     smControlsVisible = false;
   }
 
@@ -331,21 +327,18 @@ export function initRoomPage(socket, urlRoomId) {
       isMaster = me.isMaster;
     }
 
+    // Available to everyone, host included: sitting a round out is now the
+    // only way to not vote, so the host needs the toggle as much as anyone.
     if (headerSpectatorBtn) {
-      if (isMaster) {
-        headerSpectatorBtn.classList.add('hidden');
-        if (optionsRowSpectator) optionsRowSpectator.classList.add('hidden');
-      } else {
-        headerSpectatorBtn.classList.remove('hidden');
-        if (optionsRowSpectator) optionsRowSpectator.classList.remove('hidden');
-        if (headerSpectatorIcon) headerSpectatorIcon.textContent = isSpec ? '👁️' : '🃏';
-        if (headerSpectatorText) headerSpectatorText.textContent = isSpec ? t('role-spectator') : t('role-voter');
-        if (optionsCurrentRole) optionsCurrentRole.textContent = isSpec ? (t('role-spectator') || 'Toeschouwer') : (t('role-voter') || 'Stemmer');
-        const roleLabel = isSpec ? t('role-spectator') : t('role-voter');
-        if (roleLabel) {
-          headerSpectatorBtn.title = roleLabel;
-          headerSpectatorBtn.setAttribute('aria-label', roleLabel);
-        }
+      headerSpectatorBtn.classList.remove('hidden');
+      if (optionsRowSpectator) optionsRowSpectator.classList.remove('hidden');
+      if (headerSpectatorIcon) headerSpectatorIcon.textContent = isSpec ? '👁️' : '🃏';
+      if (headerSpectatorText) headerSpectatorText.textContent = isSpec ? t('role-spectator') : t('role-voter');
+      if (optionsCurrentRole) optionsCurrentRole.textContent = isSpec ? (t('role-spectator') || 'Toeschouwer') : (t('role-voter') || 'Stemmer');
+      const roleLabel = isSpec ? t('role-spectator') : t('role-voter');
+      if (roleLabel) {
+        headerSpectatorBtn.title = roleLabel;
+        headerSpectatorBtn.setAttribute('aria-label', roleLabel);
       }
     }
 
@@ -376,7 +369,7 @@ export function initRoomPage(socket, urlRoomId) {
 
     const votingCtx = {
       votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,
-      voteStatusBar, voteStatusText, cardDeck, presenterBanner, deckWrapper,
+      voteStatusBar, voteStatusText, cardDeck, deckWrapper,
       socket, currentRoom,
       onVote: (val) => {
         myVote = val;
@@ -530,39 +523,24 @@ export function initRoomPage(socket, urlRoomId) {
   }
 
   // ── Join flow ─────────────────────────────────────────────────────────────
+  // Always through the modal. The old auto-join relied on a flag the create
+  // flow set, but creating a room now opens the presenter screen instead of
+  // seating anyone, so nothing sets it any more.
   fetch(`/api/rooms/${urlRoomId}`)
     .then(r => r.json())
     .then(data => {
-      if (data.exists) {
-        joinModalRoom.textContent = `📍 ${data.name || urlRoomId}`;
-      } else {
-        localStorage.removeItem('scrum_auto_join_room');
+      if (!data.exists) {
         toast(t('toast-room-not-found', { id: urlRoomId }), 'error');
         setTimeout(() => { window.location.href = '/'; }, 2500);
         return;
       }
-      const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
-      if (modalSpectatorChk) modalSpectatorChk.checked = savedSpec;
-      const saved = getSavedName();
-      if (saved) {
-        modalNameInput.value = saved;
-      }
-      if (saved && localStorage.getItem('scrum_auto_join_room') === urlRoomId) {
-        localStorage.removeItem('scrum_auto_join_room');
-        doJoinRoom(saved, false);
-        return;
-      }
+      joinModalRoom.textContent = `📍 ${data.name || urlRoomId}`;
+      if (modalSpectatorChk) modalSpectatorChk.checked = localStorage.getItem('scrum_is_spectator') === 'true';
+      modalNameInput.value = getSavedName();
       modalNameInput.focus();
     })
     .catch(() => {
-      const saved = getSavedName();
-      if (saved) {
-        modalNameInput.value = saved;
-      }
-      if (saved && localStorage.getItem('scrum_auto_join_room') === urlRoomId) {
-        localStorage.removeItem('scrum_auto_join_room');
-        doJoinRoom(saved, false);
-      }
+      modalNameInput.value = getSavedName();
     });
 
   function doJoinRoom(name, isSpectator) {
