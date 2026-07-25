@@ -61,16 +61,19 @@ export function selectVoteCard(cardDeck, val) {
 /**
  * Renders the voting phase view.
  *
+ * Takes no `isMaster`: holding the host role no longer changes what you see
+ * here. Presenting moved to its own page, so a host is an ordinary voter and
+ * only spectators sit a round out.
+ *
  * @param {object}  ctx
  * @param {object}  room
- * @param {boolean} isMaster
  * @param {string|null} myVote
  * @param {boolean} [isSpectator]
  */
-export function renderVoting(ctx, room, isMaster, myVote, isSpectator = false) {
+export function renderVoting(ctx, room, myVote, isSpectator = false) {
   const {
     votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,
-    voteStatusBar, voteStatusText, cardDeck, presenterBanner, deckWrapper,
+    voteStatusBar, voteStatusText, cardDeck, deckWrapper,
     socket, currentRoom, onVote,
   } = ctx;
 
@@ -78,22 +81,13 @@ export function renderVoting(ctx, room, isMaster, myVote, isSpectator = false) {
   votingPhase.classList.remove('hidden');
   resultsPhase.classList.add('hidden');
 
-  if (isMaster) {
-    presenterBanner?.classList.remove('hidden');
-    spectatorBanner?.classList.add('hidden');
-    deckWrapper?.classList.add('hidden');
-    voteStatusBar.classList.add('hidden');
-    votingPhaseTitle.textContent = t('voting-phase-waiting');
-    votingPhaseSub.textContent   = '';
-  } else if (isSpectator) {
-    presenterBanner?.classList.add('hidden');
+  if (isSpectator) {
     spectatorBanner?.classList.remove('hidden');
     deckWrapper?.classList.add('hidden');
     voteStatusBar.classList.add('hidden');
     votingPhaseTitle.textContent = t('spectator-banner-title');
     votingPhaseSub.textContent   = t('spectator-banner-sub');
   } else {
-    presenterBanner?.classList.add('hidden');
     spectatorBanner?.classList.add('hidden');
     deckWrapper?.classList.remove('hidden');
     voteStatusBar.classList.remove('hidden');

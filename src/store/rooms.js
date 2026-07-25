@@ -4,7 +4,8 @@
  * @typedef {{ id: string, name: string, masterId: string|null, masterName: string,
  *             masterToken: string|null,
  *             deckType: string, deck: string[], revealed: boolean,
- *             participants: Record<string,Participant>, createdAt: number,
+ *             participants: Record<string,Participant>, displays: Set<string>,
+ *             createdAt: number,
  *             disconnectTimer?: ReturnType<typeof setTimeout>,
  *             cleanupTimer?: ReturnType<typeof setTimeout>,
  *             masterGraceTimer?: ReturnType<typeof setTimeout>,
@@ -16,6 +17,12 @@
  *
  * `sessionToken` is a per-client secret and is deliberately absent from
  * `sanitizeRoom` output — it must never reach anyone but its owner.
+ *
+ * `displays` holds the socket ids of presenter screens watching the room.
+ * A display is not a person: it has no seat, no vote and no role, so it is
+ * deliberately kept out of `participants` and therefore out of every vote
+ * calculation. That is also why it needs none of the session-token or
+ * eviction machinery a participant needs — it owns no state to inherit.
  */
 
 /**

@@ -30,7 +30,7 @@ describe('Config & i18n Dictionary verification', () => {
     assert.match(APP_VERSION, /^\d+\.\d+\.\d+$/, 'APP_VERSION must be sourced from package.json and look like semver');
     assert.ok(typeof PORT === 'number' || typeof PORT === 'string', 'PORT must be set');
     assert.ok(CORS_ORIGIN, 'CORS_ORIGIN must be defined');
-    assert.strictEqual(RECONNECT_GRACE_PERIOD_MS, 15 * 60 * 1000, 'Grace period must be 15 minutes');
+    assert.strictEqual(RECONNECT_GRACE_PERIOD_MS, 30 * 60 * 1000, 'Grace period must be 30 minutes');
     assert.strictEqual(TRUST_PROXY, false, 'TRUST_PROXY must default to false when the env var is unset');
     assert.strictEqual(PARTICIPANT_GRACE_MS, 10 * 60 * 1000, 'Participant grace must default to 10 minutes');
   });

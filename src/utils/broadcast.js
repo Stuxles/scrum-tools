@@ -19,6 +19,10 @@ export function initBroadcast(io) {
  * Emit the current room state individually to every participant,
  * so each client only sees their own vote before reveal.
  *
+ * Presenter screens get the same state with no viewer id, which is the
+ * strictest view there is: no votes at all until the room is revealed.
+ * A screen is not a person, so it has no own vote to be shown early.
+ *
  * @param {string} roomId
  */
 export function broadcastRoomState(roomId) {
@@ -31,6 +35,31 @@ export function broadcastRoomState(roomId) {
       socket.emit('room-state', { room: sanitizeRoom(room, p.id) });
     }
   }
+
+  if (room.displays?.size) {
+    const displayState = { room: sanitizeRoom(room, null) };
+    for (const id of room.displays) {
+      _io.sockets.sockets.get(id)?.emit('room-state', displayState);
+    }
+  }
+}
+
+/**
+ * Tell any presenter screens still watching that the room is gone, then
+ * delete it. Participants need no such signal — a room is only ever removed
+ * once they have all disconnected — but a display can still be attached when
+ * the 24h cleanup fires, and would otherwise sit on stale state forever.
+ *
+ * @param {string} roomId
+ */
+export function closeRoom(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  for (const id of room.displays ?? []) {
+    _io?.sockets.sockets.get(id)?.emit('room-closed', { roomId });
+  }
+  deleteRoom(roomId);
 }
 
 /**
@@ -47,12 +76,14 @@ export function scheduleRoomCleanup(roomId) {
   room.cleanupTimer = setTimeout(() => {
     const r = rooms[roomId];
     if (!r) return;
+    // Deliberately ignores displays: a room nobody has joined in 24 hours is
+    // done, even if a forgotten screen is still pointed at it.
     if (Object.keys(r.participants).length > 0) {
-      info('cleanup', `Room ${roomId} nog in gebruik na 24u, verlengd met 1u.`);
+      info('cleanup', `Room ${roomId} nog in gebruik na 24u, verlengd.`);
       scheduleRoomCleanup(roomId);
       return;
     }
-    deleteRoom(roomId);
+    closeRoom(roomId);
     info('cleanup', `Room ${roomId} verwijderd na 24u inactiviteit.`);
   }, ROOM_CLEANUP_INTERVAL_MS);
 }

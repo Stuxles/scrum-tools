@@ -1,13 +1,14 @@
 /**
  * Pure vote-statistics calculation, extracted from render-results.js so it
- * can be tested without a DOM. Excludes the Scrum Master; callers that also
- * want to exclude spectators should filter beforehand (render-results.js
- * excludes them when building the cards grid, but the historical stats
- * calculation itself only ever excluded the master).
+ * can be tested without a DOM.
+ *
+ * Counts every participant that actually voted. The host is an ordinary voter
+ * now that presenting is a separate thing, and spectators never have
+ * `hasVoted` set, so they drop out on their own.
  */
 
 /**
- * @param {Array<{ isMaster: boolean, hasVoted: boolean, vote: string|null }>} participants
+ * @param {Array<{ hasVoted: boolean, vote: string|null }>} participants
  * @returns {{
  *   votes: string[],
  *   numeric: number[],
@@ -19,7 +20,7 @@
  * }}
  */
 export function computeVoteStats(participants) {
-  const votes   = participants.filter(p => !p.isMaster && p.hasVoted).map(p => p.vote);
+  const votes   = participants.filter(p => p.hasVoted).map(p => p.vote);
   const numeric = votes.map(v => parseFloat(v)).filter(v => !isNaN(v));
   const nonNum  = votes.filter(v => isNaN(parseFloat(v)));
 

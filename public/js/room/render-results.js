@@ -15,15 +15,16 @@ export function renderResults(ctx, room) {
   votingPhase.classList.add('hidden');
   resultsPhase.classList.remove('hidden');
 
-  // Exclude SM (presenter) and spectators from vote tallies
-  const nonMaster = room.participants.filter(p => !p.isMaster && !p.isSpectator);
-  const voters    = nonMaster.filter(p => p.hasVoted);
+  // Spectators are the only ones excluded from the tally; the host votes like
+  // everyone else, and a presenter screen is not a participant to begin with.
+  const eligible = room.participants.filter(p => !p.isSpectator);
+  const voters   = eligible.filter(p => p.hasVoted);
 
-  resultsSubtitle.textContent = t('progress-text', { voted: voters.length, total: nonMaster.length });
+  resultsSubtitle.textContent = t('progress-text', { voted: voters.length, total: eligible.length });
 
   // ── Cards grid ────────────────────────────────────────────────────────────
   resultsCardsGrid.innerHTML = '';
-  for (const p of nonMaster) {
+  for (const p of eligible) {
     const div  = document.createElement('div');
     div.className = 'result-card';
     div.setAttribute('role', 'listitem');

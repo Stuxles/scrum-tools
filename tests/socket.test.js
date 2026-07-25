@@ -284,6 +284,7 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     await onceEvent(voter, 'room-joined');
 
     voter.emit('vote', { roomId, vote: '8' });
+    master.emit('vote', { roomId, vote: '5' });
     await new Promise(r => setTimeout(r, 150));
 
     assert.strictEqual(rooms[roomId].autoReveal, false, 'autoReveal defaults to false');
@@ -311,23 +312,31 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     await new Promise(r => setTimeout(r, 100));
     assert.strictEqual(rooms[roomId].autoReveal, true);
 
-    // First vote must NOT reveal (Bob still pending)
+    // First vote must NOT reveal (Bob and the host are still pending)
     a.emit('vote', { roomId, vote: '5' });
     await new Promise(r => setTimeout(r, 150));
     assert.strictEqual(rooms[roomId].revealed, false, 'Must not reveal while a voter is pending');
 
-    // Second (final) vote triggers the auto-reveal
     b.emit('vote', { roomId, vote: '8' });
-    const revealedRoom = await new Promise((resolve) => {
+    await new Promise(r => setTimeout(r, 150));
+    assert.strictEqual(rooms[roomId].revealed, false, 'the host is a voter too and has not voted');
+
+    // The host's vote is the last one outstanding, so this triggers the reveal
+    master.emit('vote', { roomId, vote: '3' });
+    const revealedRoom = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('auto-reveal never fired')), 2000);
       const handler = ({ room }) => {
-        if (room.revealed === true) { master.off('room-state', handler); resolve(room); }
+        if (room.revealed !== true) return;
+        clearTimeout(timer);
+        master.off('room-state', handler);
+        resolve(room);
       };
       master.on('room-state', handler);
     });
 
     assert.strictEqual(revealedRoom.revealed, true, 'Room auto-revealed after last vote');
-    const votes = revealedRoom.participants.filter(p => !p.isMaster).map(p => p.vote).sort();
-    assert.deepStrictEqual(votes, ['5', '8'], 'All votes visible after auto-reveal');
+    const votes = revealedRoom.participants.map(p => p.vote).sort();
+    assert.deepStrictEqual(votes, ['3', '5', '8'], 'All votes visible after auto-reveal');
   });
 
   test('enabling auto-reveal when everyone already voted reveals immediately', async () => {
@@ -344,6 +353,7 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     await onceEvent(voter, 'room-joined');
 
     voter.emit('vote', { roomId, vote: '13' });
+    master.emit('vote', { roomId, vote: '8' });
     await new Promise(r => setTimeout(r, 150));
     assert.strictEqual(rooms[roomId].revealed, false);
 
@@ -352,7 +362,7 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     assert.strictEqual(rooms[roomId].revealed, true, 'Enabling with all votes in reveals at once');
   });
 
-  test('auto-reveal ignores the Scrum Master and spectators when deciding', async () => {
+  test('auto-reveal ignores spectators but waits for the host, who votes too', async () => {
     const master = createClient();
     const voter = createClient();
     const spectator = createClient();
@@ -360,7 +370,7 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     await waitForConnect(voter);
     await waitForConnect(spectator);
 
-    master.emit('create-room', { name: 'SM', deckType: 'fibonacci' });
+    master.emit('create-room', { deckType: 'fibonacci' });
     const { roomId } = await onceEvent(master, 'room-created');
     master.emit('join-room', { roomId, name: 'SM' });
     await onceEvent(master, 'room-joined');
@@ -372,10 +382,15 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     master.emit('toggle-auto-reveal', { roomId, autoReveal: true });
     await new Promise(r => setTimeout(r, 100));
 
-    // Bob is the only real voter; SM and spectator must not block the reveal
+    // Bob votes, but the host is a voter now, so the round is not complete yet.
     voter.emit('vote', { roomId, vote: '3' });
     await new Promise(r => setTimeout(r, 150));
-    assert.strictEqual(rooms[roomId].revealed, true, 'SM and spectators excluded from the check');
+    assert.strictEqual(rooms[roomId].revealed, false, 'still waiting on the host');
+
+    // Eve is a spectator and must never be waited on.
+    master.emit('vote', { roomId, vote: '5' });
+    await new Promise(r => setTimeout(r, 150));
+    assert.strictEqual(rooms[roomId].revealed, true, 'revealed once every non-spectator voted');
   });
 
   test('non-master cannot toggle auto-reveal', async () => {

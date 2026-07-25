@@ -12,14 +12,17 @@ describe('computeVoteStats (pure vote-statistics calculation)', () => {
     assert.strictEqual(stats.maxCount, 1, 'maxCount floors at 1 to avoid divide-by-zero in bar width');
   });
 
-  test('excludes the Scrum Master and non-voters from all calculations', () => {
+  test('counts every vote cast, including the host, and skips non-voters', () => {
+    // The host is an ordinary voter now that presenting is its own thing, so
+    // their card counts. Spectators never have hasVoted set, so they drop out
+    // on their own without needing a separate filter.
     const stats = computeVoteStats([
-      { isMaster: true,  hasVoted: true,  vote: '999' },
+      { isMaster: true,  hasVoted: true,  vote: '3' },
       { isMaster: false, hasVoted: false, vote: null },
       { isMaster: false, hasVoted: true,  vote: '5' },
     ]);
-    assert.deepStrictEqual(stats.votes, ['5']);
-    assert.strictEqual(stats.avg, 5);
+    assert.deepStrictEqual(stats.votes, ['3', '5']);
+    assert.strictEqual(stats.avg, 4);
   });
 
   test('average and median for an odd number of numeric votes', () => {

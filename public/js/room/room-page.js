@@ -395,7 +395,7 @@ export function initRoomPage(socket, urlRoomId) {
       renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
 
       if (!hasCelebratedThisReveal) {
-        const eligible = room.participants.filter(p => !p.isMaster && !p.isSpectator);
+        const eligible = room.participants.filter(p => !p.isSpectator);
         const stats    = computeVoteStats(room.participants);
         if (isUnanimousConsensus(stats.votes, eligible.length) && getConfettiEnabled()) {
           celebrateConsensus();
@@ -411,12 +411,12 @@ export function initRoomPage(socket, urlRoomId) {
       if (me2 && me2.vote != null) myVote = me2.vote;
       else if (!me2 || !me2.hasVoted) myVote = null;
 
-      renderVoting(votingCtx, room, isMaster, myVote, isSpec2);
+      renderVoting(votingCtx, room, myVote, isSpec2);
     }
 
     // SM progress bar
     if (isMaster) {
-      const voters = room.participants.filter(p => !p.isMaster && !p.isSpectator);
+      const voters = room.participants.filter(p => !p.isSpectator);
       const voted  = voters.filter(p => p.hasVoted).length;
       const total  = voters.length;
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
