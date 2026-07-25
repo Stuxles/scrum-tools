@@ -157,17 +157,13 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && window._isInScrumRoom) {
       requestWakeLock();
-      if (window._scrumSocket && window._scrumRoomId) {
-        if (window._scrumSocket.disconnected) {
-          window._scrumSocket.connect();
-        } else {
-          window._scrumSocket.emit('join-room', {
-            roomId:       window._scrumRoomId,
-            name:         getSavedName() || 'Anoniem',
-            sessionToken: getSessionToken(window._scrumRoomId),
-          });
-        }
-      }
+      // Only nudge a dropped connection back up. Do NOT re-join here: while
+      // the socket is still connected the server has kept our seat (the
+      // grace timer only starts on disconnect), so re-joining on every tab
+      // focus was pure overhead — each one ran the full join handler and
+      // broadcast room state to everyone in the room. Re-joining after a
+      // connection is (re-)established is handled once, in room-page.js.
+      if (window._scrumSocket?.disconnected) window._scrumSocket.connect();
     } else if (document.visibilityState === 'hidden') {
       releaseWakeLock();
     }

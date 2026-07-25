@@ -462,17 +462,23 @@ export function initRoomPage(socket, urlRoomId) {
 
   socket.on('error',      ({ message }) => toast(message, 'error'));
   socket.on('disconnect', ()   => toast(t('toast-disconnect'), 'error'));
-  socket.io.on('reconnect', () => {
-    toast(t('toast-reconnected'), 'success');
-    if (urlRoomId && window._isInScrumRoom) {
-      const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
-      socket.emit('join-room', {
-        roomId:       urlRoomId,
-        name:         getSavedName() || 'Anoniem',
-        isSpectator:  savedSpec,
-        sessionToken: getSessionToken(urlRoomId),
-      });
-    }
+  socket.io.on('reconnect', () => toast(t('toast-reconnected'), 'success'));
+
+  // Single re-join point. `connect` fires for every established connection —
+  // socket.io's own reconnect as well as a manual `.connect()` from the
+  // visibilitychange handler — where the manager-level `reconnect` event
+  // covers only the former. Gated on `_isInScrumRoom`, which is set once the
+  // first join succeeded, so the initial connection still goes through the
+  // normal join flow instead of auto-joining behind the modal.
+  socket.on('connect', () => {
+    if (!urlRoomId || !window._isInScrumRoom) return;
+    const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
+    socket.emit('join-room', {
+      roomId:       urlRoomId,
+      name:         getSavedName() || 'Anoniem',
+      isSpectator:  savedSpec,
+      sessionToken: getSessionToken(urlRoomId),
+    });
   });
 
   // ── App version (shown in the options modal) ────────────────────────────────
