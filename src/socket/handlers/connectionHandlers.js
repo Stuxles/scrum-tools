@@ -55,13 +55,18 @@ export function expireParticipantGrace(roomId, socketId) {
  * @param {import('socket.io').Socket} socket
  */
 export function handleDisconnect(io, socket) {
-  info('disconnect', socket.id);
+  // Log the display name where we have one — a bare socket id means having to
+  // scroll back through the log to work out who left. Sockets that never
+  // joined a room (someone opening a page and leaving again) still log the id.
+  let wasInAnyRoom = false;
 
   for (const [roomId, room] of Object.entries(rooms)) {
     const participant = room.participants[socket.id];
     if (!participant) continue;
 
+    wasInAnyRoom = true;
     const wasMaster = room.masterId === socket.id;
+    info('disconnect', `${participant.name} ← ${roomId}${wasMaster ? ' (was SM)' : ''}`);
 
     // Keep the participant's seat (vote, role, spectator state) for a
     // personal grace window instead of removing them immediately, so a
@@ -124,4 +129,6 @@ export function handleDisconnect(io, socket) {
 
     broadcastRoomState(roomId);
   }
+
+  if (!wasInAnyRoom) info('disconnect', socket.id);
 }

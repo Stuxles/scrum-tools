@@ -74,7 +74,19 @@ export function initIndexPage(socket, urlRoomId) {
     saveName(name);
     createBtn.disabled    = true;
     createBtn.textContent = t('btn-creating');
-    socket.emit('create-room', { name, deckType, customCards: custom, roomName });
+
+    // The socket is created with autoConnect:false on this page (see main.js),
+    // so open it here and send once it is actually up. Emitting straight away
+    // would rely on socket.io's internal buffering; waiting for `connect` is
+    // explicit and cannot silently drop the packet.
+    if (socket.connected) {
+      socket.emit('create-room', { name, deckType, customCards: custom, roomName });
+    } else {
+      socket.once('connect', () => {
+        socket.emit('create-room', { name, deckType, customCards: custom, roomName });
+      });
+      socket.connect();
+    }
 
     setTimeout(() => {
       if (createBtn.disabled) {

@@ -187,7 +187,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
   socket.emit('room-joined', { room: sanitizeRoom(room, socket.id), isMaster, sessionToken: mySessionToken });
   broadcastRoomState(roomId);
 
-  info('join', `${name} → ${roomId}`);
+  info('join', `${name} → ${roomId} (${Object.keys(room.participants).length} in room)`);
 }
 
 /** @param {import('socket.io').Socket} socket */
