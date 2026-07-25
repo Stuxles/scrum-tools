@@ -2,7 +2,8 @@ import { rooms }            from '../../store/rooms.js';
 import { DECKS }            from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }  from '../../utils/roomId.js';
-import { applyAutoReveal }  from '../../utils/autoReveal.js';
+import { applyAutoReveal, countVoters } from '../../utils/autoReveal.js';
+import { info }             from '../../utils/logger.js';
 
 /** @param {import('socket.io').Socket} socket */
 export function handleReveal(socket, { roomId }) {
@@ -11,6 +12,8 @@ export function handleReveal(socket, { roomId }) {
   if (!room || room.masterId !== socket.id || room.revealed) return;
 
   room.revealed = true;
+  const { voted, total } = countVoters(room);
+  info('reveal', `${roomId}: ${voted}/${total} gestemd`);
   broadcastRoomState(roomId);
 }
 
@@ -20,6 +23,7 @@ export function handleReset(socket, { roomId }) {
   const room = rooms[roomId];
   if (!room || room.masterId !== socket.id) return;
 
+  info('reset', `${roomId}: nieuwe ronde`);
   room.revealed = false;
   for (const p of Object.values(room.participants)) {
     p.vote     = null;
@@ -47,6 +51,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
     return;
   }
 
+  info('change-deck', `${roomId}: ${deckType} (${room.deck.length} kaarten)`);
   room.deckType = deckType;
   room.revealed = false;
   for (const p of Object.values(room.participants)) {
