@@ -54,7 +54,11 @@
       </div>
     </header>
 
-    <div class="presenter-story">
+    <!-- Opt-in: plenty of teams never name the ticket, so this stays out of
+         the way until someone asks for it. -->
+    <button class="presenter-story-add" id="presenter-story-add" data-i18n="story-add">+ Actueel issue</button>
+
+    <div class="presenter-story hidden" id="presenter-story">
       <span class="story-banner-label" data-i18n="story-label">Actueel Issue:</span>
       <input type="text" id="presenter-story-input" class="input presenter-story-input"
         placeholder="Bijv. Login refactor (#104)" maxlength="200" data-i18n-placeholder="story-placeholder" />
@@ -94,8 +98,8 @@
 
       </aside>
 
-      <!-- ── Live state ─────────────────────────────────────────── -->
-      <section class="presenter-state" aria-live="polite">
+      <!-- ── Stage: the thing everyone in the room is looking at ── -->
+      <section class="presenter-stage" aria-live="polite">
 
         <div class="presenter-progress glass" id="presenter-progress-wrap">
           <div class="presenter-progress-head">
@@ -110,11 +114,6 @@
           <p class="presenter-empty-text" data-i18n="presenter-empty">Nog niemand in de room. Scan de QR-code om mee te doen.</p>
         </div>
 
-        <div class="presenter-participants glass" id="presenter-participants-wrap">
-          <h2 class="presenter-section-title" data-i18n="panel-title-participants">Deelnemers</h2>
-          <ul class="participants-list" id="participants-list" role="list"></ul>
-        </div>
-
         <div id="voting-phase" class="hidden"></div>
 
         <div id="results-phase" class="results-section glass hidden">
@@ -125,6 +124,12 @@
         </div>
 
       </section>
+
+      <!-- ── People: own column, so a long list never pushes the cards ── -->
+      <aside class="presenter-people glass" id="presenter-participants-wrap">
+        <h2 class="presenter-section-title" data-i18n="panel-title-participants">Deelnemers</h2>
+        <ul class="participants-list" id="participants-list" role="list"></ul>
+      </aside>
     </main>
 
     <!-- ── Deck modal ─────────────────────────────────────────── -->

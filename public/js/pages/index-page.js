@@ -68,6 +68,8 @@ export function initIndexPage(socket, urlRoomId) {
     const deckType = deckTypeSelect.value;
     const roomName = roomNameInput.value.trim();
 
+    if (!roomName) { toast(t('toast-enter-room-name'), 'error'); roomNameInput.focus(); return; }
+
     let custom = [];
     if (deckType === 'custom') {
       custom = customCards.value.split(',').map(s => s.trim()).filter(Boolean);

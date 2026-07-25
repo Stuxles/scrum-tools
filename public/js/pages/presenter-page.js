@@ -29,6 +29,8 @@ export function initPresenterPage(socket, urlRoomId) {
   const qrImg           = document.getElementById('presenter-qr');
   const qrPlaceholder   = document.getElementById('presenter-qr-placeholder');
   const qrUrl           = document.getElementById('presenter-url');
+  const storyWrap       = document.getElementById('presenter-story');
+  const storyAddBtn     = document.getElementById('presenter-story-add');
   const storyInput      = document.getElementById('presenter-story-input');
   const storyClearBtn   = document.getElementById('presenter-story-clear');
   const revealBtn       = document.getElementById('presenter-reveal-btn');
@@ -56,6 +58,16 @@ export function initPresenterPage(socket, urlRoomId) {
   const closedOverlay   = document.getElementById('presenter-closed');
 
   let currentRoom = null;
+
+  // Naming the ticket is opt-in: plenty of teams never do it, so the field
+  // stays collapsed until someone asks for it — or until a title arrives from
+  // the server, which means somebody somewhere is using it after all.
+  let storyOpen = false;
+  function renderStoryVisibility() {
+    const show = storyOpen || Boolean((currentRoom?.storyTitle || '').trim());
+    storyWrap.classList.toggle('hidden', !show);
+    storyAddBtn.classList.toggle('hidden', show);
+  }
 
   // ── QR ────────────────────────────────────────────────────────────────────
   // Fetched here rather than through qr-module.js: that module drives the
@@ -100,9 +112,16 @@ export function initPresenterPage(socket, urlRoomId) {
     toast(storyInput.value.trim() ? t('story-saved') : t('story-cleared'), 'success');
   });
   storyInput.addEventListener('blur', saveStory);
+  storyAddBtn.addEventListener('click', () => {
+    storyOpen = true;
+    renderStoryVisibility();
+    storyInput.focus();
+  });
   storyClearBtn.addEventListener('click', () => {
     storyInput.value = '';
     saveStory();
+    storyOpen = false;          // collapse again — back out of the opt-in
+    renderStoryVisibility();
     toast(t('story-cleared'), 'info');
   });
 
@@ -149,6 +168,7 @@ export function initPresenterPage(socket, urlRoomId) {
 
     // Don't fight the facilitator for the caret while they are typing.
     if (document.activeElement !== storyInput) storyInput.value = room.storyTitle || '';
+    renderStoryVisibility();
 
     currentDeck.textContent = deckLabel(room.deckType);
     deckModalType.value     = room.deckType;
@@ -171,6 +191,9 @@ export function initPresenterPage(socket, urlRoomId) {
     revealBtn.disabled = room.revealed || voted === 0;
 
     if (room.revealed) {
+      // Bigger teams get smaller cards, so a reveal never needs scrolling on a
+      // screen nobody can reach. The CSS reads this back as --card-w.
+      resultsCardsGrid.dataset.size = voters.length <= 8 ? 'lg' : voters.length <= 16 ? 'md' : 'sm';
       renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
     } else {
       resultsPhase.classList.add('hidden');

@@ -1543,16 +1543,22 @@ html.australia-mode body {
 /* ════════════════════════════════════════════════════════════════
    PRESENTER SCREEN  —  read from across the room, no controls
 ════════════════════════════════════════════════════════════════ */
-.presenter-page .results-cards-grid { gap: 20px; }
+/* Cards shrink as the team grows, so a full sprint team still fits on screen
+   without anyone having to scroll a projector. Set from presenter-page.js,
+   which knows the head count. */
+.presenter-page .results-cards-grid { gap: 20px; --card-w: clamp(84px, 7vw, 132px); }
+.presenter-page .results-cards-grid[data-size="md"] { gap: 16px; --card-w: clamp(68px, 5.2vw, 100px); }
+.presenter-page .results-cards-grid[data-size="sm"] { gap: 12px; --card-w: clamp(54px, 4vw, 78px); }
+
 .presenter-page .result-card-face {
-  width: 100px;
-  height: 140px;
-  font-size: 2rem;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 1.4);
+  font-size: calc(var(--card-w) * 0.36);
   border-radius: 16px;
 }
 .presenter-page .result-card-name {
-  font-size: 0.9rem;
-  max-width: 110px;
+  font-size: clamp(0.75rem, calc(var(--card-w) * 0.11), 0.95rem);
+  max-width: calc(var(--card-w) * 1.15);
 }
 .presenter-page .results-stats    { padding: 24px 32px; gap: 40px; }
 .presenter-page .stat-value       { font-size: 2.4rem; }
@@ -1566,6 +1572,17 @@ html.australia-mode body {
   flex-direction: column;
   gap: 20px;
   padding: 24px 32px 40px;
+}
+
+/* On a screen wide enough to be an actual presenter display, pin the page to
+   the viewport and let each column scroll on its own. Nobody is going to walk
+   over to a projector to scroll it. */
+@media (min-width: 1251px) {
+  .presenter-page { height: 100vh; overflow: hidden; padding-bottom: 24px; }
+  .presenter-main { min-height: 0; align-items: stretch; }
+  .presenter-side,
+  .presenter-stage,
+  .presenter-people { min-height: 0; overflow-y: auto; }
 }
 
 .presenter-header {
@@ -1587,6 +1604,20 @@ html.australia-mode body {
 }
 .presenter-header-right { display: flex; align-items: center; gap: 10px; }
 .presenter-header-right .online-indicator { font-size: 1.05rem; }
+
+.presenter-story-add {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--r-sm);
+  color: var(--text-500);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.presenter-story-add:hover { color: var(--text-300); border-color: var(--border-strong, var(--glass-hover)); }
 
 .presenter-story {
   display: flex;
@@ -1629,11 +1660,16 @@ html.australia-mode body {
 }
 .presenter-deck-name { font-size: 0.85rem; color: var(--text-500); }
 
+/* Three columns on purpose. The cards are what the room is looking at, so
+   they get the middle and all the width that is left. Participants sit in
+   their own column and scroll internally — in one stacked column a team of
+   fifteen would push the cards off the bottom of the screen. */
 .presenter-main {
   flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(280px, 24%) 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(230px, 260px) minmax(0, 1fr) minmax(210px, 260px);
+  gap: 20px;
   align-items: start;
 }
 
@@ -1650,8 +1686,7 @@ html.australia-mode body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  position: sticky;
-  top: 24px;
+  align-content: start;
 }
 
 .presenter-invite {
@@ -1686,12 +1721,27 @@ html.australia-mode body {
   word-break: break-all;
 }
 
-.presenter-state { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.presenter-stage { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .presenter-progress,
-.presenter-participants,
+.presenter-people,
 .presenter-page .results-section {
   border-radius: var(--r-lg);
   padding: 20px 24px;
+}
+
+/* The shared rule caps this at 720px, which on a wide screen leaves the
+   cards huddled in the middle. Here it should take the column. */
+.presenter-page .results-section { max-width: none; gap: 20px; }
+
+.presenter-people {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.presenter-people .participants-list {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0;
 }
 .presenter-progress-head {
   display: flex;
@@ -1747,6 +1797,11 @@ html.australia-mode body {
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+@media (max-width: 1250px) {
+  .presenter-main { grid-template-columns: minmax(210px, 240px) minmax(0, 1fr); }
+  .presenter-people { grid-column: 1 / -1; max-height: 320px; }
 }
 
 @media (max-width: 900px) {
