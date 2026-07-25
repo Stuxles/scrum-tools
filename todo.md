@@ -64,40 +64,6 @@ Dat botst met de manier waarop de app in de praktijk gebruikt wordt: de facilita
 
 **Bijvangst:** lost meteen de dubbelzinnigheid op dat twee gelijknamige deelnemers (of jouw eigen twee apparaten) als identieke rijen in de lijst staan — sinds PR #20 houden die wel elk hun eigen stoel, maar de SM ziet bij kicken en rol-overdracht niet wélke "Jan" hij te pakken heeft.
 
-### 6. Overbodige `join-room` bij elke tab-focus
-**Waarde: hoog.** Kleinste ingreep van deze lijst met het grootste effect. Uit een productielog:
-
-```
-21:06:40.749 INFO [join] 2 → ER5H1Z
-21:07:07.053 INFO [join] 2 → ER5H1Z
-21:07:19.174 INFO [join] 2 → ER5H1Z
-21:07:29.361 INFO [join] 2 → ER5H1Z
-21:08:16.500 INFO [join] 2 → ER5H1Z
-```
-
-Vijf joins in 96 seconden, **dezelfde socket, geen disconnect ertussen**. Oorzaak: de `visibilitychange`-handler onderaan `public/js/utils/helpers.js` vuurt een volledige `join-room` af zodra het tabblad weer zichtbaar wordt.
-
-Elke join draait de complete `handleJoinRoom` en eindigt in `broadcastRoomState()`, die individueel naar iedere deelnemer emit. Eén iemand die alt-tabt veroorzaakt dus een volledige state-broadcast naar de hele room.
-
-**De re-join is overbodig.** Is de socket nog verbonden, dan heeft de server de stoel nog: de grace-timer start pas bij een disconnect, en een room wordt pas opgeruimd als iedereen weg is. Een echte reconnect wordt al afgevangen door `socket.io.on('reconnect')` in `public/js/room/room-page.js`, en een server-herstart verbreekt de socket, dus die valt ook onder dat pad.
-
-- Aanpak: de `else`-tak in de `visibilitychange`-handler weghalen; `requestWakeLock()` en de `connect()`-tak blijven staan.
-- Bijkomend: dit was ook het pad dat de naamgenoten-bug uit PR #20 in normaal gebruik bereikbaar maakte, niet alleen in theorie.
-
-### 7. Observability: je ziet niet of er geschat is
-**Waarde: gemiddeld.** Het log kent `connect`, `join`, `reconnect`, `grace`, `cleanup` en `disconnect`, maar niets voor `reveal`, `reset` of `change-deck`. Een room waarin een uur lang gewerkt is, is in het log niet te onderscheiden van een lege room.
-
-- Voeg een `[reveal]`- en `[reset]`-regel toe in `src/socket/handlers/smHandlers.js`, met room-id en aantal stemmers.
-- **Stemmen zelf niet loggen** — dat is precies de informatie die de app tot na de reveal verborgen houdt.
-- Overweeg het aantal deelnemers mee te loggen bij `[join]`; nu moet je terugscrollen om te weten hoe vol een room is.
-- Kleiner punt: `[connect]`/`[disconnect]` loggen alleen een socket-id, geen naam. Bij een disconnect is de naam wél bekend (de deelnemer staat nog in `room.participants`), dus die kan erbij.
-
-### 8. Socket wordt geopend op elke pageload
-**Waarde: laag.** `public/js/main.js` opent bij iedere pageload een Socket.IO-verbinding, ook op de indexpagina waar hij pas nodig is als je daadwerkelijk een room aanmaakt. In het log zie je daardoor een stroom connect/disconnect-paren zonder enige room-activiteit.
-
-- Geen bug, wel ruis: het maakt logs lastiger te lezen en houdt verbindingen open voor bezoekers die alleen even kijken.
-- Optie: de socket pas opzetten bij de eerste actie die hem nodig heeft (`create-room`), of op de indexpagina helemaal achterwege laten en pas op `room.html` verbinden.
-
 ### 9. Een room bestaat 5 minuten zonder deelnemers
 **Waarde: laag.** `PARTICIPANT_GRACE_MS` staat op 10 minuten, `RECONNECT_GRACE_PERIOD_MS` op 15. Uit het log:
 
@@ -130,3 +96,6 @@ De laatste stoel verdwijnt op minuut 10, de room pas op minuut 15. In dat gat be
 - **Persoonlijke reconnect-grace** — een deelnemer die disconnect (bijv. scherm uit) wordt niet meer direct verwijderd, maar 10 minuten (override via `PARTICIPANT_GRACE_MINUTES`) als "afwezig" bewaard met stem/rol intact; reconnect met dezelfde naam herstelt de plek direct. SM kan een afwezige alsnog meteen kicken; master-overdracht naar een afwezige wordt geweigerd.
 - **Versienummer in het opties-scherm** — uit `package.json`, via `/api/config`.
 - **Consensus-animatie bij unanieme stem** — confetti-burst (dependency-vrij, CSS+JS) wanneer alle stemmers exact hetzelfde kaartje kiezen; respecteert `prefers-reduced-motion`, vuurt precies één keer per reveal. Persoonlijke "no fun mode"-toggle in het opties-scherm (localStorage, per apparaat) om 'm uit te zetten.
+- **Geen `join-room` meer bij elke tab-focus** *(was #6)* — de `visibilitychange`-handler brengt alleen nog een gevallen verbinding omhoog. Zolang de socket verbonden is, heeft de server de stoel nog, dus viel er niets te herstellen. Het opnieuw joinen zit nu op één plek: `socket.on('connect')` in `room-page.js`, dat zowel de automatische reconnect als een handmatige `.connect()` afvangt — waar het oude `socket.io.on('reconnect')` alleen de eerste dekte.
+- **Log laat nu zien of er geschat is** *(was #7)* — `[reveal]` met aantal stemmers, `[reset]`, `[change-deck]` met dektype, en `[auto-reveal]` vanuit `applyAutoReveal()` zelf zodat alle vijf de aanroeppaden erin zitten. `[join]` toont hoeveel mensen er in de room zitten en `[disconnect]` toont de naam plus of het de SM was. Individuele stemmen worden bewust niet gelogd.
+- **Socket alleen nog waar hij nodig is** *(was #8)* — de indexpagina verbindt pas als je daadwerkelijk een room aanmaakt (`autoConnect: isRoomPage`), niet meer bij elke pageload. Scheelt een stroom connect/disconnect-paren in het log van bezoekers die alleen even kijken.
