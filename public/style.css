@@ -734,11 +734,6 @@ html.australia-mode body {
   font-size: 0.72rem;
   border: 1px solid rgba(124,58,237,0.3);
 }
-.participant-status.presenter-mode {
-  background: rgba(255,255,255,0.04);
-  font-size: 0.85rem;
-  opacity: 0.6;
-}
 
 .participant-item .kick-btn,
 .participant-item .transfer-btn {
@@ -1374,14 +1369,30 @@ html.australia-mode body {
   .participant-item .transfer-btn,
   .participant-item .kick-btn { display: none; }
 
+  /* A badge on the avatar, so it has to stay a circle: fixed width and height
+     with no padding, or a two-character vote stretches it into an oval.
+     Translucent white with dark text rather than the desktop colour tints —
+     it sits on top of the avatar, so it needs to read against that. */
   .participant-item .participant-status {
     position: absolute;
     right: -2px;
     bottom: -2px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    font-size: 0.65rem;
+    width: 22px;
+    height: 22px;
+    min-width: 0;
+    padding: 0;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    /* Sized so the widest real card still fits: XXL from the t-shirt deck.
+       A long custom card is clipped rather than allowed to break the circle —
+       the full value is on the result card and in the expanded chip. */
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    overflow: hidden;
+    background: rgba(255,255,255,0.5);
+    color: var(--bg-base);
     border: 2px solid var(--bg-surface);
   }
 
