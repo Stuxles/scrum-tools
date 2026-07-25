@@ -1,9 +1,11 @@
 /**
- * Presenter screen.
+ * Presenter screen — the facilitator's dashboard.
  *
  * A screen, not a person: it attaches with `watch-room`, never appears in the
- * participant list, and holds no vote, seat or role. Read-only by design —
- * every control lives with the host, on their own device.
+ * participant list, and holds no vote or seat. It does drive the room though
+ * (reveal, new round, deck, story title), because running the session from
+ * the big screen while estimating from your own phone is the entire point.
+ * The server authorises it through `canControlRoom()`.
  *
  * @param {import('socket.io-client').Socket} socket
  * @param {string} urlRoomId
@@ -27,8 +29,19 @@ export function initPresenterPage(socket, urlRoomId) {
   const qrImg           = document.getElementById('presenter-qr');
   const qrPlaceholder   = document.getElementById('presenter-qr-placeholder');
   const qrUrl           = document.getElementById('presenter-url');
-  const storyWrap       = document.getElementById('presenter-story');
-  const storyText       = document.getElementById('presenter-story-text');
+  const storyInput      = document.getElementById('presenter-story-input');
+  const storyClearBtn   = document.getElementById('presenter-story-clear');
+  const revealBtn       = document.getElementById('presenter-reveal-btn');
+  const resetBtn        = document.getElementById('presenter-reset-btn');
+  const autoRevealChk   = document.getElementById('presenter-auto-reveal-chk');
+  const currentDeck     = document.getElementById('presenter-current-deck');
+  const deckBtn         = document.getElementById('presenter-deck-btn');
+  const deckModal       = document.getElementById('deck-modal');
+  const deckModalType   = document.getElementById('deck-modal-type');
+  const deckModalCustom = document.getElementById('deck-modal-custom');
+  const deckCustomField = document.getElementById('deck-modal-custom-field');
+  const deckModalSave   = document.getElementById('deck-modal-save');
+  const deckModalCancel = document.getElementById('deck-modal-cancel');
   const progressWrap    = document.getElementById('presenter-progress-wrap');
   const progressFill    = document.getElementById('presenter-progress-fill');
   const progressText    = document.getElementById('presenter-progress-text');
@@ -66,6 +79,66 @@ export function initPresenterPage(socket, urlRoomId) {
 
   onThemeChange(() => loadQR());
 
+  // ── Controls ──────────────────────────────────────────────────────────────
+  const emitRoom = (event, extra = {}) => {
+    if (currentRoom) socket.emit(event, { roomId: currentRoom.id, ...extra });
+  };
+
+  revealBtn.addEventListener('click', () => emitRoom('reveal'));
+  resetBtn.addEventListener('click',  () => emitRoom('reset'));
+  autoRevealChk.addEventListener('change', () => {
+    emitRoom('toggle-auto-reveal', { autoReveal: autoRevealChk.checked });
+    toast(autoRevealChk.checked ? t('toast-auto-reveal-on') : t('toast-auto-reveal-off'), 'info');
+  });
+
+  const saveStory = () => emitRoom('update-story-title', { storyTitle: storyInput.value.trim() });
+  storyInput.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    saveStory();
+    storyInput.blur();
+    toast(storyInput.value.trim() ? t('story-saved') : t('story-cleared'), 'success');
+  });
+  storyInput.addEventListener('blur', saveStory);
+  storyClearBtn.addEventListener('click', () => {
+    storyInput.value = '';
+    saveStory();
+    toast(t('story-cleared'), 'info');
+  });
+
+  const closeDeckModal = () => deckModal.classList.add('hidden');
+  deckBtn.addEventListener('click', () => {
+    if (!currentRoom) return;
+    deckModalType.value = currentRoom.deckType || 'standard';
+    deckCustomField.classList.toggle('hidden', deckModalType.value !== 'custom');
+    deckModal.classList.remove('hidden');
+  });
+  deckModalType.addEventListener('change', () => {
+    deckCustomField.classList.toggle('hidden', deckModalType.value !== 'custom');
+  });
+  deckModalCancel.addEventListener('click', closeDeckModal);
+  deckModal.addEventListener('click', e => { if (e.target === deckModal) closeDeckModal(); });
+  deckModalSave.addEventListener('click', () => {
+    const deckType = deckModalType.value;
+    let cards = [];
+    if (deckType === 'custom') {
+      cards = deckModalCustom.value.split(',').map(s => s.trim()).filter(Boolean);
+      if (cards.length < 2) { toast(t('toast-min-cards'), 'error'); return; }
+    }
+    emitRoom('change-deck', { deckType, customCards: cards });
+    closeDeckModal();
+  });
+
+  function deckLabel(type) {
+    const labels = {
+      standard:  t('deck-standard').split(' — ')[0],
+      fibonacci: t('deck-fibonacci').split(' — ')[0],
+      tshirt:    t('deck-tshirt').split(' — ')[0],
+      custom:    t('deck-custom').replace('…', ''),
+    };
+    return labels[type] || type;
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   function applyRoomState(room) {
     currentRoom = room;
@@ -74,9 +147,12 @@ export function initPresenterPage(socket, urlRoomId) {
     roomCode.textContent = room.id;
     onlineCount.textContent = `${room.participants.length}`;
 
-    const story = (room.storyTitle || '').trim();
-    storyWrap.classList.toggle('hidden', !story);
-    storyText.textContent = story;
+    // Don't fight the facilitator for the caret while they are typing.
+    if (document.activeElement !== storyInput) storyInput.value = room.storyTitle || '';
+
+    currentDeck.textContent = deckLabel(room.deckType);
+    deckModalType.value     = room.deckType;
+    autoRevealChk.checked   = Boolean(room.autoReveal);
 
     const hasPeople = room.participants.length > 0;
     emptyState.classList.toggle('hidden', hasPeople);
@@ -91,6 +167,8 @@ export function initPresenterPage(socket, urlRoomId) {
     progressFill.style.width = `${pct}%`;
     progressText.textContent = t('progress-text', { voted, total: voters.length });
     progressWrap.classList.toggle('hidden', !hasPeople || room.revealed);
+
+    revealBtn.disabled = room.revealed || voted === 0;
 
     if (room.revealed) {
       renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);

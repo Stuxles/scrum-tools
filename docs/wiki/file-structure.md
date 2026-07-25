@@ -20,7 +20,7 @@ scrum-poker-collab/
 ├── 📁 docs/wiki/                         # 📚 Technical Documentation & Mermaid Diagrams Wiki
 │   ├── index.md                          # Wiki home page & high-level system diagram
 │   ├── architecture.md                   # ES Module topology, data sanitization & rate limiting
-│   ├── lifecycle.md                      # Room state transitions, 15m grace period & 24h cleanup
+│   ├── lifecycle.md                      # Room state transitions, 30m unattended grace & 24h cleanup
 │   ├── socket-flows.md                   # Sequence diagrams for voting rounds & kick actions
 │   ├── roles.md                          # SM vs Voter vs Spectator permission matrix & progress logic
 │   └── file-structure.md                 # (This file) Comprehensive directory & module breakdown
@@ -33,30 +33,32 @@ scrum-poker-collab/
 │   │   ├── 📄 index.js                   # Socket.IO bootstrap, safe dispatch (payload guard + error isolation) & 35 req/sec rate limiter
 │   │   └── 📁 handlers/
 │   │       ├── 📄 connectionHandlers.js  # Per-participant reconnect grace (`PARTICIPANT_GRACE_MS`), empty-room grace (`RECONNECT_GRACE_PERIOD_MS`) & kick-user
-│   │       ├── 📄 roomHandlers.js        # `create-room`, `join-room`, `vote`, `toggle-spectator`, `claim-master`, `sm-transfer-master`
-│   │       └── 📄 smHandlers.js          # Scrum Master commands (`reveal`, `reset`, `change-deck`, `update-story-title`)
+│   │       ├── 📄 roomHandlers.js        # `create-room`, `join-room`, `watch-room`, `vote`, `toggle-spectator`, `claim-master`, `sm-transfer-master`
+│   │       └── 📄 smHandlers.js          # Room commands (`reveal`, `reset`, `change-deck`, `update-story-title`), gated by `canControlRoom`
 │   ├── 📁 store/
-│   │   └── 📄 rooms.js                   # In-memory room dictionary (null-prototype), `deleteRoom` & `sanitizeRoom`
+│   │   └── 📄 rooms.js                   # In-memory rooms (null-prototype), `deleteRoom`, `sanitizeRoom` & `canControlRoom`
 │   └── 📁 utils/
-│       ├── 📄 broadcast.js               # `broadcastRoomState` (with `sanitizeRoom`) & 24h cleanup timer
+│       ├── 📄 broadcast.js               # `broadcastRoomState` (participants + presenter screens), `closeRoom` & 24h cleanup timer
 │       ├── 📄 roomId.js                  # 6-character room code generator (Crockford Base32, no I/L/O/U) & `normalizeRoomId`
 │       ├── 📄 rateLimiter.js             # Two-layer REST rate limiter (`createRateLimiter`): per-IP ceiling + per-(IP, room) budget
 │       ├── 📄 sessionToken.js            # Per-session reconnect tokens — how a returning client proves identity instead of matching display names
 │       └── 📄 logger.js                  # Leveled, column-aligned, TTY-colored console wrapper (`info`/`warn`/`error`) used by every server log line
 │
 └── 📁 public/                            # 🎨 Client-Side Frontend (Static HTML, CSS Variables, ES Modules)
-    ├── 📄 index.html                     # Landing / Home page (`/` -> create or join room)
+    ├── 📄 index.html                     # Landing / Home page (`/` -> create, join or present a room)
     ├── 📄 room.html                      # Active planning room page (`/room.html?id=...`)
+    ├── 📄 presenter.html                 # Presenter screen (`/presenter.html?id=...`) — a display, not a participant
     ├── 📄 style.css                      # Global stylesheet (Dark/Light themes, glassmorphism, animations)
     └── 📁 js/                            # Client-Side ES Modules (`type="module"`)
         ├── 📄 config.js                  # Central frontend configuration (`export const APP_NAME = 'Scrum Poker'`)
         ├── 📄 main.js                    # Global client bootstrap & Socket.IO client initialization
         ├── 📄 theme.js                   # Dark/Light mode theme switcher (`localStorage` + DOM classes)
         ├── 📁 pages/
-        │   └── 📄 index-page.js          # Landing page controller (Create room tab, join code form, deck preview)
+        │   ├── 📄 index-page.js          # Landing page controller (create / join / present tabs)
+        │   └── 📄 presenter-page.js      # Presenter screen controller (live state + facilitator controls)
         ├── 📁 room/
         │   ├── 📄 room-page.js           # Master room coordinator (event listeners, modals, wake lock, socket sync)
-        │   ├── 📄 render-users.js        # Sidebar participant list, status icons (👑/🖥️/👁️/✓), SM kick button (`✕`)
+        │   ├── 📄 render-users.js        # Sidebar participant list, status icons (👑/👁️/✓), SM kick button (`✕`)
         │   ├── 📄 render-voting.js       # Card deck grid generation, vote selection/deselection, spectator banner
         │   ├── 📄 render-results.js      # Post-reveal grid, automated consensus analysis, average/median & bar chart
         │   └── 📄 qr-module.js           # Full-screen interactive QR code generator & invite link sharing

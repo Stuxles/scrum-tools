@@ -226,6 +226,66 @@ describe('Presenter screens (displays are not participants)', () => {
     assert.strictEqual(rooms[roomId], undefined, 'room is gone');
   });
 
+  test('a presenter screen can drive the room: reveal, reset, deck and story title', async () => {
+    const creator = createClient();
+    await waitForConnect(creator);
+    const roomId = await makeRoom(creator);
+
+    const screen = createClient();
+    await waitForConnect(screen);
+    screen.emit('watch-room', { roomId });
+    await onceEvent(screen, 'room-watched');
+
+    const alice = createClient();
+    await waitForConnect(alice);
+    alice.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(alice, 'room-joined');
+    alice.emit('vote', { roomId, vote: '5' });
+    await new Promise(r => setTimeout(r, 100));
+
+    // Reveal from the screen, not from the host.
+    screen.emit('reveal', { roomId });
+    await new Promise(r => setTimeout(r, 100));
+    assert.strictEqual(rooms[roomId].revealed, true, 'screen may reveal');
+
+    screen.emit('reset', { roomId });
+    await new Promise(r => setTimeout(r, 100));
+    assert.strictEqual(rooms[roomId].revealed, false, 'screen may start a new round');
+    assert.strictEqual(rooms[roomId].participants[alice.id].hasVoted, false, 'votes cleared');
+
+    screen.emit('update-story-title', { roomId, storyTitle: 'JIRA-204' });
+    screen.emit('change-deck', { roomId, deckType: 'tshirt' });
+    screen.emit('toggle-auto-reveal', { roomId, autoReveal: true });
+    await new Promise(r => setTimeout(r, 120));
+
+    assert.strictEqual(rooms[roomId].storyTitle, 'JIRA-204', 'screen may set the story title');
+    assert.strictEqual(rooms[roomId].deckType, 'tshirt', 'screen may change the deck');
+    assert.strictEqual(rooms[roomId].autoReveal, true, 'screen may toggle auto-reveal');
+  });
+
+  test('an ordinary participant still cannot drive the room', async () => {
+    const creator = createClient();
+    await waitForConnect(creator);
+    const roomId = await makeRoom(creator);
+
+    const alice = createClient();   // first joiner -> host
+    const bob   = createClient();   // plain participant
+    await waitForConnect(alice);
+    await waitForConnect(bob);
+    alice.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(alice, 'room-joined');
+    bob.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(bob, 'room-joined');
+
+    bob.emit('vote', { roomId, vote: '5' });
+    bob.emit('reveal', { roomId });
+    bob.emit('change-deck', { roomId, deckType: 'tshirt' });
+    await new Promise(r => setTimeout(r, 120));
+
+    assert.strictEqual(rooms[roomId].revealed, false, 'a plain participant may not reveal');
+    assert.strictEqual(rooms[roomId].deckType, 'standard', 'nor change the deck');
+  });
+
   test('switching a seated participant to presenter mode drops their seat', async () => {
     const creator = createClient();
     await waitForConnect(creator);

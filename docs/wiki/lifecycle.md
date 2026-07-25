@@ -10,8 +10,8 @@ The diagram below illustrates the exact lifecycle of a room from initial creatio
 
 ```mermaid
 stateDiagram-v2
-    [*] --> RoomCreated : create-room or join-room
-    
+    [*] --> RoomCreated : create-room (no participants yet)
+
     state RoomCreated {
         [*] --> VotingPhase
         VotingPhase --> VotingPhase : Voter picks or deselects card
@@ -44,12 +44,12 @@ stateDiagram-v2
     }
     MasterGrace30s --> RoomCreated
 
-    RoomCreated --> GracePeriod15m : Last participant leaves room
-    
-    state GracePeriod15m {
-        [*] --> TimerRunning : setTimeout 15m
-        TimerRunning --> RoomCreated : Rejoin within 15 minutes
-        TimerRunning --> RoomDeleted : 15 minutes elapsed
+    RoomCreated --> GracePeriod30m : Nothing attached (no participant AND no presenter screen)
+
+    state GracePeriod30m {
+        [*] --> TimerRunning : setTimeout 30m
+        TimerRunning --> RoomCreated : Anyone rejoins or opens a screen within 30 minutes
+        TimerRunning --> RoomDeleted : 30 minutes elapsed
     }
 
     RoomCreated --> Check24hState : 24 hours elapsed since creation
@@ -92,18 +92,20 @@ When the **Scrum Master disconnects but other participants are still present**, 
 
 ---
 
-## ⏳ The 15-Minute Empty Room Grace Period (`RECONNECT_GRACE_PERIOD_MS`)
+## ⏳ The 30-Minute Unattended Room Grace Period (`RECONNECT_GRACE_PERIOD_MS`)
 
-When the last participant in a room accidentally closes their browser tab, drops Wi-Fi, or locks their smartphone screen, the room is not wiped immediately. Instead, `connectionHandlers.js` starts a countdown grace period of exactly **15 minutes (`900,000 ms`)**:
+When the last person in a room closes their browser tab, drops Wi-Fi, or locks their phone, the room is not wiped immediately. `connectionHandlers.js` starts a countdown of **30 minutes (`1,800,000 ms`)** — long enough to survive a coffee break or a lunch:
 
 1. **Disconnect Event**:  
-   The server intercepts the socket `disconnect` and checks whether any participant is still `connected` (see the personal grace period above — a lone disconnecting participant doesn't empty the room instantly, but the room-empty check runs off active connections, not raw entry count).
+   The server intercepts the socket `disconnect` and checks whether anything is still attached (see the personal grace period above — a lone disconnecting participant doesn't empty the room instantly, but the check runs off active connections, not raw entry count).
 2. **Start Grace Timer**:  
-   If no participant is actively connected, `room.disconnectTimer = setTimeout(..., RECONNECT_GRACE_PERIOD_MS)` is initialized.
-3. **Rejoin (Within 15 Minutes)**:  
-   As soon as any participant opens the room URL or reconnects (`join-room`), `clearTimeout(room.disconnectTimer)` cancels the wipe. The room state, votes, and active ticket title are restored instantly without data loss.
-4. **Final Deletion (After 15 Minutes)**:  
-   If the room remains empty for 15 full minutes, `deleteRoom(roomId)` clears all internal timer handles and purges the room from memory.
+   Only when `isRoomUnattended()` holds — **no connected participant *and* no presenter screen in `room.displays`** — is `room.disconnectTimer = setTimeout(..., RECONNECT_GRACE_PERIOD_MS)` armed. A team at lunch with the screen still up has not abandoned the room, so the countdown does not run; it starts instead when that last screen closes.
+3. **Return (Within 30 Minutes)**:  
+   As soon as anyone rejoins (`join-room`) or opens a presenter screen (`watch-room`), the pending wipe is cancelled. Room state, votes and the active ticket title are restored without data loss.
+4. **Final Deletion (After 30 Minutes)**:  
+   The timer re-checks `isRoomUnattended()` when it fires rather than trusting the state at scheduling time, since anyone may have returned meanwhile. If the room really is unattended, `closeRoom(roomId)` notifies any screens with `room-closed`, then clears all internal timer handles and purges the room from memory.
+
+> ⚠️ **Note the gap with the personal grace period.** A disconnected participant's seat expires after `PARTICIPANT_GRACE_MS` (10 minutes), but the room itself survives for 30. Return after 20 minutes and the room is still there while your seat is not: you rejoin with a fresh seat, no vote, and — if nobody else is left — as the new host. That is deliberate (the room code stays valid across a break), not an oversight.
 
 ---
 
@@ -121,12 +123,14 @@ export function scheduleRoomCleanup(roomId) {
   room.cleanupTimer = setTimeout(() => {
     const r = rooms[roomId];
     if (!r) return;
+    // Deliberately ignores displays: a room nobody has joined in 24 hours is
+    // done, even if a forgotten screen is still pointed at it.
     if (Object.keys(r.participants).length > 0) {
-      console.log(`[cleanup] Room ${roomId} still active after 24h, extending by 1h.`);
-      scheduleRoomCleanup(roomId); // Re-schedule for another 1 hour
+      info('cleanup', `Room ${roomId} nog in gebruik na 24u, verlengd.`);
+      scheduleRoomCleanup(roomId);
       return;
     }
-    deleteRoom(roomId);
-  }, 24 * 60 * 60 * 1000);
+    closeRoom(roomId); // notifies any watching screens first
+  }, ROOM_CLEANUP_INTERVAL_MS);
 }
 ```

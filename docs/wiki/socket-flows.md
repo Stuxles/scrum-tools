@@ -6,33 +6,36 @@ All communication during active planning rounds happens over bi-directional **So
 
 ## 🃏 Voting Round Sequence (Join → Vote → Reveal → Reset)
 
-The sequence below traces the journey of a Scrum Master (`SM`), two Voters (`Voter A` & `Voter B`), and the `Server` during a standard planning estimation cycle.
+The sequence below traces the journey of a presenter screen (`P`), a Host (`SM`), a Voter (`Voter B`), and the `Server` during a standard planning estimation cycle.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor SM as Scrum Master 👑
-    actor A as Voter A 🃏
+    participant P as Presenter screen 📺
+    actor SM as Host 👑
     actor B as Voter B 🃏
     participant S as Node.js Server (`rooms.js`)
 
-    Note over SM,S: Room Creation (Landing Page)
-    SM->>S: emit('create-room', { name, deckType, customCards, roomName })
-    S-->>SM: emit('room-created', { roomId })
-    Note over SM: Browser navigates to /room.html?id=roomId
+    Note over P,S: Room Creation — no display name, nobody is seated
+    P->>S: emit('create-room', { deckType, customCards, roomName })
+    S-->>P: emit('room-created', { roomId })
+    Note over P: Browser navigates to /presenter.html?id=roomId
 
-    Note over SM,S: Joining the Room (first joiner becomes Master)
+    Note over P,S: The screen attaches as a display, not a participant
+    P->>S: emit('watch-room', { roomId })
+    S-->>P: emit('room-watched', sanitizeRoom(room, null))
+    Note over S: socket.join(roomId) + room.displays.add(socket.id)
+    Note over P: The screen may still drive the room — canControlRoom()
+
+    Note over SM,S: Joining the Room (first joiner claims the vacant host role)
     SM->>S: emit('join-room', { roomId, name, isSpectator: false })
-    S-->>SM: emit('room-joined', { room, isMaster: true })
-
-    A->>S: emit('join-room', { roomId, name: 'Alice', isSpectator: false })
-    S-->>A: emit('room-joined', { room, isMaster: false })
-    S-->>SM: broadcast('room-state', sanitizedRoom)
+    S-->>SM: emit('room-joined', { room, isMaster: true, sessionToken })
+    S-->>P: broadcast('room-state', sanitizeRoom(room, null))
 
     B->>S: emit('join-room', { roomId, name: 'Bob', isSpectator: false })
-    S-->>B: emit('room-joined', { room, isMaster: false })
+    S-->>B: emit('room-joined', { room, isMaster: false, sessionToken })
     S-->>SM: broadcast('room-state', sanitizedRoom)
-    S-->>A: broadcast('room-state', sanitizedRoom)
+    S-->>P: broadcast('room-state', sanitizeRoom(room, null))
 
     Note over SM,S: Live Ticket Title Broadcast
     SM->>S: emit('update-story-title', { roomId, title: 'JIRA-204: Login Refactor' })

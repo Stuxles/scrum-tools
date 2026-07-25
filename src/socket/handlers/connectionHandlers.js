@@ -1,4 +1,4 @@
-import { rooms }              from '../../store/rooms.js';
+import { rooms, canControlRoom } from '../../store/rooms.js';
 import { broadcastRoomState, closeRoom } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
 import { applyAutoReveal }    from '../../utils/autoReveal.js';
@@ -12,7 +12,7 @@ import { info }                from '../../utils/logger.js';
 export function handleKickUser(io, socket, { roomId, targetId }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id || targetId === socket.id) return;
+  if (!room || !canControlRoom(room, socket.id) || targetId === socket.id) return;
 
   const target = io.sockets.sockets.get(targetId);
   if (target) {

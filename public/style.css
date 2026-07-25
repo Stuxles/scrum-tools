@@ -1590,15 +1590,44 @@ html.australia-mode body {
 
 .presenter-story {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
-.presenter-story-text {
-  font-size: clamp(1.1rem, 2vw, 1.6rem);
+.presenter-story-input {
+  flex: 1;
+  min-width: 200px;
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
   font-weight: 600;
   color: var(--purple-200);
 }
+
+.presenter-controls {
+  border-radius: var(--r-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.presenter-auto-reveal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-300);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.presenter-auto-reveal input { width: 16px; height: 16px; cursor: pointer; }
+.presenter-deck-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 12px;
+}
+.presenter-deck-name { font-size: 0.85rem; color: var(--text-500); }
 
 .presenter-main {
   flex: 1;
@@ -1617,12 +1646,18 @@ html.australia-mode body {
   margin-bottom: 12px;
 }
 
+.presenter-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 24px;
+}
+
 .presenter-invite {
   border-radius: var(--r-lg);
   padding: 20px;
   text-align: center;
-  position: sticky;
-  top: 24px;
 }
 .presenter-code {
   font-family: var(--font-mono, ui-monospace, monospace);
@@ -1717,5 +1752,5 @@ html.australia-mode body {
 @media (max-width: 900px) {
   .presenter-page { padding: 16px; }
   .presenter-main { grid-template-columns: 1fr; }
-  .presenter-invite { position: static; }
+  .presenter-side { position: static; }
 }

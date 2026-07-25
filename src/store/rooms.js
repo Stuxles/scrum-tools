@@ -49,6 +49,28 @@ export function deleteRoom(roomId) {
 }
 
 /**
+ * May this socket drive the room — reveal, reset, change the deck, set the
+ * story title, kick someone?
+ *
+ * Two kinds of client qualify, for the same reason: they are the facilitator.
+ * The host holds the role among the participants, and a presenter screen *is*
+ * the facilitator's dashboard — the whole point of putting the session on a
+ * big screen is running it from there while estimating from your own phone.
+ *
+ * This grants a display no more reach than the room code already does:
+ * `claim-master` is deliberately open to anyone who can join, so the code has
+ * always been the trust boundary rather than the role. See docs/wiki/roles.md.
+ *
+ * @param {Room}   room
+ * @param {string} socketId
+ * @returns {boolean}
+ */
+export function canControlRoom(room, socketId) {
+  if (!room) return false;
+  return room.masterId === socketId || Boolean(room.displays?.has(socketId));
+}
+
+/**
  * Serialize room state for a specific client.
  * Votes are hidden unless the room is revealed or it's the viewer's own vote.
  *

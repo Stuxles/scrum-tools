@@ -9,7 +9,7 @@ Welcome to the official technical wiki of **Scrum Poker**. This documentation de
 1. [**System Architecture & Components**](./architecture.md)  
    *High-level overview of the Node.js / Socket.IO backend, in-memory state store, and modular ES Module frontend.*
 2. [**Room Lifecycle & State Transitions**](./lifecycle.md)  
-   *How a room is created, transitions between voting and revealed phases, and gets cleaned up via the 15-minute empty grace period and 24-hour timers.*
+   *How a room is created, transitions between voting and revealed phases, and gets cleaned up via the 30-minute empty grace period and 24-hour timers.*
 3. [**Real-time Socket.IO Sequence Flows**](./socket-flows.md)  
    *Detailed socket interaction sequences between the Scrum Master, Voters, Spectators, and the Server during voting rounds and kick actions.*
 4. [**Roles & Permissions (SM vs. Voter vs. Spectator)**](./roles.md)  
@@ -38,7 +38,7 @@ graph TD
         ServerEntry["server.js / src/socket/index.js (Safe Dispatch + Rate Limiter: 35 req/s)"]
         RoomHandlers["roomHandlers.js (create, join, vote, toggle-spectator, claim/transfer-master)"]
         SMHandlers["smHandlers.js (reveal, reset, change-deck, update-story)"]
-        ConnHandlers["connectionHandlers.js (kick-user, 10m participant grace, 15m empty-room grace)"]
+        ConnHandlers["connectionHandlers.js (kick-user, 10m participant grace, 30m unattended-room grace)"]
         Broadcast["broadcast.js (broadcastRoomState, 24h Cleanup)"]
         RoomsStore["src/store/rooms.js (Null-Prototype Rooms Dictionary & sanitizeRoom)"]
     end

@@ -54,12 +54,16 @@
       </div>
     </header>
 
-    <div class="presenter-story hidden" id="presenter-story">
+    <div class="presenter-story">
       <span class="story-banner-label" data-i18n="story-label">Actueel Issue:</span>
-      <span class="presenter-story-text" id="presenter-story-text"></span>
+      <input type="text" id="presenter-story-input" class="input presenter-story-input"
+        placeholder="Bijv. Login refactor (#104)" maxlength="200" data-i18n-placeholder="story-placeholder" />
+      <button class="btn btn-secondary btn-sm" id="presenter-story-clear" title="Wissen / Clear">✕</button>
     </div>
 
     <main class="presenter-main">
+
+      <aside class="presenter-side">
 
       <!-- ── Invite ─────────────────────────────────────────────── -->
       <section class="presenter-invite glass" aria-labelledby="presenter-invite-title">
@@ -69,6 +73,26 @@
         <div class="presenter-qr-placeholder" id="presenter-qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
         <p class="presenter-url" id="presenter-url"></p>
       </section>
+
+      <!-- ── Controls ───────────────────────────────────────────── -->
+      <section class="presenter-controls glass" aria-labelledby="presenter-controls-title">
+        <h2 class="presenter-section-title" id="presenter-controls-title" data-i18n="sm-section-actions">Acties</h2>
+
+        <button class="btn btn-primary btn-lg btn-full" id="presenter-reveal-btn" data-i18n="sm-reveal-btn">🃏 Reveal</button>
+        <button class="btn btn-secondary btn-full" id="presenter-reset-btn" data-i18n="sm-reset-btn">🔄 Nieuwe ronde</button>
+
+        <label class="presenter-auto-reveal">
+          <input type="checkbox" id="presenter-auto-reveal-chk" />
+          <span data-i18n="sm-auto-reveal">Auto-reveal</span>
+        </label>
+
+        <div class="presenter-deck-row">
+          <span class="presenter-deck-name" id="presenter-current-deck">—</span>
+          <button class="btn btn-secondary btn-sm" id="presenter-deck-btn" data-i18n="sm-change-deck-btn">🎴 Wijzig deck</button>
+        </div>
+      </section>
+
+      </aside>
 
       <!-- ── Live state ─────────────────────────────────────────── -->
       <section class="presenter-state" aria-live="polite">
@@ -102,6 +126,37 @@
 
       </section>
     </main>
+
+    <!-- ── Deck modal ─────────────────────────────────────────── -->
+    <div id="deck-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deck-modal-title">
+      <div class="modal-box">
+        <h2 class="modal-title" id="deck-modal-title" data-i18n="deck-modal-title">Kaartdek wijzigen</h2>
+        <p class="modal-subtitle" data-i18n="deck-modal-subtitle">Het huidige deck wordt vervangen en alle stemmen worden
+          gereset.</p>
+
+        <div class="field">
+          <label class="field-label" for="deck-modal-type" data-i18n="deck-modal-label">Dek type</label>
+          <select class="input" id="deck-modal-type">
+            <option value="standard" data-i18n="deck-standard">Standaard — 0 1 2 3 4 5 6 8 12 16 24 32 40 ♾️ ❓ ☕</option>
+            <option value="fibonacci" data-i18n="deck-fibonacci">Fibonacci — 0 1 2 3 5 8 13 21 34 55 89 ❓ ☕</option>
+            <option value="tshirt" data-i18n="deck-tshirt">T-Shirt — XS S M L XL XXL ❓ ☕</option>
+            <option value="custom" data-i18n="deck-custom">Aangepast…</option>
+          </select>
+        </div>
+
+        <div class="field hidden" id="deck-modal-custom-field">
+          <label class="field-label" for="deck-modal-custom" data-i18n="deck-modal-custom-label">Kaarten
+            (komma-gescheiden)</label>
+          <input class="input" id="deck-modal-custom" type="text" placeholder="1, 2, 4, 8, 16, ?"
+            data-i18n-placeholder="placeholder-custom-cards" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="deck-modal-save" style="flex:1;" data-i18n="deck-modal-save">Toepassen</button>
+          <button class="btn btn-secondary" id="deck-modal-cancel" data-i18n="deck-modal-cancel">Annuleer</button>
+        </div>
+      </div>
+    </div>
 
     <div class="presenter-closed hidden" id="presenter-closed">
       <div class="presenter-closed-box glass">
