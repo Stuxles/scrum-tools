@@ -169,6 +169,26 @@ De laatste stoel verdwijnt op minuut 10, de room pas op minuut 15. In dat gat be
 
 **Let op:** #5 verhoogt `RECONNECT_GRACE_PERIOD_MS` naar 30 minuten en laat de timer pas starten als ook alle presenter-schermen weg zijn. Daarmee groeit dit gat van 5 naar 20 minuten. Het gedrag verandert niet van aard — alleen het venster wordt groter, dus documenteren wordt belangrijker. Overweeg bij die wijziging meteen of `PARTICIPANT_GRACE_MS` (10 min) mee omhoog moet: bij een lunchpauze van een half uur ben je je stem sowieso kwijt, wat prima is zolang de ronde daarna toch gereset wordt.
 
+### 10. Installeerbaar maken als PWA
+**Waarde: gemiddeld.** Sluit direct aan op de manier waarop de app gebruikt wordt: meestemmen vanaf je telefoon (zie #5). Levert een icoon op het beginscherm en een standalone weergave zonder browserbalk — dat scheelt schermruimte op een telefoon, en de wake lock (`requestWakeLock()` in `public/js/utils/helpers.js`) zit er al in.
+
+**Wat het níét oplevert: offline werken.** Dit is een real-time app; zonder verbinding is er niets zinvols te tonen. De service worker cachet dus alleen de app-shell (HTML/CSS/JS), nooit room-state.
+
+**Benodigd:**
+- `public/manifest.webmanifest` plus echte PNG-iconen (192 en 512). Het huidige favicon is een inline SVG data-URI in de `<head>` van `index.html` en `room.html` — bruikbaar als tab-icoon, maar niet genoeg om installeerbaar te zijn. Voor iOS ook een `apple-touch-icon`.
+- Service worker met de hand schrijven, geen Workbox: dit repo hand-rolt kleine utilities in plaats van er een package voor te trekken (zie `CLAUDE.md`).
+
+**De belangrijkste val — cache versus versienummer.** `/api/config` voedt het versienummer in het opties-scherm. Een service worker die de shell cachet, serveert na een deploy de oude JS/HTML terwijl `/api/config` al de nieuwe versie meldt. Dat is precies het "versie staat stil"-faalgeval waar `CLAUDE.md` voor waarschuwt, alleen dan via de cache in plaats van via een gemiste version-bump.
+- Nooit `/api/*` of Socket.IO-verkeer cachen.
+- De shell-cache benoemen naar `APP_VERSION`, zodat een nieuwe versie de oude cache automatisch ongeldig maakt.
+
+**HTTPS is een harde eis.** Service workers draaien alleen in een secure context. De deployment op een publiek domein voldoet daaraan; toegang via het LAN-adres (`http://192.168.x.x:3000`) niet. De README verkoopt LAN-gebruik juist als feature, en `copyToClipboard()` heeft al een expliciete fallback voor insecure contexts — installeerbaarheid wordt dus een extraatje voor de HTTPS-deployment, geen vervanging van de LAN-route.
+
+**Aandachtspunten:**
+- `start_url` wordt `/`. Joinen gaat via een QR-code of link, en die opent de browser, niet de geïnstalleerde app. Start je standalone op, dan land je dus op de homepagina en moet je de room-code intypen. Overweeg of dat acceptabel is, of dat een `share_target`/deeplink-oplossing nodig is.
+- iOS heeft beperkte PWA-ondersteuning; in standalone modus kan de socket bij backgrounden sneuvelen. Dat valt onder het bestaande re-join-pad op `socket.on('connect')` in `public/js/room/room-page.js`.
+- Docker vereist geen wijziging: `COPY public ./public` staat al in de `Dockerfile`, dus manifest, service worker en iconen liften automatisch mee.
+
 ---
 
 ## ✅ Afgerond
