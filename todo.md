@@ -101,13 +101,34 @@ Dit **verwijdert** een uitzondering in plaats van er een toe te voegen: wie niet
 - `public/js/main.js` — routeren op `presenter.html`.
 - `public/js/room/room-page.js` — alle presenter-logica eruit: `is-presenter` body-class, presenter-banner, en `showSMControls()` wordt puur host-controls.
 
-#### Lifecycle — twee gaten die de huidige logica niet dekt
+#### Meerdere presenter-schermen
 
-1. **Room zonder deelnemers bij aanmaak.** De 15-minutentimer wordt nu alleen gezet in `handleDisconnect` als de láátste deelnemer wegvalt. Een room die als presenter wordt aangemaakt heeft nooit een deelnemer gehad, dus die timer start nooit — hij leeft op de 24-uurstimer. Acceptabel, maar bewust vastleggen.
-2. **Presenter-scherm dat blijft staan.** Gaat iedereen lunchen, dan start de 15-minutentimer en is de room weg terwijl het scherm er nog naar kijkt. Voorstel:
-   - Een verbonden display onderdrukt de 15-minutenopruiming — voeg `room.displays.size === 0` toe aan de conditie in de `disconnectTimer`-callback.
+Toegestaan, en dat volgt uit het ontwerp: `room.displays` is een Set, dus een tweede scherm komt er gewoon bij. Beide krijgen dezelfde `sanitizeRoom(room, null)`.
+
+**Een display bezit niets** — geen stoel, geen stem, geen rol. Daarom heeft hij niets van de token- en eviction-machinerie uit PR #20 nodig: die bestaat juist omdat een deelnemer wél state bezit en een naamgenoot die anders zou erven. Een scherm dat herlaadt hangt heel even als twee sockets in de Set tot de oude disconnect binnenkomt; onschadelijk.
+
+Rechten zijn strikt mínder dan die van een deelnemer: een display ziet vóór de reveal geen enkele stem, een deelnemer ziet zijn eigen kaart wel. En wie de room-code heeft kan sowieso al joinen, dus een tweede presenter opent geen gat.
+
+Levert gratis op: hybride overleg met een scherm in de zaal én een gedeeld scherm in de call, of simpelweg een tweede monitor.
+
+Twee dingen die hierbij horen:
+
+- **Toon de host hoeveel schermen meekijken** (bijv. "2 presenter-schermen" in het SM-paneel), anders weet je niet of de TV het nog doet.
+- **Broadcast-versterking**: N displays betekent N extra emits per statuswijziging. Niet nieuw — deelnemers doen hetzelfde — maar een display is goedkoper te openen. Een ruime bovengrens kan, niet oplossen tot het speelt.
+
+#### Lifecycle — drie gaten die de huidige logica niet dekt
+
+1. **Room zonder deelnemers bij aanmaak.** De opruimtimer wordt nu alleen gezet in `handleDisconnect` als de láátste deelnemer wegvalt. Een room die als presenter wordt aangemaakt heeft nooit een deelnemer gehad, dus die timer start nooit — hij leeft op de 24-uurstimer. Acceptabel, maar bewust vastleggen.
+
+2. **De timer moet pas lopen als iederéén weg is, en naar 30 minuten.** Nu telt alleen "geen verbonden deelnemers meer". Dat wordt: geen verbonden deelnemers **en** geen verbonden displays. Gaat het team lunchen terwijl het scherm aan blijft, dan blijft de room dus bestaan.
+   - `RECONNECT_GRACE_PERIOD_MS` van 15 naar 30 minuten (`src/config.js:19`).
+   - Conditie in de `disconnectTimer`-callback uitbreiden met `room.displays.size === 0`.
    - Bij disconnect van een display: zijn er geen deelnemers én geen displays meer, start dan alsnog die timer.
    - De 24-uurstimer negeert displays: een room waar alleen nog een scherm naar staart, verdwijnt na 24 uur.
+   - **Het getal 15 staat op vijf plekken vast** en moet overal mee: de assertie in `tests/config.test.js:33`, plus `docs/wiki/lifecycle.md` (state-diagram én de sectiekop "The 15-Minute Empty Room Grace Period"), `docs/wiki/file-structure.md` en `docs/wiki/index.md`.
+   - Gevolg voor #9: het gat tussen de stoel-grace (10 min) en de room-grace groeit van 5 naar 20 minuten. Zie dat item.
+
+3. **Room verdwijnt terwijl een scherm nog kijkt.** `deleteRoom()` in `src/store/rooms.js` licht niemand in — er bestaat geen enkel "room weg"-event. Vandaag onschadelijk, want een room gaat alleen dood als iedereen al weg is. Met displays kan er wél iemand verbonden zijn op het moment van verwijderen (de 24-uurstimer), en dat scherm blijft dan voor eeuwig verouderde data tonen. Nodig: een `room-closed` naar de resterende displays bij verwijdering.
 
 #### Open beslissingen
 
@@ -145,6 +166,8 @@ De laatste stoel verdwijnt op minuut 10, de room pas op minuut 15. In dat gat be
 
 - Verdedigbaar gedrag (de room-code blijft geldig), maar het staat nergens beschreven en de twee timers overlappen zonder dat de relatie ergens expliciet is.
 - Keuze: ofwel de room meteen opruimen zodra `expireParticipantGrace()` de laatste deelnemer verwijdert, ofwel de verhouding tussen beide timers documenteren in `docs/wiki/lifecycle.md`.
+
+**Let op:** #5 verhoogt `RECONNECT_GRACE_PERIOD_MS` naar 30 minuten en laat de timer pas starten als ook alle presenter-schermen weg zijn. Daarmee groeit dit gat van 5 naar 20 minuten. Het gedrag verandert niet van aard — alleen het venster wordt groter, dus documenteren wordt belangrijker. Overweeg bij die wijziging meteen of `PARTICIPANT_GRACE_MS` (10 min) mee omhoog moet: bij een lunchpauze van een half uur ben je je stem sowieso kwijt, wat prima is zolang de ronde daarna toch gereset wordt.
 
 ---
 
