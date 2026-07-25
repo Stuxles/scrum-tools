@@ -19,12 +19,17 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
     const li = document.createElement('li');
     li.className  = 'participant-item' + (isAway ? ' is-away' : '');
     li.dataset.id = p.id;
-    if (isAway) li.title = t('participant-away-title');
+    // Always name the row: on a phone the list collapses to initials only, so
+    // this is what tells you who a chip belongs to.
+    li.title = isAway ? `${p.name} — ${t('participant-away-title')}` : p.name;
 
-    const initial = escHtml((p.name || '?')[0].toUpperCase());
+    // Two letters, not one: a row of bare initials has too many collisions on
+    // a normal team. Split by code point so an emoji or accent isn't cut in
+    // half. Falls back to '?' for a name that is somehow empty.
+    const initials = escHtml([...(p.name || '?').trim()].slice(0, 2).join('').toUpperCase() || '?');
     const roleText = p.isMaster ? 'Scrum Master' : (p.isSpectator ? t('role-spectator') : t('role-participant'));
     li.innerHTML  = `
-      <div class="participant-avatar" aria-hidden="true">${initial}</div>
+      <div class="participant-avatar" aria-hidden="true">${initials}</div>
       <div class="participant-info">
         <div class="participant-name">${escHtml(p.name)}${p.id === socket.id ? ` <span style="color:var(--purple-300)">${t('user-you')}</span>` : ''}${p.isMaster ? ' 👑' : ''}</div>
         <div class="participant-role">${roleText}</div>
@@ -85,6 +90,17 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
       });
       li.appendChild(kickBtn);
     }
+
+    // Phone-only affordance: the chip collapses to initials there, so tapping
+    // it expands that one row to show the full name and, for the host, the
+    // transfer and kick buttons. Does nothing visible on desktop, where the
+    // name and buttons are on screen anyway.
+    li.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return; // let the action buttons act
+      const wasOpen = li.classList.contains('is-expanded');
+      participantsList.querySelectorAll('.is-expanded').forEach(el => el.classList.remove('is-expanded'));
+      if (!wasOpen) li.classList.add('is-expanded');
+    });
 
     participantsList.appendChild(li);
   }

@@ -1361,11 +1361,39 @@ html.australia-mode body {
     scrollbar-width: none;
   }
   .participants-list::-webkit-scrollbar { display: none; }
+  /* Collapsed to initials: a dozen chips fit on screen instead of three.
+     Tap one to expand just that row (see render-users.js). */
   .participant-item {
     flex: 0 0 auto;
-    padding: 6px 10px;
+    position: relative;
+    gap: 0;
+    padding: 4px;
     border-radius: var(--r-full);
   }
+  .participant-item .participant-info,
+  .participant-item .transfer-btn,
+  .participant-item .kick-btn { display: none; }
+
+  .participant-item .participant-status {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.65rem;
+    border: 2px solid var(--bg-surface);
+  }
+
+  .participant-item.is-expanded {
+    gap: 10px;
+    padding: 4px 12px 4px 4px;
+  }
+  .participant-item.is-expanded .participant-info { display: block; }
+  .participant-item.is-expanded .transfer-btn,
+  .participant-item.is-expanded .kick-btn { display: inline-flex; }
+  .participant-item.is-expanded .participant-status { position: static; border: none; }
+
   .participant-name { font-size: 0.85rem; white-space: nowrap; }
   .participant-role { display: none; }
 
