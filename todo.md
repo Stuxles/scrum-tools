@@ -39,30 +39,98 @@ Afgeronde items staan onderaan.
 - Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
 - **Bewuste trade-off:** de README verkoopt "geen database nodig" als feature. Alleen oppakken als dit in de praktijk stoort.
 
-### 5. Presenter-scherm loskoppelen van de Scrum Master-rol
-**Waarde: hoog.** De SM-rol bundelt nu drie losse dingen in één socket: *rechten* (reveal, reset, deck, kick, story-titel, auto-reveal), *presenter-weergave* (eigen dek verbergen, QR-paneel, `is-presenter` op de body) en *structureel niet mogen stemmen*.
+### 5. Presenter-scherm als eigen ingang
+**Waarde: hoog.** Nu bundelt de Scrum Master-rol drie losse dingen in één socket: *rechten* (reveal, reset, deck, kick, story-titel, auto-reveal), *presenter-weergave* (eigen dek verbergen, QR-paneel, `is-presenter` op de body) en *structureel niet mogen stemmen*.
 
-Dat botst met de manier waarop de app in de praktijk gebruikt wordt: de facilitator zet de sessie op een groot scherm én doet mee vanaf zijn telefoon. Nu kan dat niet goed — geeft de telefoon de rechten, dan verliest het grote scherm zijn presenter-weergave (kaarten verschijnen, QR verdwijnt); houdt het grote scherm de rol, dan moet je er fysiek heen om te revealen. Bovendien sta je dan als twee losse rijen met dezelfde naam in de deelnemerslijst.
+Dat botst met hoe de app gebruikt wordt: de facilitator zet de sessie op een groot scherm én doet mee vanaf zijn telefoon. Geeft de telefoon de rechten, dan verliest het grote scherm zijn presenter-weergave; houdt het grote scherm de rol, dan moet je er fysiek heen om te revealen. Bovendien sta je dan twee keer in de deelnemerslijst.
 
-**Gekozen aanpak: het presenter-scherm is helemaal geen deelnemer.**
+**Aanpak: een presenter-scherm is geen deelnemer, en je komt er via een eigen ingang binnen.** Een room aanmaken *is* het opzetten van het scherm — geen rol die later moet verhuizen.
 
-- Join met een `presenter`-modus: wel `socket.join(roomId)` voor de broadcasts, géén entry in `room.participants`.
-- Werkt omdat `sanitizeRoom(room, null)` al bestaat — zonder viewer-id krijg je precies de "alleen onthulde stemmen"-weergave die een presenter-scherm nodig heeft (`src/store/rooms.js`).
-- `broadcastRoomState()` itereert nu over `room.participants` om per socket te emitten; er moet een `room.displays` (Set van socket-ids) bij die de `sanitizeRoom(room, null)`-versie krijgt (`src/utils/broadcast.js`).
-- Het presenter-scherm heeft dan **nul rechten**; de telefoon houdt de host-rol én stemt gewoon mee.
-- Client: QR-paneel en `is-presenter` loskoppelen van `showSMControls()` in `public/js/room/room-page.js` — splitsen in host-controls en presenter-weergave.
+```mermaid
+flowchart TD
+    I["index.html"] --> C["Maak room<br/>alleen room-naam"]
+    I --> P["Presenteer room<br/>room-code invoeren"]
+    I --> J["Join room<br/>naam invoeren"]
+    C --> PV["presenter.html<br/>scherm, geen deelnemer"]
+    P --> PV
+    J --> RV["room.html<br/>deelnemer"]
+    PV --> D["room.displays<br/>telt niet mee bij stemmen"]
+    RV --> PA["room.participants<br/>eerste joiner wordt host"]
+```
 
-**Grootste risico:** `masterId` fungeert op vier plekken als "de niet-stemmer"-markering — `src/utils/autoReveal.js` (`p.id !== room.masterId`), de voortgangsbalk, de resultatengrid en de stats. Bij deze aanpak hoef je die niet te *vervangen* maar te *verwijderen*: een presenter is geen deelnemer, dus valt automatisch buiten alle stem-berekeningen. Wel de auto-reveal-tests nalopen — daar zit de bestaande dekking op.
+#### Model
 
-**Gevolg dat een keuze is, geen bug:** de opruimlogica verwijdert een room zodra er geen verbonden deelnemers meer zijn. Een room waar alleen nog een presenter-scherm aan hangt, wordt dus na `RECONNECT_GRACE_PERIOD_MS` opgeruimd.
+| | Wat | Heeft naam | Stemt | Rechten |
+|---|---|---|---|---|
+| **display** | een scherm | nee | nee | nee |
+| **participant** | een persoon | ja | ja | nee |
+| **host** | eerste participant | ja | ja | ja |
 
-**Wat de transfer-knop hierna betekent:** nu sleept `sm-transfer-master` alle drie de dingen tegelijk mee, inclusief de weergave — daarom voelt hij verkeerd. Na de splitsing verhuist alleen de bevoegdheid ("iemand anders faciliteert nu"), en blijft het grote scherm staan waar het staat.
+Een display staat niet in `room.participants` en valt daardoor automatisch buiten elke stemberekening — geen enkele filter hoeft hem te kennen.
 
-**Overwogen en afgevallen:**
-- *Presenter als gewone deelnemer met een `isPresenter`-vlag* — werkt, maar je staat dan nog steeds dubbel in de lijst en `masterId` moet overal vervangen worden door een presenter/spectator-filter.
-- *Eén gebruiker met meerdere verbindingen* (`sockets: Set`, één stem, presenter-vlag per verbinding) — conceptueel het netst, maar ontkoppelt deelnemer-identiteit van socket-id door de hele codebase (kick, transfer, grace-timers, broadcast, sanitize) en vereist een apart koppel-mechanisme. De QR is niet herbruikbaar: dat is de join-link die iedereen scant. Botst bovendien met de eviction-regel uit PR #20 — dezelfde token op twee apparaten betekent per definitie "iemand is teruggekomen", niet "iemand heeft een tweede scherm".
+#### Serverwijzigingen
 
-**Bijvangst:** lost meteen de dubbelzinnigheid op dat twee gelijknamige deelnemers (of jouw eigen twee apparaten) als identieke rijen in de lijst staan — sinds PR #20 houden die wel elk hun eigen stoel, maar de SM ziet bij kicken en rol-overdracht niet wélke "Jan" hij te pakken heeft.
+- `src/store/rooms.js` — `displays: Set<socketId>` op het room-object.
+- `src/socket/handlers/roomHandlers.js`
+  - `handleCreateRoom`: `name` vervalt, alleen room-naam en dek. Default room-naam wordt `Room ${roomId}` in plaats van `${name}'s Room`; `masterName`/`masterToken` starten leeg.
+  - Nieuw `handleWatchRoom(socket, { roomId, sessionToken })`: `socket.join(roomId)`, `room.displays.add(socket.id)`, emit `room-state` met `sanitizeRoom(room, null)`. Bestaat de room niet → `error`. De token meesturen is optioneel maar ruimt de oude stoel meteen op als iemand een lopende sessie omschakelt naar presenter (anders 10 minuten spookrij).
+- `src/utils/broadcast.js` — tweede lus na de participants:
+  ```js
+  for (const id of room.displays ?? []) {
+    _io.sockets.sockets.get(id)?.emit('room-state', { room: sanitizeRoom(room, null) });
+  }
+  ```
+  `sanitizeRoom(room, null)` bestaat al en geeft precies de juiste weergave: stemmen pas zichtbaar na de reveal.
+- `src/socket/handlers/connectionHandlers.js` — display-disconnect afhandelen, zie lifecycle hieronder.
+
+**De vier niet-stemmer-filters** gaan van "niet de master" naar "niet de spectator". Zonder dit kan de host nog steeds niet stemmen, en dat was het hele punt:
+
+```
+src/utils/autoReveal.js:21          p.id !== room.masterId && !p.isSpectator  →  !p.isSpectator
+public/js/room/render-results.js:19
+public/js/room/room-page.js:419     (voortgangsbalk)
+public/js/room/render-voting.js:81  (dek verbergen)
+```
+
+Dit **verwijdert** een uitzondering in plaats van er een toe te voegen: wie niet wil stemmen zet zichzelf op spectator, en dat knopje bestaat al.
+
+#### Clientwijzigingen
+
+- **Nieuw: `public/presenter.html` + `public/js/pages/presenter-page.js`.** Aparte pagina, geen vlag op `room.html` — die zit vol met join-modal, dek, stem-statusbalk, naam- en spectator-knoppen die je allemaal zou moeten verbergen. En een presenter-scherm wordt van drie meter afstand gelezen, dus andere typografie. Hergebruikt `render-users.js`, `render-results.js`, `qr-module.js`, `i18n.js` en `theme.js`. Toont room-naam, code groot, QR groot, deelnemerslijst, voortgang, story-titel en resultaten na reveal. Geen dek, geen knoppen.
+- `public/index.html` + `public/js/pages/index-page.js` — derde tab "Presenteer room" met code-invoer (valideren via de bestaande `GET /api/rooms/:id`). Uit het create-formulier verdwijnt het naamveld; room-naam wordt het hoofdveld.
+- `public/js/main.js` — routeren op `presenter.html`.
+- `public/js/room/room-page.js` — alle presenter-logica eruit: `is-presenter` body-class, presenter-banner, en `showSMControls()` wordt puur host-controls.
+
+#### Lifecycle — twee gaten die de huidige logica niet dekt
+
+1. **Room zonder deelnemers bij aanmaak.** De 15-minutentimer wordt nu alleen gezet in `handleDisconnect` als de láátste deelnemer wegvalt. Een room die als presenter wordt aangemaakt heeft nooit een deelnemer gehad, dus die timer start nooit — hij leeft op de 24-uurstimer. Acceptabel, maar bewust vastleggen.
+2. **Presenter-scherm dat blijft staan.** Gaat iedereen lunchen, dan start de 15-minutentimer en is de room weg terwijl het scherm er nog naar kijkt. Voorstel:
+   - Een verbonden display onderdrukt de 15-minutenopruiming — voeg `room.displays.size === 0` toe aan de conditie in de `disconnectTimer`-callback.
+   - Bij disconnect van een display: zijn er geen deelnemers én geen displays meer, start dan alsnog die timer.
+   - De 24-uurstimer negeert displays: een room waar alleen nog een scherm naar staart, verdwijnt na 24 uur.
+
+#### Open beslissingen
+
+- **`sm-transfer-master` laten staan?** Met dit ontwerp is overdragen niet meer nodig voor het presenter-scenario — je opent gewoon een presenter-scherm. Tussen personen blijft het zinvol (jij moet weg, iemand anders faciliteert). Advies: laten staan, hij is gebouwd en getest, en `claim-master` is de pull-variant ernaast.
+- **QR bij deelnemers?** Nu alleen zichtbaar voor de SM. De presenter toont hem groot; de host zou hem ook moeten houden om te kunnen uitnodigen.
+
+#### Overwogen en afgevallen
+
+- *Presenter als deelnemer met een `isPresenter`-vlag* — je staat dan nog steeds in de lijst en `masterId` moet overal vervangen worden door een presenter/spectator-filter.
+- *Eén gebruiker met meerdere verbindingen* (`sockets: Set`, één stem, presenter-vlag per verbinding) — conceptueel het netst, maar ontkoppelt deelnemer-identiteit van socket-id door de hele codebase (kick, transfer, grace-timers, broadcast, sanitize) en vereist een apart koppelmechanisme. De QR is daar niet voor herbruikbaar: dat is de join-link die iedereen scant. Botst bovendien met de eviction-regel uit PR #20 — dezelfde token op twee apparaten betekent per definitie "iemand is teruggekomen", niet "iemand heeft een tweede scherm".
+
+#### Volgorde
+
+1. Server: `displays` + `watch-room` + broadcast + lifecycle — los testbaar
+2. De vier filters omzetten, bestaande auto-reveal-tests bijwerken (de master telt straks als stemmer)
+3. `presenter.html` + `presenter-page.js`
+4. Index: derde tab, naamveld eruit
+5. `room-page.js` opschonen
+6. Docs: `roles.md`, `lifecycle.md`, `socket-flows.md`, `file-structure.md`
+
+Stap 1 en 2 zijn samen al bruikbaar; 3 tot en met 5 is de zichtbare helft.
+
+**Bijvangst:** lost de dubbelzinnigheid op dat twee gelijknamige deelnemers (of je eigen twee apparaten) als identieke rijen in de lijst staan — sinds PR #20 houdt elk wel zijn eigen stoel, maar de SM ziet bij kicken en rol-overdracht niet wélke "Jan" hij te pakken heeft.
 
 ### 9. Een room bestaat 5 minuten zonder deelnemers
 **Waarde: laag.** `PARTICIPANT_GRACE_MS` staat op 10 minuten, `RECONNECT_GRACE_PERIOD_MS` op 15. Uit het log:
