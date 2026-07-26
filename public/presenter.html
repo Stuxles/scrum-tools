@@ -46,13 +46,8 @@
           <div class="online-dot" aria-hidden="true"></div>
           <span id="presenter-online-count">0</span>
         </div>
-        <button class="btn btn-secondary btn-icon" id="lang-toggle" title="Taal / Language">NL</button>
         <button class="btn btn-secondary btn-icon" id="presenter-options-btn" title="Opties & instellingen"
           data-i18n-title="options-btn-title" aria-label="Opties">⚙️</button>
-        <button class="btn btn-secondary btn-icon" id="theme-toggle" title="Wissel thema"
-          data-i18n-title="theme-toggle-title" aria-label="Thema">
-          <span id="theme-icon">☀️</span>
-        </button>
       </div>
     </header>
 
@@ -145,6 +140,25 @@
         <p class="modal-subtitle" data-i18n="presenter-options-sub">Instellingen van dit scherm.</p>
 
         <div class="options-list" style="display: flex; flex-direction: column; gap: 12px; margin: 16px 0;">
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-lang">Taal / Language</div>
+              <div class="option-row-sub">Nederlands / English</div>
+            </div>
+            <button class="btn btn-secondary btn-sm lang-toggle" id="lang-toggle" title="Wissel taal">NL</button>
+          </div>
+
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-theme">Thema</div>
+              <div class="option-row-sub" id="options-sub-theme" data-i18n="options-sub-theme">Donkere of lichte modus</div>
+            </div>
+            <button class="btn btn-secondary btn-sm theme-toggle" id="theme-toggle" title="Wissel thema">
+              <span id="theme-icon" style="font-size:1rem; margin-right:4px;">☀️</span>
+              <span id="theme-label">Licht</span>
+            </button>
+          </div>
+
           <div class="option-row">
             <div>
               <div class="option-row-title" data-i18n="options-label-confetti">Confetti</div>
