@@ -14,8 +14,11 @@
 import { toast }              from '../utils/toast.js';
 import { t }                  from '../utils/i18n.js';
 import { onThemeChange }      from '../theme.js';
+import { getConfettiEnabled } from '../utils/helpers.js';
 import { renderParticipants } from '../room/render-users.js';
 import { renderResults }      from '../room/render-results.js';
+import { computeVoteStats, isUnanimousConsensus } from '../utils/stats.js';
+import { celebrateConsensus } from '../utils/confetti.js';
 
 export function initPresenterPage(socket, urlRoomId) {
   if (!urlRoomId) {
@@ -62,6 +65,10 @@ export function initPresenterPage(socket, urlRoomId) {
   // Naming the ticket is opt-in: plenty of teams never do it, so the field
   // stays collapsed until someone asks for it — or until a title arrives from
   // the server, which means somebody somewhere is using it after all.
+  // Fire the consensus burst once per reveal, not on every room-state that
+  // arrives while the room stays revealed.
+  let hasCelebratedThisReveal = false;
+
   let storyOpen = false;
   function renderStoryVisibility() {
     const show = storyOpen || Boolean((currentRoom?.storyTitle || '').trim());
@@ -195,7 +202,20 @@ export function initPresenterPage(socket, urlRoomId) {
       // screen nobody can reach. The CSS reads this back as --card-w.
       resultsCardsGrid.dataset.size = voters.length <= 8 ? 'lg' : voters.length <= 16 ? 'md' : 'sm';
       renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
+
+      // The screen is where everyone is already looking, so this is the place
+      // to celebrate a unanimous round. The on/off preference is per device,
+      // which here means the screen's own — a phone opting out does not stop
+      // the room from seeing it, and vice versa.
+      if (!hasCelebratedThisReveal) {
+        const stats = computeVoteStats(room.participants);
+        if (isUnanimousConsensus(stats.votes, voters.length) && getConfettiEnabled()) {
+          celebrateConsensus();
+        }
+        hasCelebratedThisReveal = true; // only ever attempt once per reveal
+      }
     } else {
+      hasCelebratedThisReveal = false;
       resultsPhase.classList.add('hidden');
     }
   }
