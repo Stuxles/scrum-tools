@@ -14,7 +14,7 @@
 import { toast }              from '../utils/toast.js';
 import { t }                  from '../utils/i18n.js';
 import { onThemeChange }      from '../theme.js';
-import { getConfettiEnabled } from '../utils/helpers.js';
+import { getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { renderParticipants } from '../room/render-users.js';
 import { renderResults }      from '../room/render-results.js';
 import { computeVoteStats, isUnanimousConsensus } from '../utils/stats.js';
@@ -59,6 +59,14 @@ export function initPresenterPage(socket, urlRoomId) {
   const resultsCardsGrid = document.getElementById('results-cards-grid');
   const resultsStats    = document.getElementById('results-stats');
   const closedOverlay   = document.getElementById('presenter-closed');
+  const optionsBtn      = document.getElementById('presenter-options-btn');
+  const optionsModal    = document.getElementById('options-modal');
+  const optionsCloseBtn = document.getElementById('options-close-btn');
+  const optionsVersion  = document.getElementById('options-version');
+  const confettiToggle  = document.getElementById('confetti-toggle');
+  const confettiLabel   = document.getElementById('confetti-label');
+  const australiaToggle = document.getElementById('australia-toggle');
+  const australiaLabel  = document.getElementById('australia-label');
 
   let currentRoom = null;
 
@@ -243,7 +251,47 @@ export function initPresenterPage(socket, urlRoomId) {
 
   loadQR();
 
+  // ── Options ───────────────────────────────────────────────────────────────
+  optionsBtn.addEventListener('click', () => optionsModal.classList.remove('hidden'));
+  optionsCloseBtn.addEventListener('click', () => optionsModal.classList.add('hidden'));
+  optionsModal.addEventListener('click', e => { if (e.target === optionsModal) optionsModal.classList.add('hidden'); });
+
+  function renderConfettiToggle() {
+    confettiLabel.textContent = getConfettiEnabled() ? t('confetti-on') : t('confetti-off');
+    confettiToggle.setAttribute('aria-pressed', String(getConfettiEnabled()));
+  }
+  confettiToggle.addEventListener('click', () => {
+    setConfettiEnabled(!getConfettiEnabled());
+    renderConfettiToggle();
+  });
+
+  function renderAustraliaToggle() {
+    australiaLabel.textContent = getAustraliaModeEnabled() ? t('confetti-on') : t('confetti-off');
+    australiaToggle.setAttribute('aria-pressed', String(getAustraliaModeEnabled()));
+  }
+  australiaToggle.addEventListener('click', () => {
+    const enabled = !getAustraliaModeEnabled();
+    setAustraliaModeEnabled(enabled);
+    applyAustraliaMode(enabled);
+    renderAustraliaToggle();
+  });
+
+  renderConfettiToggle();
+  renderAustraliaToggle();
+
+  let appVersion = null;
+  const renderVersion = () => {
+    if (appVersion) optionsVersion.textContent = `${t('options-version-label')} ${appVersion}`;
+  };
+  fetch('/api/config')
+    .then(r => r.json())
+    .then(data => { if (data.version) { appVersion = data.version; renderVersion(); } })
+    .catch(() => {});
+
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);
+    renderConfettiToggle();
+    renderAustraliaToggle();
+    renderVersion();
   });
 }

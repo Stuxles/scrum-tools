@@ -47,6 +47,8 @@
           <span id="presenter-online-count">0</span>
         </div>
         <button class="btn btn-secondary btn-icon" id="lang-toggle" title="Taal / Language">NL</button>
+        <button class="btn btn-secondary btn-icon" id="presenter-options-btn" title="Opties & instellingen"
+          data-i18n-title="options-btn-title" aria-label="Opties">⚙️</button>
         <button class="btn btn-secondary btn-icon" id="theme-toggle" title="Wissel thema"
           data-i18n-title="theme-toggle-title" aria-label="Thema">
           <span id="theme-icon">☀️</span>
@@ -131,6 +133,50 @@
         <ul class="participants-list" id="participants-list" role="list"></ul>
       </aside>
     </main>
+
+    <!-- ── Options modal ──────────────────────────────────────── -->
+    <!-- Theme and language sit in the header; this covers the per-device
+         preferences that have nowhere else to live on a screen that never
+         joins a room. -->
+    <div id="options-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+      aria-labelledby="options-modal-title">
+      <div class="modal-box" style="max-width: 440px;">
+        <h2 class="modal-title" id="options-modal-title" data-i18n="options-modal-title">Opties &amp; Instellingen</h2>
+        <p class="modal-subtitle" data-i18n="presenter-options-sub">Instellingen van dit scherm.</p>
+
+        <div class="options-list" style="display: flex; flex-direction: column; gap: 12px; margin: 16px 0;">
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-confetti">Confetti</div>
+              <div class="option-row-sub" data-i18n="options-sub-confetti">Feestje bij unanieme stem</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="confetti-toggle" title="Confetti aan/uit"
+              data-i18n-title="confetti-btn-title">
+              <span id="confetti-icon">🎉</span>
+              <span id="confetti-label" data-i18n="confetti-on">Aan</span>
+            </button>
+          </div>
+
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-australia">Australië-modus</div>
+              <div class="option-row-sub" data-i18n="options-sub-australia">Alles ondersteboven 🇦🇺</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="australia-toggle" title="Australië-modus aan/uit"
+              data-i18n-title="australia-btn-title">
+              <span id="australia-icon">🙃</span>
+              <span id="australia-label" data-i18n="confetti-off">Uit</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="options-version" id="options-version"></div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-full" id="options-close-btn" data-i18n="qr-close-btn">Sluiten</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ── Deck modal ─────────────────────────────────────────── -->
     <div id="deck-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deck-modal-title">
