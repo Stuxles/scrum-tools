@@ -29,9 +29,11 @@ export function initPresenterPage(socket, urlRoomId) {
   const roomName        = document.getElementById('presenter-room-name');
   const roomCode        = document.getElementById('presenter-code');
   const onlineCount     = document.getElementById('presenter-online-count');
+  const invitePanel     = document.getElementById('presenter-invite');
   const qrImg           = document.getElementById('presenter-qr');
   const qrPlaceholder   = document.getElementById('presenter-qr-placeholder');
   const qrUrl           = document.getElementById('presenter-url');
+  const qrToggle        = document.getElementById('presenter-qr-toggle');
   const storyWrap       = document.getElementById('presenter-story');
   const storyAddBtn     = document.getElementById('presenter-story-add');
   const storyInput      = document.getElementById('presenter-story-input');
@@ -105,6 +107,21 @@ export function initPresenterPage(socket, urlRoomId) {
   }
 
   onThemeChange(() => loadQR());
+
+  // The QR folds away by itself once the room has filled — it has done its job
+  // and should not keep a quarter of the screen. `null` means "follow the
+  // room"; once the facilitator decides, their choice sticks.
+  let qrOverride = null;
+  function renderInvite() {
+    const open = qrOverride ?? !currentRoom?.participants.length;
+    invitePanel.classList.toggle('is-collapsed', !open);
+    qrToggle.textContent = open ? t('presenter-hide-qr') : t('presenter-show-qr');
+    qrToggle.setAttribute('aria-expanded', String(open));
+  }
+  qrToggle.addEventListener('click', () => {
+    qrOverride = invitePanel.classList.contains('is-collapsed');
+    renderInvite();
+  });
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const emitRoom = (event, extra = {}) => {
@@ -188,6 +205,8 @@ export function initPresenterPage(socket, urlRoomId) {
     currentDeck.textContent = deckLabel(room.deckType);
     deckModalType.value     = room.deckType;
     autoRevealChk.checked   = Boolean(room.autoReveal);
+
+    renderInvite();
 
     const hasPeople = room.participants.length > 0;
     emptyState.classList.toggle('hidden', hasPeople);
@@ -296,6 +315,7 @@ export function initPresenterPage(socket, urlRoomId) {
 
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);
+    renderInvite();
     renderConfettiToggle();
     renderAustraliaToggle();
     renderVersion();

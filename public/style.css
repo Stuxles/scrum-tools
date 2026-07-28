@@ -1786,6 +1786,20 @@ html.australia-mode body {
   word-break: break-all;
 }
 
+/* Once people are in, the QR has done its job and a quarter of the screen
+   should not stay reserved for it. Collapsed keeps the room code — a latecomer
+   can still type that — and the toggle brings the code back for scanning. */
+.presenter-qr-toggle { margin-top: 12px; width: 100%; justify-content: center; }
+.presenter-invite.is-collapsed .presenter-qr,
+.presenter-invite.is-collapsed .presenter-qr-placeholder,
+.presenter-invite.is-collapsed .presenter-url { display: none; }
+.presenter-invite.is-collapsed .presenter-code { margin-bottom: 0; }
+
+/* Hand the width back to the cards, not just the vertical space. */
+.presenter-main:has(.presenter-invite.is-collapsed) {
+  grid-template-columns: minmax(150px, 180px) minmax(0, 1fr) minmax(210px, 260px);
+}
+
 .presenter-stage { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .presenter-progress,
 .presenter-people,
