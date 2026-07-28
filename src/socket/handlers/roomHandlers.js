@@ -86,10 +86,16 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
  * fine: a display owns no state, so there is nothing for a second one to
  * inherit or conflict with.
  *
+ * Deliberately takes no session token. Dropping the seat of whoever holds a
+ * matching token sounds tidy, but the token is per browser, not per tab: open
+ * a screen in a second tab of a browser already sitting in the room and it
+ * would delete the seat of the tab still using it. A seat left behind by
+ * navigating away expires on its own through the normal grace window.
+ *
  * @param {import('socket.io').Socket} socket
- * @param {{ roomId: string, sessionToken?: string }} payload
+ * @param {{ roomId: string }} payload
  */
-export function handleWatchRoom(socket, { roomId, sessionToken } = {}) {
+export function handleWatchRoom(socket, { roomId } = {}) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room) {
@@ -102,25 +108,6 @@ export function handleWatchRoom(socket, { roomId, sessionToken } = {}) {
   if (room.disconnectTimer) {
     clearTimeout(room.disconnectTimer);
     delete room.disconnectTimer;
-  }
-
-  // Switching an existing session over to presenter mode: drop the seat that
-  // client held instead of leaving it to time out as a ghost row.
-  const token = normalizeSessionToken(sessionToken);
-  if (token) {
-    for (const [id, p] of Object.entries(room.participants)) {
-      if (p.sessionToken !== token) continue;
-      if (room.participantGraceTimers?.[id]) {
-        clearTimeout(room.participantGraceTimers[id]);
-        delete room.participantGraceTimers[id];
-      }
-      delete room.participants[id];
-      if (room.masterId === id) {
-        room.masterId    = null;
-        room.masterName  = '';
-        room.masterToken = null;
-      }
-    }
   }
 
   if (!room.displays) room.displays = new Set();

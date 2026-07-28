@@ -286,7 +286,7 @@ describe('Presenter screens (displays are not participants)', () => {
     assert.strictEqual(rooms[roomId].deckType, 'standard', 'nor change the deck');
   });
 
-  test('switching a seated participant to presenter mode drops their seat', async () => {
+  test('opening a screen never disturbs the seats already in the room', async () => {
     const creator = createClient();
     await waitForConnect(creator);
     const roomId = await makeRoom(creator);
@@ -296,15 +296,18 @@ describe('Presenter screens (displays are not participants)', () => {
     alice.emit('join-room', { roomId, name: 'Alice' });
     const joined = await onceEvent(alice, 'room-joined');
     assert.strictEqual(joined.isMaster, true);
+    alice.emit('vote', { roomId, vote: '5' });
+    await new Promise(r => setTimeout(r, 100));
 
-    // Same person reopens the room as a presenter screen, replaying the token
-    // their browser stored — the seat should not linger as a ghost row.
+    // Same browser, second tab: the screen presents no token and must leave
+    // Alice's seat, vote and host role exactly where they are.
     const screen = createClient();
     await waitForConnect(screen);
     screen.emit('watch-room', { roomId, sessionToken: joined.sessionToken });
     await onceEvent(screen, 'room-watched');
 
-    assert.strictEqual(Object.keys(rooms[roomId].participants).length, 0, 'old seat removed');
-    assert.strictEqual(rooms[roomId].masterId, null, 'and the vacated host role is released');
+    assert.strictEqual(Object.keys(rooms[roomId].participants).length, 1, 'seat untouched');
+    assert.strictEqual(rooms[roomId].masterId, alice.id, 'still the host');
+    assert.strictEqual(rooms[roomId].participants[alice.id].vote, '5', 'vote intact');
   });
 });

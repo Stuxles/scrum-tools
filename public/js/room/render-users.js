@@ -11,13 +11,20 @@ import { toast } from '../utils/toast.js';
  * @param {import('socket.io-client').Socket} socket
  */
 export function renderParticipants(participantsList, room, isMaster, socket) {
+  // The whole list is rebuilt on every room-state, which arrives on every vote
+  // from anyone. Remember which chip was expanded first, or a teammate voting
+  // would snap it shut under the finger of a host reaching for kick.
+  const expandedId = participantsList.querySelector('.participant-item.is-expanded')?.dataset.id;
+
   participantsList.innerHTML = '';
 
   for (const p of room.participants) {
     const isAway = p.connected === false;
 
     const li = document.createElement('li');
-    li.className  = 'participant-item' + (isAway ? ' is-away' : '');
+    li.className  = 'participant-item'
+      + (isAway ? ' is-away' : '')
+      + (p.id === expandedId ? ' is-expanded' : '');
     li.dataset.id = p.id;
     // Always name the row: on a phone the list collapses to initials only, so
     // this is what tells you who a chip belongs to.

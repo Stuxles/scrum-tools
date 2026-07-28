@@ -239,7 +239,13 @@ export function initPresenterPage(socket, urlRoomId) {
     closedOverlay.classList.remove('hidden');
   });
 
-  socket.on('error', ({ message }) => toast(message, 'error'));
+  socket.on('error', ({ message }) => {
+    toast(message, 'error');
+    // A bookmarked screen whose room has since been cleaned up would otherwise
+    // sit on an empty page with nothing but a toast that fades after three
+    // seconds. Show the same dead-end as a room closing under us.
+    if (!currentRoom) closedOverlay.classList.remove('hidden');
+  });
 
   // Re-attach on every established connection, the same way the room page
   // re-joins: `connect` covers socket.io's own reconnect as well as a manual
