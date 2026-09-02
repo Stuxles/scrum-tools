@@ -16,7 +16,13 @@ export const CORS_ORIGIN = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
   : '*';
 
-export const RECONNECT_GRACE_PERIOD_MS = 15 * 60 * 1000; // 15 minutes (empty room)
+/**
+ * How long a room with nobody attached is kept before it is deleted.
+ * "Nobody attached" means no connected participant *and* no presenter screen
+ * — a team at lunch with the screen still up has not abandoned the room.
+ * Long enough to survive a coffee break or a lunch.
+ */
+export const RECONNECT_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes (empty room)
 
 /**
  * How long a disconnected participant's seat (vote, role, spectator state)

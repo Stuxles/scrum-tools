@@ -10,7 +10,8 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
 ## ✨ Features & Highlights
 
 - **⚡ Real-Time Collaboration**: Instant updates powered by **Socket.IO**. No polling, zero latency.
-- **📱 QR-Code Join & Zoom**: The Scrum Master or presenter sees a live QR code on their dashboard. Click it to open a **full-screen modal** suitable for large displays or projectors. Team members scan the code with their smartphone camera to join the exact room instantly!
+- **📺 Dedicated Presenter Screen**: Put the session on a TV or projector without taking a seat in it. Creating a room opens a presenter screen straight away — it shows the room code, a large QR code, live progress and the results, and you can reveal, start a new round and change the deck right from it. It is **not** a participant, so it never appears in the list, never blocks a vote and never skews the average. Meanwhile you join from your own phone and estimate like everyone else. Already have a room? The **Present** tab opens a screen for it by code, and several screens on one room are fine (handy for hybrid meetings).
+- **📱 QR-Code Join & Zoom**: The presenter screen shows a live QR code permanently; the host has one on their dashboard too, which opens a **full-screen modal** suitable for large displays. Team members scan it with their smartphone camera to join the exact room instantly!
 - **🃏 Configurable Card Decks**:
   - **Standard**: `0, 1, 2, 3, 4, 5, 6, 8, 12, 16, 24, 32, 40, ♾️, ❓, ☕`
   - **Fibonacci**: `0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, ❓, ☕`
@@ -21,11 +22,13 @@ A modern, interactive, and real-time **Scrum Poker web application** designed fo
   - **Screen Wake Lock API**: Automatically prevents smartphone screens from turning off or going into standby during an active planning session.
   - **Auto-Reconnect & Rejoin**: Switched momentarily to another app (like Slack or WhatsApp) or suffered a brief Wi-Fi drop? When returning to the browser tab, the application automatically reconnects and re-joins the active round.
   - **Card Deselection**: Click an already selected card again to easily deselect or change your vote prior to the reveal.
-- **👑 Scrum Master Controls**:
+- **👑 Facilitator Controls** — from the presenter screen *and* from the host's own device:
   - Progress bar with live voting status (*e.g., 4/5 voted*).
   - **Reveal** (one-time action per round to prevent accidental double-clicks).
   - **New Round / Reset** (clears votes for all participants).
-  - Participant management (kick members or transfer the Scrum Master role).
+  - Deck changes, the current ticket title and auto-reveal.
+  - Participant management (kick members, or hand the host role to someone else).
+  - The host is an **ordinary voter**: running the session no longer means sitting it out. Don't want to estimate? Toggle spectator, same as anyone else.
 - **🪶 Lightweight & Fast**: No database required! State is kept in-memory with automatic cleanup timers (`disconnectTimer`) for inactive rooms.
 - **🛡️ Hardened & Resilient**: Per-socket rate limiting (35 events/s) and a two-layer REST rate limiter (a 300/min per-IP ceiling plus a 120/min per-room budget, so a shared office connection or reverse proxy doesn't collapse everyone into one bucket) plus a safe-dispatch layer that defaults missing payloads, isolates handler errors, and rejects prototype-polluting room IDs — a single malformed client message can never crash the server.
 
@@ -96,6 +99,7 @@ npm test
 | `tests/config.test.js` | **Decks & Translations** | Verification of all deck arrays (`standard`, `fibonacci`, `tshirt`), special cards (`❓`, `☕`), and 100% bilingual parity check between NL and EN dictionaries in `i18n.js`. |
 | `tests/api.test.js` | **REST API** | HTTP integration testing of Express routes via `supertest`: `GET /api/config`, `GET /api/rooms/:id`, Base64 PNG QR code generation (`/api/rooms/:id/qr`), and Docker health check (`/health`). |
 | `tests/socket.test.js` | **Real-time WebSockets** | End-to-end Socket.IO integration testing (`socket.io-client`) simulating full room lifecycles: `create-room` → `join-room` → `vote` → `reveal` → `reset` → `kick-user` → `update-story-title`, plus `claim-master`, `sm-transfer-master`, and the 30s Scrum Master reconnect grace. |
+| `tests/presenter.test.js` | **Presenter screens** | `watch-room` attaches a display without seating anyone, displays stay out of `room.participants`, see no votes before the reveal, and may still drive the room (`canControlRoom`) while a plain participant may not. Also covers multiple screens on one room, `room-closed`, and a screen keeping the room alive after the last participant leaves. |
 | `tests/robustness.test.js` | **Resilience / Hardening** | Malformed & missing socket payloads, prototype-key room IDs (`__proto__`, `constructor`, …) and `roomId` case-normalization — proving a single bad client message can never crash the server. |
 | `tests/rateLimiter.test.js` | **REST Rate Limiting** | Per-IP fixed-window limiter: requests under quota pass, exceeding it returns `429` with `Retry-After`, the window resets, and separate IPs are tracked independently. |
 | `tests/roomId.test.js` | **Room Codes** | `generateRoomId` only emits the curated Crockford Base32 alphabet (no ambiguous `I`/`L`/`O`/`U`), is always uppercase, and produces distinct codes; `normalizeRoomId` trims/uppercases correctly. |
@@ -112,9 +116,9 @@ For deep-dive documentation on system design, state management, security (`sanit
 | :--- | :--- |
 | [**🏠 Wiki Index & System Overview**](./docs/wiki/index.md) | High-level system topology (`graph TD`) connecting Express, Socket.IO, ES Modules, and `localStorage`. |
 | [**🧩 Modular Components & Security**](./docs/wiki/architecture.md) | ES Module breakdown (`graph LR`) and unrevealed vote protection (`sanitizeRoom` flowchart). |
-| [**🔄 Room Lifecycle & Timers**](./docs/wiki/lifecycle.md) | State transitions (`stateDiagram-v2`) showing the **15-minute empty room grace period** and **24-hour cleanup**. |
-| [**⚡ Socket.IO Sequence Flows**](./docs/wiki/socket-flows.md) | Sequence diagrams (`sequenceDiagram`) for voting rounds (`join → vote → reveal → reset`) and user kicks (`handleKickUser`). |
-| [**👑 Roles & Permissions Matrix**](./docs/wiki/roles.md) | Detailed capability matrix and progress bar calculations filtering out non-voters (`isMaster` / `isSpectator`). |
+| [**🔄 Room Lifecycle & Timers**](./docs/wiki/lifecycle.md) | State transitions (`stateDiagram-v2`) showing the **30-minute unattended room grace period** (no participant *and* no presenter screen) and **24-hour cleanup**. |
+| [**⚡ Socket.IO Sequence Flows**](./docs/wiki/socket-flows.md) | Sequence diagrams (`sequenceDiagram`) for voting rounds (`watch-room` / `join → vote → reveal → reset`) and user kicks (`handleKickUser`). |
+| [**👑 Roles & Permissions Matrix**](./docs/wiki/roles.md) | Capability matrix for host, voter, spectator and presenter screen, plus who counts as a voter (`isSpectator`) and who may drive the room (`canControlRoom`). |
 | [**📂 Complete File Structure & Modules**](./docs/wiki/file-structure.md) | Exhaustive directory and file tree with module responsibilities and dependency graph (`graph TD`). |
 
 ---
@@ -137,6 +141,7 @@ For deep-dive documentation on system design, state management, security (`sanit
 ├── public/
 │   ├── index.html           # Home / Landing page
 │   ├── room.html            # Active poker room
+│   ├── presenter.html       # Presenter screen (display, not a participant)
 │   ├── style.css            # Styling, themes & animations
 │   └── js/                  # Client-side ES Modules (room, i18n, utils)
 ├── src/

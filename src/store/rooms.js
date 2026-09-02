@@ -4,7 +4,8 @@
  * @typedef {{ id: string, name: string, masterId: string|null, masterName: string,
  *             masterToken: string|null,
  *             deckType: string, deck: string[], revealed: boolean,
- *             participants: Record<string,Participant>, createdAt: number,
+ *             participants: Record<string,Participant>, displays: Set<string>,
+ *             createdAt: number,
  *             disconnectTimer?: ReturnType<typeof setTimeout>,
  *             cleanupTimer?: ReturnType<typeof setTimeout>,
  *             masterGraceTimer?: ReturnType<typeof setTimeout>,
@@ -16,6 +17,12 @@
  *
  * `sessionToken` is a per-client secret and is deliberately absent from
  * `sanitizeRoom` output — it must never reach anyone but its owner.
+ *
+ * `displays` holds the socket ids of presenter screens watching the room.
+ * A display is not a person: it has no seat, no vote and no role, so it is
+ * deliberately kept out of `participants` and therefore out of every vote
+ * calculation. That is also why it needs none of the session-token or
+ * eviction machinery a participant needs — it owns no state to inherit.
  */
 
 /**
@@ -39,6 +46,28 @@ export function deleteRoom(roomId) {
     for (const timer of Object.values(room.participantGraceTimers)) clearTimeout(timer);
   }
   delete rooms[roomId];
+}
+
+/**
+ * May this socket drive the room — reveal, reset, change the deck, set the
+ * story title, kick someone?
+ *
+ * Two kinds of client qualify, for the same reason: they are the facilitator.
+ * The host holds the role among the participants, and a presenter screen *is*
+ * the facilitator's dashboard — the whole point of putting the session on a
+ * big screen is running it from there while estimating from your own phone.
+ *
+ * This grants a display no more reach than the room code already does:
+ * `claim-master` is deliberately open to anyone who can join, so the code has
+ * always been the trust boundary rather than the role. See docs/wiki/roles.md.
+ *
+ * @param {Room}   room
+ * @param {string} socketId
+ * @returns {boolean}
+ */
+export function canControlRoom(room, socketId) {
+  if (!room) return false;
+  return room.masterId === socketId || Boolean(room.displays?.has(socketId));
 }
 
 /**

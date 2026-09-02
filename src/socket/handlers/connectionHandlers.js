@@ -1,5 +1,5 @@
-import { rooms, deleteRoom }  from '../../store/rooms.js';
-import { broadcastRoomState } from '../../utils/broadcast.js';
+import { rooms, canControlRoom } from '../../store/rooms.js';
+import { broadcastRoomState, closeRoom } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
 import { applyAutoReveal }    from '../../utils/autoReveal.js';
 import { RECONNECT_GRACE_PERIOD_MS, PARTICIPANT_GRACE_MS, MASTER_GRACE_MS } from '../../config.js';
@@ -12,7 +12,7 @@ import { info }                from '../../utils/logger.js';
 export function handleKickUser(io, socket, { roomId, targetId }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id || targetId === socket.id) return;
+  if (!room || !canControlRoom(room, socket.id) || targetId === socket.id) return;
 
   const target = io.sockets.sockets.get(targetId);
   if (target) {
@@ -29,6 +29,39 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
   // The remaining voters may now all have voted
   applyAutoReveal(room);
   broadcastRoomState(roomId);
+}
+
+/**
+ * Nobody is looking at this room any more — no connected participant and no
+ * presenter screen. Both have to be gone: a team at lunch with the screen
+ * still up has not abandoned the room.
+ *
+ * @param {import('../../store/rooms.js').Room} room
+ * @returns {boolean}
+ */
+function isRoomUnattended(room) {
+  if (room.displays?.size) return false;
+  return Object.values(room.participants).every(p => p.connected === false);
+}
+
+/**
+ * Arm the empty-room timer. Re-checks on firing rather than trusting the
+ * state at scheduling time, because anyone — participant or screen — may
+ * have come back in the meantime.
+ *
+ * @param {string} roomId
+ */
+function scheduleEmptyRoomCleanup(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+  if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
+
+  room.disconnectTimer = setTimeout(() => {
+    const r = rooms[roomId];
+    if (!r || !isRoomUnattended(r)) return;
+    closeRoom(roomId);
+    info('cleanup', `Room ${roomId} deleted after ${RECONNECT_GRACE_PERIOD_MS / 60000}m inactivity.`);
+  }, RECONNECT_GRACE_PERIOD_MS);
 }
 
 /**
@@ -60,6 +93,17 @@ export function handleDisconnect(io, socket) {
   // joined a room (someone opening a page and leaving again) still log the id.
   let wasInAnyRoom = false;
 
+  // Presenter screens: no seat to keep, nothing to grace. Just detach, and
+  // start the empty-room countdown if that was the last thing watching.
+  for (const [roomId, room] of Object.entries(rooms)) {
+    if (!room.displays?.has(socket.id)) continue;
+
+    wasInAnyRoom = true;
+    room.displays.delete(socket.id);
+    info('disconnect', `presenter-scherm ← ${roomId} (${room.displays.size} over)`);
+    if (isRoomUnattended(room)) scheduleEmptyRoomCleanup(roomId);
+  }
+
   for (const [roomId, room] of Object.entries(rooms)) {
     const participant = room.participants[socket.id];
     if (!participant) continue;
@@ -85,16 +129,10 @@ export function handleDisconnect(io, socket) {
     const activeRemaining = Object.values(room.participants).filter(p => p.connected !== false);
 
     if (activeRemaining.length === 0) {
-      if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
-      // Grace period: give participants time to reconnect before wiping an empty room
-      room.disconnectTimer = setTimeout(() => {
-        const r = rooms[roomId];
-        if (r && Object.values(r.participants).every(p => p.connected === false)) {
-          deleteRoom(roomId);
-          info('cleanup', `Room ${roomId} deleted after ${RECONNECT_GRACE_PERIOD_MS / 60000}m inactivity.`);
-        }
-      }, RECONNECT_GRACE_PERIOD_MS);
       broadcastRoomState(roomId);
+      // A presenter screen still watching keeps the room alive; the countdown
+      // then starts when that screen closes instead.
+      if (isRoomUnattended(room)) scheduleEmptyRoomCleanup(roomId);
       continue;
     }
 

@@ -9,16 +9,20 @@
 import { info } from './logger.js';
 
 /**
- * Everyone whose vote the round is waiting on: not the Scrum Master, not a
- * spectator. Shared by the auto-reveal check and the reveal logging so the
+ * Everyone whose vote the round is waiting on: every participant that is not
+ * a spectator. Shared by the auto-reveal check and the reveal logging so the
  * two can never disagree about who counts.
+ *
+ * The host is an ordinary voter. Presenting is a separate thing now — a
+ * presenter screen is not a participant at all (see `room.displays`) — so
+ * holding the role no longer implies sitting a round out. A host who does not
+ * want to vote toggles spectator, same as anyone else.
  *
  * @param {object} room
  * @returns {Array<object>}
  */
 function eligibleVoters(room) {
-  return Object.values(room.participants)
-    .filter(p => p.id !== room.masterId && !p.isSpectator);
+  return Object.values(room.participants).filter(p => !p.isSpectator);
 }
 
 /**

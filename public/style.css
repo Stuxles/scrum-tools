@@ -378,6 +378,28 @@ label.field-label {
   100% { transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rotate)); opacity: 0; }
 }
 
+/* ── Create-room mode picker (where the creator will be voting) ─── */
+.create-mode { display: flex; flex-direction: column; gap: 8px; }
+.create-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.create-mode-option:hover { background: var(--glass-hover); }
+.create-mode-option:has(input:checked) {
+  border-color: var(--purple-400);
+  background: rgba(124,58,237,0.12);
+}
+.create-mode-option input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; flex: 0 0 auto; }
+.create-mode-title { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-100); }
+.create-mode-sub   { display: block; font-size: 0.78rem; color: var(--text-500); margin-top: 2px; }
+
 /* ── Australia mode (personal, purely cosmetic "down under" toggle) ─ */
 /* Transform `body`, never the root `<html>` element. A transform on the
    root does not reliably recompute once the page has loaded — confirmed
@@ -472,18 +494,20 @@ html.australia-mode body {
 /* Tabs */
 .tab-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--glass-border);
 }
 
 .tab-btn {
-  padding: 14px;
+  padding: 14px 8px;
+  white-space: nowrap;
   background: none;
   border: none;
   color: var(--text-500);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: clamp(0.78rem, 2.2vw, 0.9rem);
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s;
@@ -493,7 +517,7 @@ html.australia-mode body {
 .tab-btn.active::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 12px; right: 12px;
+  bottom: 0; left: 8px; right: 8px;
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: linear-gradient(90deg, var(--purple-500), var(--indigo-500));
@@ -731,11 +755,6 @@ html.australia-mode body {
   font-weight: 700;
   font-size: 0.72rem;
   border: 1px solid rgba(124,58,237,0.3);
-}
-.participant-status.presenter-mode {
-  background: rgba(255,255,255,0.04);
-  font-size: 0.85rem;
-  opacity: 0.6;
 }
 
 .participant-item .kick-btn,
@@ -1322,14 +1341,16 @@ html.australia-mode body {
   .mobile-sm-bar:not(.hidden) {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    padding: 12px 16px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     background: rgba(13,13,26,0.95);
     border-top: 1px solid var(--glass-border);
     backdrop-filter: blur(20px);
     display: flex !important;
-    gap: 10px;
+    gap: 8px;
     z-index: 50;
   }
+  .mobile-sm-bar .btn { padding: 10px 12px; font-size: 0.85rem; white-space: nowrap; }
+  .mobile-sm-bar .btn-icon { flex: 0 0 auto; width: 42px; padding: 10px 0; }
 }
 
 @media (max-width: 700px) {
@@ -1337,13 +1358,76 @@ html.australia-mode body {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }
+  /* One swipeable row instead of a wrapping block. A wrapping list grew with
+     the team and pushed the card deck down the screen — with a dozen people
+     you had to scroll past everyone before you could vote. */
   .participants-panel {
     border-right: none;
     border-bottom: 1px solid var(--glass-border);
-    max-height: 160px;
+    max-height: none;
   }
-  .participants-list { flex-direction: row; display: flex; flex-wrap: wrap; }
-  .participant-item { padding: 6px 8px; }
+  .participants-panel .panel-header { padding: 8px 12px 0; }
+  .participants-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding: 8px 12px;
+    scrollbar-width: none;
+  }
+  .participants-list::-webkit-scrollbar { display: none; }
+  /* Collapsed to initials: a dozen chips fit on screen instead of three.
+     Tap one to expand just that row (see render-users.js). */
+  .participant-item {
+    flex: 0 0 auto;
+    position: relative;
+    gap: 0;
+    padding: 4px;
+    border-radius: var(--r-full);
+  }
+  .participant-item .participant-info,
+  .participant-item .transfer-btn,
+  .participant-item .kick-btn { display: none; }
+
+  /* A badge on the avatar, so it has to stay a circle: fixed width and height
+     with no padding, or a two-character vote stretches it into an oval.
+     Translucent white with dark text rather than the desktop colour tints —
+     it sits on top of the avatar, so it needs to read against that. */
+  .participant-item .participant-status {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 22px;
+    height: 22px;
+    min-width: 0;
+    padding: 0;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    /* Sized so the widest real card still fits: XXL from the t-shirt deck.
+       A long custom card is clipped rather than allowed to break the circle —
+       the full value is on the result card and in the expanded chip. */
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    overflow: hidden;
+    background: rgba(255,255,255,0.5);
+    color: var(--bg-base);
+    border: 2px solid var(--bg-surface);
+  }
+
+  .participant-item.is-expanded {
+    gap: 10px;
+    padding: 4px 12px 4px 4px;
+  }
+  .participant-item.is-expanded .participant-info { display: block; }
+  .participant-item.is-expanded .transfer-btn,
+  .participant-item.is-expanded .kick-btn { display: inline-flex; }
+  .participant-item.is-expanded .participant-status { position: static; border: none; }
+
+  .participant-name { font-size: 0.85rem; white-space: nowrap; }
   .participant-role { display: none; }
 
   .room-header { padding: 0 8px; gap: 6px; }
@@ -1356,6 +1440,11 @@ html.australia-mode body {
   .voting-area { padding: 16px 12px; gap: 20px; }
   .card-deck { gap: 8px; }
   .vote-card { --card-w: 60px; --card-h: 84px; font-size: 1.1rem; border-radius: 10px; }
+
+  /* The host's action bar is fixed to the bottom, so it sat on top of the last
+     row of cards. Only pad when that bar is actually there — non-hosts get no
+     dead space. */
+  body:has(.mobile-sm-bar:not(.hidden)) .voting-area { padding-bottom: 88px; }
 
   .results-stats { gap: 16px; padding: 16px; }
   .stat-value { font-size: 1.4rem; }
@@ -1539,19 +1628,285 @@ html.australia-mode body {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   PRESENTER MODE  —  Larger result cards on the shared screen
+   PRESENTER SCREEN  —  read from across the room, no controls
 ════════════════════════════════════════════════════════════════ */
-body.is-presenter .results-cards-grid { gap: 20px; }
-body.is-presenter .result-card-face {
-  width: 100px;
-  height: 140px;
-  font-size: 2rem;
+/* Cards shrink as the team grows, so a full sprint team still fits on screen
+   without anyone having to scroll a projector. Set from presenter-page.js,
+   which knows the head count. */
+.presenter-page .results-cards-grid { gap: 20px; --card-w: clamp(84px, 7vw, 132px); }
+.presenter-page .results-cards-grid[data-size="md"] { gap: 16px; --card-w: clamp(68px, 5.2vw, 100px); }
+.presenter-page .results-cards-grid[data-size="sm"] { gap: 12px; --card-w: clamp(54px, 4vw, 78px); }
+
+.presenter-page .result-card-face {
+  width: var(--card-w);
+  height: calc(var(--card-w) * 1.4);
+  font-size: calc(var(--card-w) * 0.36);
   border-radius: 16px;
 }
-body.is-presenter .result-card-name {
-  font-size: 0.9rem;
-  max-width: 110px;
+.presenter-page .result-card-name {
+  font-size: clamp(0.75rem, calc(var(--card-w) * 0.11), 0.95rem);
+  max-width: calc(var(--card-w) * 1.15);
 }
-body.is-presenter .results-stats    { padding: 24px 32px; gap: 40px; }
-body.is-presenter .stat-value       { font-size: 2.4rem; }
-body.is-presenter .stat-label       { font-size: 0.85rem; }
+.presenter-page .results-stats    { padding: 24px 32px; gap: 40px; }
+.presenter-page .stat-value       { font-size: 2.4rem; }
+.presenter-page .stat-label       { font-size: 0.85rem; }
+
+.presenter-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 32px 40px;
+}
+
+/* On a screen wide enough to be an actual presenter display, pin the page to
+   the viewport and let each column scroll on its own. Nobody is going to walk
+   over to a projector to scroll it. */
+@media (min-width: 1251px) {
+  .presenter-page { height: 100vh; overflow: hidden; padding-bottom: 24px; }
+  .presenter-main { min-height: 0; align-items: stretch; }
+  .presenter-side,
+  .presenter-stage,
+  .presenter-people { min-height: 0; overflow-y: auto; }
+}
+
+.presenter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.presenter-headline { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.presenter-headline .header-brand-icon { font-size: 1.8rem; }
+.presenter-room-name {
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.presenter-header-right { display: flex; align-items: center; gap: 10px; }
+.presenter-header-right .online-indicator { font-size: 1.05rem; }
+
+.presenter-story-add {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--r-sm);
+  color: var(--text-500);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.presenter-story-add:hover { color: var(--text-300); border-color: var(--border-strong, var(--glass-hover)); }
+
+.presenter-story {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.presenter-story-input {
+  flex: 1;
+  min-width: 200px;
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-weight: 600;
+  color: var(--purple-200);
+}
+
+.presenter-controls {
+  border-radius: var(--r-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.presenter-auto-reveal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-300);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.presenter-auto-reveal input { width: 16px; height: 16px; cursor: pointer; }
+.presenter-deck-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 12px;
+}
+.presenter-deck-name { font-size: 0.85rem; color: var(--text-500); }
+
+/* Three columns on purpose. The cards are what the room is looking at, so
+   they get the middle and all the width that is left. Participants sit in
+   their own column and scroll internally — in one stacked column a team of
+   fifteen would push the cards off the bottom of the screen. */
+.presenter-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(230px, 260px) minmax(0, 1fr) minmax(210px, 260px);
+  gap: 20px;
+  align-items: start;
+}
+
+.presenter-section-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-500);
+  margin-bottom: 12px;
+}
+
+.presenter-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-content: start;
+}
+
+.presenter-invite {
+  border-radius: var(--r-lg);
+  padding: 20px;
+  text-align: center;
+}
+.presenter-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--purple-200);
+  margin-bottom: 14px;
+}
+.presenter-qr {
+  width: 100%;
+  max-width: 260px;
+  border-radius: 14px;
+  display: block;
+  margin: 0 auto;
+}
+.presenter-qr-placeholder {
+  padding: 40px 0;
+  color: var(--text-500);
+  font-size: 0.9rem;
+}
+.presenter-url {
+  margin-top: 12px;
+  font-size: 0.75rem;
+  color: var(--text-500);
+  word-break: break-all;
+}
+
+/* Once people are in, the QR has done its job and a quarter of the screen
+   should not stay reserved for it. Collapsed keeps the room code — a latecomer
+   can still type that — and the toggle brings the code back for scanning. */
+.presenter-qr-toggle { margin-top: 12px; width: 100%; justify-content: center; }
+.presenter-invite.is-collapsed .presenter-qr,
+.presenter-invite.is-collapsed .presenter-qr-placeholder,
+.presenter-invite.is-collapsed .presenter-url { display: none; }
+.presenter-invite.is-collapsed .presenter-code { margin-bottom: 0; }
+
+/* Hand the width back to the cards, not just the vertical space. */
+.presenter-main:has(.presenter-invite.is-collapsed) {
+  grid-template-columns: minmax(150px, 180px) minmax(0, 1fr) minmax(210px, 260px);
+}
+
+.presenter-stage { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.presenter-progress,
+.presenter-people,
+.presenter-page .results-section {
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+}
+
+/* The shared rule caps this at 720px, which on a wide screen leaves the
+   cards huddled in the middle. Here it should take the column. */
+.presenter-page .results-section { max-width: none; gap: 20px; }
+
+.presenter-people {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.presenter-people .participants-list {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 0;
+}
+.presenter-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.presenter-progress-head .presenter-section-title { margin-bottom: 0; }
+.presenter-progress-text {
+  font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+  font-weight: 700;
+}
+.presenter-progress .progress-track {
+  margin-top: 14px;
+  height: 12px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.presenter-progress .progress-fill {
+  height: 100%;
+  border-radius: var(--r-full);
+  background: linear-gradient(90deg, var(--purple-500), var(--indigo-500));
+  transition: width 0.3s ease;
+}
+
+.presenter-empty {
+  border-radius: var(--r-lg);
+  padding: 48px 24px;
+  text-align: center;
+}
+.presenter-empty-icon { font-size: 2.6rem; margin-bottom: 12px; }
+.presenter-empty-text { color: var(--text-300); font-size: 1.05rem; }
+
+.presenter-page .participants-list { gap: 8px; }
+.presenter-page .participant-item { padding: 12px 14px; }
+.presenter-page .participant-name { font-size: 1.05rem; }
+
+.presenter-closed {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7,7,15,0.86);
+}
+.presenter-closed-box {
+  border-radius: var(--r-lg);
+  padding: 40px 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 1250px) {
+  .presenter-main { grid-template-columns: minmax(210px, 240px) minmax(0, 1fr); }
+  .presenter-people { grid-column: 1 / -1; max-height: 320px; }
+}
+
+@media (max-width: 900px) {
+  .presenter-page { padding: 16px; }
+  .presenter-main { grid-template-columns: 1fr; }
+  .presenter-side { position: static; }
+}

@@ -1,4 +1,4 @@
-import { rooms }            from '../../store/rooms.js';
+import { rooms, canControlRoom } from '../../store/rooms.js';
 import { DECKS }            from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }  from '../../utils/roomId.js';
@@ -9,7 +9,7 @@ import { info }             from '../../utils/logger.js';
 export function handleReveal(socket, { roomId }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id || room.revealed) return;
+  if (!room || !canControlRoom(room, socket.id) || room.revealed) return;
 
   room.revealed = true;
   const { voted, total } = countVoters(room);
@@ -21,7 +21,7 @@ export function handleReveal(socket, { roomId }) {
 export function handleReset(socket, { roomId }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id) return;
+  if (!room || !canControlRoom(room, socket.id)) return;
 
   info('reset', `${roomId}: nieuwe ronde`);
   room.revealed = false;
@@ -36,7 +36,7 @@ export function handleReset(socket, { roomId }) {
 export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id) return;
+  if (!room || !canControlRoom(room, socket.id)) return;
 
   if (deckType === 'custom') {
     const cards = (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30);
@@ -86,7 +86,7 @@ export function handleUpdateName(socket, { roomId, name }) {
 export function handleToggleAutoReveal(socket, { roomId, autoReveal }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id) return;
+  if (!room || !canControlRoom(room, socket.id)) return;
 
   room.autoReveal = Boolean(autoReveal);
   if (room.autoReveal) applyAutoReveal(room);
@@ -97,7 +97,7 @@ export function handleToggleAutoReveal(socket, { roomId, autoReveal }) {
 export function handleUpdateStoryTitle(socket, { roomId, storyTitle }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
-  if (!room || room.masterId !== socket.id) return;
+  if (!room || !canControlRoom(room, socket.id)) return;
 
   room.storyTitle = String(storyTitle || '').trim().slice(0, 200);
   broadcastRoomState(roomId);

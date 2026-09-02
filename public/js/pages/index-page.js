@@ -10,36 +10,56 @@ import { getSavedName, saveName }   from '../utils/helpers.js';
 import { t }                        from '../utils/i18n.js';
 
 export function initIndexPage(socket, urlRoomId) {
-  const createName     = document.getElementById('create-name');
   const joinName       = document.getElementById('join-name');
   const roomNameInput  = document.getElementById('room-name');
+  const createName     = document.getElementById('create-name');
+  const createNameField = document.getElementById('create-name-field');
+  const modeHere       = document.getElementById('mode-here');
   const deckTypeSelect = document.getElementById('deck-type');
   const customField    = document.getElementById('custom-cards-field');
   const customCards    = document.getElementById('custom-cards');
   const createBtn      = document.getElementById('create-room-btn');
   const joinCodeInput  = document.getElementById('join-code');
   const joinBtn        = document.getElementById('join-room-btn');
+  const presentCode    = document.getElementById('present-code');
+  const presentBtn     = document.getElementById('present-room-btn');
   const createTab      = document.getElementById('create-tab');
   const joinTab        = document.getElementById('join-tab');
+  const presentTab     = document.getElementById('present-tab');
   const createPanel    = document.getElementById('create-panel');
   const joinPanel      = document.getElementById('join-panel');
+  const presentPanel   = document.getElementById('present-panel');
 
-  // Pre-fill saved name
   const saved = getSavedName();
-  if (saved) { createName.value = saved; joinName.value = saved; }
+  if (saved) { joinName.value = saved; createName.value = saved; }
+
+  // A name is only needed when the creator is taking a seat on this device;
+  // a presenter screen has no name.
+  function renderCreateMode() {
+    createNameField.classList.toggle('hidden', !modeHere.checked);
+  }
+  document.querySelectorAll('input[name="create-mode"]')
+    .forEach(radio => radio.addEventListener('change', renderCreateMode));
+  renderCreateMode();
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
-  function switchTab(tab) {
-    const isCreate = tab === 'create';
-    createTab.classList.toggle('active',  isCreate);
-    joinTab.classList.toggle('active',    !isCreate);
-    createTab.setAttribute('aria-selected', String(isCreate));
-    joinTab.setAttribute('aria-selected',   String(!isCreate));
-    createPanel.classList.toggle('hidden', !isCreate);
-    joinPanel.classList.toggle('hidden',    isCreate);
+  const TABS = {
+    create:  { tab: createTab,  panel: createPanel },
+    join:    { tab: joinTab,    panel: joinPanel },
+    present: { tab: presentTab, panel: presentPanel },
+  };
+
+  function switchTab(name) {
+    for (const [key, { tab, panel }] of Object.entries(TABS)) {
+      const active = key === name;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+      panel.classList.toggle('hidden', !active);
+    }
   }
-  createTab.addEventListener('click', () => switchTab('create'));
-  joinTab.addEventListener('click',   () => switchTab('join'));
+  for (const [name, { tab }] of Object.entries(TABS)) {
+    tab.addEventListener('click', () => switchTab(name));
+  }
 
   // Pre-fill join tab when room code is in URL
   if (urlRoomId) {
@@ -54,12 +74,21 @@ export function initIndexPage(socket, urlRoomId) {
   });
 
   // ── Create room ───────────────────────────────────────────────────────────
+  // Where the creator lands after `room-created`, decided at submit time.
+  let createMode = 'elsewhere';
+
   function doCreate() {
-    const name     = createName.value.trim();
     const deckType = deckTypeSelect.value;
     const roomName = roomNameInput.value.trim();
 
-    if (!name) { toast(t('toast-enter-name'), 'error'); createName.focus(); return; }
+    if (!roomName) { toast(t('toast-enter-room-name'), 'error'); roomNameInput.focus(); return; }
+
+    const seatMeHere = modeHere.checked;
+    if (seatMeHere && !createName.value.trim()) {
+      toast(t('toast-enter-name'), 'error');
+      createName.focus();
+      return;
+    }
 
     let custom = [];
     if (deckType === 'custom') {
@@ -71,20 +100,21 @@ export function initIndexPage(socket, urlRoomId) {
       }
     }
 
-    saveName(name);
     createBtn.disabled    = true;
     createBtn.textContent = t('btn-creating');
+    // Remembered here so the room page can seat you without asking again.
+    if (seatMeHere) saveName(createName.value.trim());
+    createMode = seatMeHere ? 'here' : 'elsewhere';
 
     // The socket is created with autoConnect:false on this page (see main.js),
     // so open it here and send once it is actually up. Emitting straight away
     // would rely on socket.io's internal buffering; waiting for `connect` is
     // explicit and cannot silently drop the packet.
+    const payload = { deckType, customCards: custom, roomName };
     if (socket.connected) {
-      socket.emit('create-room', { name, deckType, customCards: custom, roomName });
+      socket.emit('create-room', payload);
     } else {
-      socket.once('connect', () => {
-        socket.emit('create-room', { name, deckType, customCards: custom, roomName });
-      });
+      socket.once('connect', () => socket.emit('create-room', payload));
       socket.connect();
     }
 
@@ -98,7 +128,6 @@ export function initIndexPage(socket, urlRoomId) {
   }
 
   createBtn.addEventListener('click', doCreate);
-  createName.addEventListener('keydown',    e => { if (e.key === 'Enter') doCreate(); });
   roomNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doCreate(); });
 
   // ── Join room ─────────────────────────────────────────────────────────────
@@ -120,10 +149,41 @@ export function initIndexPage(socket, urlRoomId) {
   joinName.addEventListener('keydown',      e => { if (e.key === 'Enter') doJoin(); });
   joinCodeInput.addEventListener('input',   () => { joinCodeInput.value = joinCodeInput.value.toUpperCase(); });
 
+  // ── Present an existing room ──────────────────────────────────────────────
+  async function doPresent() {
+    const code = presentCode.value.trim().toUpperCase();
+    if (!code) { toast(t('toast-enter-code'), 'error'); presentCode.focus(); return; }
+
+    presentBtn.disabled    = true;
+    presentBtn.textContent = t('btn-continuing');
+
+    // Check the room exists before navigating, so a typo is caught here rather
+    // than on a presenter screen someone already pointed at a projector.
+    try {
+      const res  = await fetch(`/api/rooms/${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!data.exists) throw new Error('not found');
+      window.location.href = `/presenter.html?id=${encodeURIComponent(code)}`;
+    } catch {
+      toast(t('toast-room-not-found', { id: code }), 'error');
+      presentBtn.disabled    = false;
+      presentBtn.textContent = t('btn-present');
+      presentCode.focus();
+    }
+  }
+
+  presentBtn.addEventListener('click', doPresent);
+  presentCode.addEventListener('keydown', e => { if (e.key === 'Enter') doPresent(); });
+  presentCode.addEventListener('input',   () => { presentCode.value = presentCode.value.toUpperCase(); });
+
   // ── Socket events ─────────────────────────────────────────────────────────
+  // Two ways out, chosen on the form. Voting elsewhere makes this screen a
+  // presenter display; voting here seats you straight away, so the room page
+  // is told to skip the join modal — it already has your name.
   socket.on('room-created', ({ roomId }) => {
-    localStorage.setItem('scrum_auto_join_room', roomId);
-    window.location.href = `/room.html?id=${roomId}`;
+    window.location.href = createMode === 'here'
+      ? `/room.html?id=${roomId}&autojoin=1`
+      : `/presenter.html?id=${roomId}`;
   });
 
   socket.on('error', ({ message }) => {

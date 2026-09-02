@@ -318,16 +318,6 @@
               Je stem is pas zichtbaar na de reveal.</p>
           </div>
 
-          <!-- Presenter banner: shown for SM on the shared screen instead of the card deck -->
-          <div id="presenter-banner" class="presenter-banner hidden" role="status" aria-live="polite">
-            <div class="presenter-banner-icon" aria-hidden="true">🖥️</div>
-            <div>
-              <strong data-i18n="presenter-banner-title">Presenter-scherm</strong>
-              <p data-i18n="presenter-banner-text">Kaarten zijn hier verborgen. Stem mee via je telefoon door de QR-code
-                te scannen.</p>
-            </div>
-          </div>
-
           <!-- Spectator banner: shown when user is watching as spectator -->
           <div id="spectator-banner" class="presenter-banner hidden" role="status" aria-live="polite" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.25);">
             <div class="presenter-banner-icon" aria-hidden="true">👁️</div>
@@ -424,11 +414,12 @@
 
     <!-- Mobile SM bar (bottom strip, only SM on mobile) -->
     <div id="mobile-sm-bar" class="mobile-sm-bar hidden">
-      <button class="btn btn-primary" id="mobile-reveal-btn" style="flex:1;" data-i18n="sm-reveal-btn">🃏
-        Reveal</button>
-      <button class="btn btn-secondary" id="mobile-reset-btn" style="flex:1;" data-i18n="sm-reset-btn">🔄 Reset</button>
-      <button class="btn btn-secondary btn-icon" id="mobile-qr-btn">🔗</button>
-      <button class="btn btn-secondary btn-icon" id="mobile-deck-btn">🎴</button>
+      <button class="btn btn-primary" id="mobile-reveal-btn" style="flex:1;" data-i18n="sm-reveal-btn">🃏 Reveal</button>
+      <button class="btn btn-secondary" id="mobile-reset-btn" style="flex:1;" data-i18n="sm-reset-btn">🔄 Nieuwe ronde</button>
+      <button class="btn btn-secondary btn-icon" id="mobile-qr-btn" title="QR-code tonen / link delen"
+        data-i18n-title="qr-btn-title" aria-label="Link delen">🔗</button>
+      <button class="btn btn-secondary btn-icon" id="mobile-deck-btn" title="Kaartdek wijzigen"
+        data-i18n-title="deck-btn-title" aria-label="Kaartdek wijzigen">🎴</button>
     </div>
 
   </div><!-- /#room-ui -->

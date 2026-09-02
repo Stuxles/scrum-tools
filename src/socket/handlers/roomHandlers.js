@@ -23,10 +23,15 @@ function cleanText(raw, maxLength, fallback) {
   return String(raw ?? '').trim().slice(0, maxLength) || fallback;
 }
 
-/** @param {import('socket.io').Socket} socket */
-export function handleCreateRoom(socket, { name, deckType, customCards, roomName }) {
-  name     = cleanText(name, 40, 'Anoniem');
-  roomName = cleanText(roomName, 60, `${name}'s Room`);
+/**
+ * Create a room. Deliberately takes no display name: creating a room is
+ * setting up the presenter screen, and a screen is not a person. The first
+ * client to actually join becomes host — see `handleJoinRoom`, which claims
+ * the role whenever `masterId` is still null.
+ *
+ * @param {import('socket.io').Socket} socket
+ */
+export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   deckType = DECKS[deckType] ? deckType : 'standard';
 
   // Copy the preset — assigning DECKS[deckType] by reference would make every
@@ -53,9 +58,9 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
 
   rooms[roomId] = {
     id:           roomId,
-    name:         roomName,
+    name:         cleanText(roomName, 60, `Room ${roomId}`),
     masterId:     null,
-    masterName:   name,   // display/logging only — never used to grant the role
+    masterName:   '',     // display/logging only — never used to grant the role
     masterToken:  null,   // session token of the current SM; see utils/sessionToken.js
     deckType,
     deck,
@@ -63,12 +68,56 @@ export function handleCreateRoom(socket, { name, deckType, customCards, roomName
     revealed:     false,
     autoReveal:   false,
     participants: {},
+    displays:     new Set(),
     createdAt:    Date.now(),
   };
 
   scheduleRoomCleanup(roomId);
   socket.emit('room-created', { roomId });
-  info('room', `${roomId} aangemaakt door ${name}`);
+  info('room', `${roomId} aangemaakt (${rooms[roomId].name})`);
+}
+
+/**
+ * Attach a presenter screen (`watch-room`).
+ *
+ * A display joins the Socket.IO room for broadcasts but is never added to
+ * `room.participants`, so it falls outside every vote calculation without a
+ * single filter having to know about it. Multiple displays on one room are
+ * fine: a display owns no state, so there is nothing for a second one to
+ * inherit or conflict with.
+ *
+ * Deliberately takes no session token. Dropping the seat of whoever holds a
+ * matching token sounds tidy, but the token is per browser, not per tab: open
+ * a screen in a second tab of a browser already sitting in the room and it
+ * would delete the seat of the tab still using it. A seat left behind by
+ * navigating away expires on its own through the normal grace window.
+ *
+ * @param {import('socket.io').Socket} socket
+ * @param {{ roomId: string }} payload
+ */
+export function handleWatchRoom(socket, { roomId } = {}) {
+  roomId = normalizeRoomId(roomId);
+  const room = rooms[roomId];
+  if (!room) {
+    socket.emit('error', { message: `Room "${roomId}" niet gevonden. Controleer de code.` });
+    return;
+  }
+
+  // Cancel a pending deletion the same way a join does: a screen watching the
+  // room is a reason to keep it alive.
+  if (room.disconnectTimer) {
+    clearTimeout(room.disconnectTimer);
+    delete room.disconnectTimer;
+  }
+
+  if (!room.displays) room.displays = new Set();
+  room.displays.add(socket.id);
+  socket.join(roomId);
+
+  socket.emit('room-watched', { room: sanitizeRoom(room, null) });
+  broadcastRoomState(roomId);
+
+  info('watch', `presenter-scherm → ${roomId} (${room.displays.size} scherm(en))`);
 }
 
 /**

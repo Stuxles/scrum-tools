@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Scrum Poker presenter-scherm — toon de sessie op een groot scherm." />
+  <title>Scrum Poker — Presenter</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>" />
+  <link rel="stylesheet" href="/style.css" />
+  <script>
+    (function () {
+      var t = localStorage.getItem('scrumpoker_theme') || localStorage.getItem('stuxpoker_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      if (localStorage.getItem('scrum_australia_mode') === 'true') {
+        document.documentElement.classList.add('australia-mode');
+      }
+    })();
+  </script>
+  <script type="module">
+    import { APP_NAME } from '/js/config.js';
+    const suffix = document.title.includes('—') ? ` — ${document.title.split('—')[1].trim()}` : '';
+    document.title = `${APP_NAME}${suffix}`;
+    document.querySelectorAll('[data-app-name="true"]').forEach(el => { el.textContent = APP_NAME; });
+  </script>
+</head>
+
+<body>
+
+  <div class="bg-gradient" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+  <div id="toast-container" role="alert" aria-live="polite"></div>
+
+  <div id="presenter-ui" class="presenter-page">
+
+    <header class="presenter-header" role="banner">
+      <div class="presenter-headline">
+        <span class="header-brand-icon" aria-hidden="true">🃏</span>
+        <h1 class="presenter-room-name" id="presenter-room-name">&nbsp;</h1>
+      </div>
+      <div class="presenter-header-right">
+        <div class="online-indicator" aria-label="Verbonden deelnemers">
+          <div class="online-dot" aria-hidden="true"></div>
+          <span id="presenter-online-count">0</span>
+        </div>
+        <button class="btn btn-secondary btn-icon" id="presenter-options-btn" title="Opties & instellingen"
+          data-i18n-title="options-btn-title" aria-label="Opties">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Opt-in: plenty of teams never name the ticket, so this stays out of
+         the way until someone asks for it. -->
+    <button class="presenter-story-add" id="presenter-story-add" data-i18n="story-add">+ Actueel issue</button>
+
+    <div class="presenter-story hidden" id="presenter-story">
+      <span class="story-banner-label" data-i18n="story-label">Actueel Issue:</span>
+      <input type="text" id="presenter-story-input" class="input presenter-story-input"
+        placeholder="Bijv. Login refactor (#104)" maxlength="200" data-i18n-placeholder="story-placeholder" />
+      <button class="btn btn-secondary btn-sm" id="presenter-story-clear" title="Wissen / Clear">✕</button>
+    </div>
+
+    <main class="presenter-main">
+
+      <aside class="presenter-side">
+
+      <!-- ── Invite ─────────────────────────────────────────────── -->
+      <section class="presenter-invite glass" id="presenter-invite" aria-labelledby="presenter-invite-title">
+        <h2 class="presenter-section-title" id="presenter-invite-title" data-i18n="presenter-join-title">Doe mee</h2>
+        <div class="presenter-code" id="presenter-code">——</div>
+        <img class="presenter-qr hidden" id="presenter-qr" src="" alt="QR-code om mee te doen" />
+        <div class="presenter-qr-placeholder" id="presenter-qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
+        <p class="presenter-url" id="presenter-url"></p>
+        <button class="btn btn-secondary btn-sm presenter-qr-toggle" id="presenter-qr-toggle"
+          data-i18n="presenter-show-qr">📱 Toon QR</button>
+      </section>
+
+      <!-- ── Controls ───────────────────────────────────────────── -->
+      <section class="presenter-controls glass" aria-labelledby="presenter-controls-title">
+        <h2 class="presenter-section-title" id="presenter-controls-title" data-i18n="sm-section-actions">Acties</h2>
+
+        <button class="btn btn-primary btn-lg btn-full" id="presenter-reveal-btn" data-i18n="sm-reveal-btn">🃏 Reveal</button>
+        <button class="btn btn-secondary btn-full" id="presenter-reset-btn" data-i18n="sm-reset-btn">🔄 Nieuwe ronde</button>
+
+        <label class="presenter-auto-reveal">
+          <input type="checkbox" id="presenter-auto-reveal-chk" />
+          <span data-i18n="sm-auto-reveal">Auto-reveal</span>
+        </label>
+
+        <div class="presenter-deck-row">
+          <span class="presenter-deck-name" id="presenter-current-deck">—</span>
+          <button class="btn btn-secondary btn-sm" id="presenter-deck-btn" data-i18n="sm-change-deck-btn">🎴 Wijzig deck</button>
+        </div>
+      </section>
+
+      </aside>
+
+      <!-- ── Stage: the thing everyone in the room is looking at ── -->
+      <section class="presenter-stage" aria-live="polite">
+
+        <div class="presenter-progress glass" id="presenter-progress-wrap">
+          <div class="presenter-progress-head">
+            <h2 class="presenter-section-title" data-i18n="sm-section-progress">Voortgang</h2>
+            <span class="presenter-progress-text" id="presenter-progress-text">0 / 0</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="presenter-progress-fill"></div></div>
+        </div>
+
+        <div class="presenter-empty glass" id="presenter-empty">
+          <div class="presenter-empty-icon" aria-hidden="true">📺</div>
+          <p class="presenter-empty-text" data-i18n="presenter-empty">Nog niemand in de room. Scan de QR-code om mee te doen.</p>
+        </div>
+
+        <div id="voting-phase" class="hidden"></div>
+
+        <div id="results-phase" class="results-section glass hidden">
+          <h2 class="presenter-section-title" data-i18n="results-phase-title">🎉 Resultaten</h2>
+          <p class="phase-subtitle" id="results-subtitle"></p>
+          <div class="results-cards-grid" id="results-cards-grid" role="list"></div>
+          <div class="results-stats" id="results-stats" role="region" aria-label="Statistieken"></div>
+        </div>
+
+      </section>
+
+      <!-- ── People: own column, so a long list never pushes the cards ── -->
+      <aside class="presenter-people glass" id="presenter-participants-wrap">
+        <h2 class="presenter-section-title" data-i18n="panel-title-participants">Deelnemers</h2>
+        <ul class="participants-list" id="participants-list" role="list"></ul>
+      </aside>
+    </main>
+
+    <!-- ── Options modal ──────────────────────────────────────── -->
+    <!-- Theme and language sit in the header; this covers the per-device
+         preferences that have nowhere else to live on a screen that never
+         joins a room. -->
+    <div id="options-modal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+      aria-labelledby="options-modal-title">
+      <div class="modal-box" style="max-width: 440px;">
+        <h2 class="modal-title" id="options-modal-title" data-i18n="options-modal-title">Opties &amp; Instellingen</h2>
+        <p class="modal-subtitle" data-i18n="presenter-options-sub">Instellingen van dit scherm.</p>
+
+        <div class="options-list" style="display: flex; flex-direction: column; gap: 12px; margin: 16px 0;">
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-lang">Taal / Language</div>
+              <div class="option-row-sub">Nederlands / English</div>
+            </div>
+            <button class="btn btn-secondary btn-sm lang-toggle" id="lang-toggle" title="Wissel taal">NL</button>
+          </div>
+
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-theme">Thema</div>
+              <div class="option-row-sub" id="options-sub-theme" data-i18n="options-sub-theme">Donkere of lichte modus</div>
+            </div>
+            <button class="btn btn-secondary btn-sm theme-toggle" id="theme-toggle" title="Wissel thema">
+              <span id="theme-icon" style="font-size:1rem; margin-right:4px;">☀️</span>
+              <span id="theme-label">Licht</span>
+            </button>
+          </div>
+
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-confetti">Confetti</div>
+              <div class="option-row-sub" data-i18n="options-sub-confetti">Feestje bij unanieme stem</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="confetti-toggle" title="Confetti aan/uit"
+              data-i18n-title="confetti-btn-title">
+              <span id="confetti-icon">🎉</span>
+              <span id="confetti-label" data-i18n="confetti-on">Aan</span>
+            </button>
+          </div>
+
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="options-label-australia">Australië-modus</div>
+              <div class="option-row-sub" data-i18n="options-sub-australia">Alles ondersteboven 🇦🇺</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="australia-toggle" title="Australië-modus aan/uit"
+              data-i18n-title="australia-btn-title">
+              <span id="australia-icon">🙃</span>
+              <span id="australia-label" data-i18n="confetti-off">Uit</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="options-version" id="options-version"></div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-full" id="options-close-btn" data-i18n="qr-close-btn">Sluiten</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Deck modal ─────────────────────────────────────────── -->
+    <div id="deck-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deck-modal-title">
+      <div class="modal-box">
+        <h2 class="modal-title" id="deck-modal-title" data-i18n="deck-modal-title">Kaartdek wijzigen</h2>
+        <p class="modal-subtitle" data-i18n="deck-modal-subtitle">Het huidige deck wordt vervangen en alle stemmen worden
+          gereset.</p>
+
+        <div class="field">
+          <label class="field-label" for="deck-modal-type" data-i18n="deck-modal-label">Dek type</label>
+          <select class="input" id="deck-modal-type">
+            <option value="standard" data-i18n="deck-standard">Standaard — 0 1 2 3 4 5 6 8 12 16 24 32 40 ♾️ ❓ ☕</option>
+            <option value="fibonacci" data-i18n="deck-fibonacci">Fibonacci — 0 1 2 3 5 8 13 21 34 55 89 ❓ ☕</option>
+            <option value="tshirt" data-i18n="deck-tshirt">T-Shirt — XS S M L XL XXL ❓ ☕</option>
+            <option value="custom" data-i18n="deck-custom">Aangepast…</option>
+          </select>
+        </div>
+
+        <div class="field hidden" id="deck-modal-custom-field">
+          <label class="field-label" for="deck-modal-custom" data-i18n="deck-modal-custom-label">Kaarten
+            (komma-gescheiden)</label>
+          <input class="input" id="deck-modal-custom" type="text" placeholder="1, 2, 4, 8, 16, ?"
+            data-i18n-placeholder="placeholder-custom-cards" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="deck-modal-save" style="flex:1;" data-i18n="deck-modal-save">Toepassen</button>
+          <button class="btn btn-secondary" id="deck-modal-cancel" data-i18n="deck-modal-cancel">Annuleer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="presenter-closed hidden" id="presenter-closed">
+      <div class="presenter-closed-box glass">
+        <div class="presenter-empty-icon" aria-hidden="true">🚪</div>
+        <p data-i18n="presenter-closed">Deze room bestaat niet meer.</p>
+        <a href="/" class="btn btn-primary" data-i18n="modal-back-btn">← Terug naar home</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+
+</html>

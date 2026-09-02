@@ -1,36 +1,70 @@
-# 👑 Roles & Permissions (SM vs. Voter vs. Spectator)
+# 👑 Roles & Permissions (Host vs. Voter vs. Spectator vs. Display)
 
-Scrum Poker categorizes participants into three distinct operational roles. Each role determines which dashboard controls, status icons, and voting interfaces are rendered, as well as how statistical consensus is calculated upon card reveal.
+Scrum Poker separates three things that used to be bundled into one role: **who may run the session**, **who is voting**, and **which screens are showing it**. Keeping them apart is what lets the facilitator put the session on a big screen and still estimate from their own phone.
 
 ---
 
 ## 📊 Role & Permission Matrix
 
-| Capability / Feature | 👑 Scrum Master | 🃏 Voter (Participant) | 👁️ Spectator |
-| :--- | :---: | :---: | :---: |
-| **Select / Deselect Estimation Cards** | ❌ (Presenter mode) | ✅ Yes | ❌ (View only) |
-| **Reveal All Votes (`reveal`)** | ✅ Yes | ❌ No | ❌ No |
-| **Start New Round (`reset`)** | ✅ Yes | ❌ No | ❌ No |
-| **Update Current Ticket / Story Title** | ✅ Yes (Live input) | ❌ Read-only banner | ❌ Read-only banner |
-| **Change Card Deck (`change-deck`)** | ✅ Yes | ❌ No | ❌ No |
-| **Kick Participants (`kick-user`)** | ✅ Yes | ❌ No | ❌ No |
-| **Enlarge Full-Screen QR Code Modal** | ✅ Yes | ❌ No | ❌ No |
-| **Counted in Voting Progress Bar (%)** | ❌ Excluded | ✅ **Included** | ❌ **Excluded** |
-| **Included in Average / Median / Chart** | ❌ Excluded | ✅ **Included** | ❌ **Excluded** |
-| **Toggle Spectator Role Live** | ❌ No | ✅ Can become Spectator | ✅ Can become Voter |
+| Capability / Feature | 👑 Host (Scrum Master) | 🃏 Voter (Participant) | 👁️ Spectator | 📺 Presenter screen |
+| :--- | :---: | :---: | :---: | :---: |
+| **Select / Deselect Estimation Cards** | ✅ Yes | ✅ Yes | ❌ (View only) | ❌ Not a person |
+| **Reveal All Votes (`reveal`)** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| **Start New Round (`reset`)** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| **Update Current Ticket / Story Title** | ✅ Yes (Live input) | ❌ Read-only banner | ❌ Read-only banner | ✅ Yes (Live input) |
+| **Change Card Deck (`change-deck`)** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| **Toggle Auto-Reveal** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| **Kick Participants (`kick-user`)** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
+| **Hand the host role to someone (`sm-transfer-master`)** | ✅ Yes | ❌ No | ❌ No | ❌ No (not a participant) |
+| **Enlarge Full-Screen QR Code Modal** | ✅ Yes | ❌ No | ❌ No | ✅ Shows it permanently |
+| **Counted in Voting Progress Bar (%)** | ✅ **Included** | ✅ **Included** | ❌ **Excluded** | ❌ Not in `participants` |
+| **Included in Average / Median / Chart** | ✅ **Included** | ✅ **Included** | ❌ **Excluded** | ❌ Not in `participants` |
+| **Toggle Spectator Role Live** | ✅ Yes | ✅ Can become Spectator | ✅ Can become Voter | ❌ n/a |
+
+A host who does not want to estimate toggles **spectator**, the same as anyone else. That is now the only way to sit a round out.
+
+---
+
+## 📺 Presenter Screens Are Not Participants
+
+A presenter screen attaches with `watch-room`, not `join-room`. It joins the Socket.IO room so it receives broadcasts, and its socket id goes into `room.displays`, but it never appears in `room.participants`.
+
+That one decision does most of the work:
+
+- It falls outside every vote calculation without a single filter having to know it exists.
+- It needs none of the session-token or eviction machinery a participant needs (see the trust model below) — that exists because a participant owns a seat, a vote and possibly the host role, and a screen owns nothing.
+- **Multiple screens on one room are therefore free**, which covers a hybrid meeting with one screen in the room and another shared into a call. A screen that reloads briefly appears twice, which is harmless.
+- Screens receive `sanitizeRoom(room, null)` — the strictest view there is. A screen has no own vote, so it sees nothing at all until the reveal.
+
+Because a display is not a participant, the empty-room countdown keys on both: it starts only when there is no connected participant **and** no screen. See [Room Lifecycle](./lifecycle.md).
+
+### But it still runs the session
+
+A screen is not a passive monitor — it is the facilitator's dashboard. Reveal, new round, deck, story title, auto-reveal and kick all work from it, so you can run the session from the big screen while estimating from your own phone. That was the whole reason to separate presenting from the host role.
+
+Authorisation for all of those goes through one predicate, `canControlRoom(room, socketId)` in `src/store/rooms.js`:
+
+```javascript
+export function canControlRoom(room, socketId) {
+  if (!room) return false;
+  return room.masterId === socketId || Boolean(room.displays?.has(socketId));
+}
+```
+
+This grants a screen no more reach than the room code already does: `claim-master` has always been open to anyone who can join, so the code — not the role — is the trust boundary. `sm-transfer-master` stays host-only, because handing over a seat among participants is not something a screen has standing to do.
 
 ---
 
 ## 🎯 Progress Bar & Statistics Calculation Logic
 
-To ensure accurate Agile story sizing, any participant marked as `isMaster: true` or `isSpectator: true` is automatically excluded from both the live voting denominator (`voters.length`) and post-reveal score analytics.
+Only `isSpectator: true` excludes someone from the live voting denominator (`voters.length`) and post-reveal analytics. Presenter screens never reach these calculations, because they are not in `room.participants` to begin with.
 
 ```mermaid
 flowchart LR
-    AllParticipants["All Room Participants (room.participants)"] --> FilterVoters["Filter: !p.isMaster && !p.isSpectator"]
-    
-    FilterVoters --> VotersPool["Active Voters Pool (Estimation participants only)"]
-    
+    AllParticipants["All Room Participants (room.participants)"] --> FilterVoters["Filter: !p.isSpectator"]
+
+    FilterVoters --> VotersPool["Active Voters Pool (host included)"]
+
     VotersPool --> CalcProgress["Live Voting Progress Bar (votedCount / total)"]
     VotersPool --> CalcStats["Post-Reveal Analytics (Average, Median & Bar Chart)"]
 ```
@@ -39,7 +73,7 @@ flowchart LR
 
 ```javascript
 // Filter only active estimation voters
-const voters = room.participants.filter(p => !p.isMaster && !p.isSpectator);
+const voters = room.participants.filter(p => !p.isSpectator);
 const voted  = voters.filter(p => p.hasVoted).length;
 const total  = voters.length;
 
@@ -48,6 +82,16 @@ const pct = total > 0 ? Math.round((voted / total) * 100) : 0;
 smProgressFill.style.width = `${pct}%`;
 smProgressText.textContent = t('progress-text', { voted, total });
 ```
+
+The server-side equivalent lives in `src/utils/autoReveal.js`, where `eligibleVoters()` is shared by the auto-reveal condition and the reveal log line so the two cannot disagree about who counts.
+
+---
+
+## 🙋 Who Becomes Host
+
+`create-room` takes no display name — creating a room is setting up the presenter screen, and a screen is not a person. The room starts with `masterId: null`.
+
+The **first client to `join-room`** claims the vacant role, which is the branch `handleJoinRoom` already had for a room without a host. So the usual flow needs no extra step: put the room on the big screen, scan the QR with your phone, and your phone is the host.
 
 ---
 

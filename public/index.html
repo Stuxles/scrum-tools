@@ -65,29 +65,28 @@
                 data-i18n="tab-join">
           → Join Room
         </button>
+        <button class="tab-btn"
+                id="present-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="present-panel"
+                data-i18n="tab-present">
+          📺 Presenteer
+        </button>
       </div>
 
       <!-- CREATE PANEL -->
       <div id="create-panel" class="tab-panel" role="tabpanel" aria-labelledby="create-tab">
 
         <div class="field">
-          <label class="field-label" for="create-name" data-i18n="label-name">Jouw naam</label>
+          <label class="field-label" for="room-name" data-i18n="label-room-name">Room naam</label>
           <input class="input input-lg"
-                 id="create-name"
-                 type="text"
-                 placeholder="Bijv. Scrum Master"
-                 maxlength="40"
-                 autocomplete="nickname"
-                 required />
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="room-name">Room naam <span style="color:var(--text-700)">(optioneel)</span></label>
-          <input class="input"
                  id="room-name"
                  type="text"
                  placeholder="Bijv. Sprint 42 Planning"
-                 maxlength="60" />
+                 maxlength="60"
+                 required
+                 autofocus />
         </div>
 
         <div class="field">
@@ -107,6 +106,38 @@
                  type="text"
                  placeholder="1, 2, 4, 8, 16, ❓"
                  data-i18n-placeholder="placeholder-custom-cards" />
+        </div>
+
+        <!-- Where the creator votes decides what this screen becomes: a
+             presenter display, or an ordinary seat at the table. -->
+        <div class="field">
+          <span class="field-label" data-i18n="label-where-vote">Waar doe je zelf mee?</span>
+          <div class="create-mode" role="radiogroup" aria-labelledby="create-mode-label">
+            <label class="create-mode-option">
+              <input type="radio" name="create-mode" value="elsewhere" id="mode-elsewhere" checked />
+              <span>
+                <span class="create-mode-title" data-i18n="mode-elsewhere">📱 Op mijn telefoon of ander apparaat</span>
+                <span class="create-mode-sub" data-i18n="mode-elsewhere-sub">Dit scherm wordt het presenter-scherm.</span>
+              </span>
+            </label>
+            <label class="create-mode-option">
+              <input type="radio" name="create-mode" value="here" id="mode-here" />
+              <span>
+                <span class="create-mode-title" data-i18n="mode-here">💻 Op dit apparaat</span>
+                <span class="create-mode-sub" data-i18n="mode-here-sub">Je komt meteen in de room te zitten.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field hidden" id="create-name-field">
+          <label class="field-label" for="create-name" data-i18n="label-name">Jouw naam</label>
+          <input class="input input-lg"
+                 id="create-name"
+                 type="text"
+                 placeholder="Bijv. Alice"
+                 maxlength="40"
+                 autocomplete="nickname" />
         </div>
 
         <div class="field" style="margin-top:24px;">
@@ -145,6 +176,31 @@
         <div class="field" style="margin-top:24px;">
           <button class="btn btn-primary btn-lg btn-full" id="join-room-btn" data-i18n="btn-join">
             → Meedoen
+          </button>
+        </div>
+      </div>
+
+      <!-- PRESENT PANEL -->
+      <div id="present-panel" class="tab-panel hidden" role="tabpanel" aria-labelledby="present-tab">
+
+        <p class="field-hint" data-i18n="present-hint">Toon een bestaande room op een groot scherm. Je doet zelf niet mee —
+          deelnemen doe je op je eigen apparaat.</p>
+
+        <div class="field">
+          <label class="field-label" for="present-code" data-i18n="label-room-code">Room code</label>
+          <input class="input input-lg"
+                 id="present-code"
+                 type="text"
+                 placeholder="ABC123"
+                 data-i18n-placeholder="placeholder-code"
+                 maxlength="6"
+                 autocomplete="off"
+                 style="letter-spacing:0.12em;font-family:'Courier New',monospace;text-transform:uppercase;" />
+        </div>
+
+        <div class="field" style="margin-top:24px;">
+          <button class="btn btn-primary btn-lg btn-full" id="present-room-btn" data-i18n="btn-present">
+            📺 Open presenter-scherm
           </button>
         </div>
       </div>
