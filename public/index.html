@@ -108,6 +108,38 @@
                  data-i18n-placeholder="placeholder-custom-cards" />
         </div>
 
+        <!-- Where the creator votes decides what this screen becomes: a
+             presenter display, or an ordinary seat at the table. -->
+        <div class="field">
+          <span class="field-label" data-i18n="label-where-vote">Waar doe je zelf mee?</span>
+          <div class="create-mode" role="radiogroup" aria-labelledby="create-mode-label">
+            <label class="create-mode-option">
+              <input type="radio" name="create-mode" value="elsewhere" id="mode-elsewhere" checked />
+              <span>
+                <span class="create-mode-title" data-i18n="mode-elsewhere">📱 Op mijn telefoon of ander apparaat</span>
+                <span class="create-mode-sub" data-i18n="mode-elsewhere-sub">Dit scherm wordt het presenter-scherm.</span>
+              </span>
+            </label>
+            <label class="create-mode-option">
+              <input type="radio" name="create-mode" value="here" id="mode-here" />
+              <span>
+                <span class="create-mode-title" data-i18n="mode-here">💻 Op dit apparaat</span>
+                <span class="create-mode-sub" data-i18n="mode-here-sub">Je komt meteen in de room te zitten.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field hidden" id="create-name-field">
+          <label class="field-label" for="create-name" data-i18n="label-name">Jouw naam</label>
+          <input class="input input-lg"
+                 id="create-name"
+                 type="text"
+                 placeholder="Bijv. Alice"
+                 maxlength="40"
+                 autocomplete="nickname" />
+        </div>
+
         <div class="field" style="margin-top:24px;">
           <button class="btn btn-primary btn-lg btn-full" id="create-room-btn" data-i18n="btn-create">
             ✦ Maak Room aan

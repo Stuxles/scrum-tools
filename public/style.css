@@ -378,6 +378,28 @@ label.field-label {
   100% { transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rotate)); opacity: 0; }
 }
 
+/* ── Create-room mode picker (where the creator will be voting) ─── */
+.create-mode { display: flex; flex-direction: column; gap: 8px; }
+.create-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.create-mode-option:hover { background: var(--glass-hover); }
+.create-mode-option:has(input:checked) {
+  border-color: var(--purple-400);
+  background: rgba(124,58,237,0.12);
+}
+.create-mode-option input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; flex: 0 0 auto; }
+.create-mode-title { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-100); }
+.create-mode-sub   { display: block; font-size: 0.78rem; color: var(--text-500); margin-top: 2px; }
+
 /* ── Australia mode (personal, purely cosmetic "down under" toggle) ─ */
 /* Transform `body`, never the root `<html>` element. A transform on the
    root does not reliably recompute once the page has loaded — confirmed

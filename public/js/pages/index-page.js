@@ -12,6 +12,9 @@ import { t }                        from '../utils/i18n.js';
 export function initIndexPage(socket, urlRoomId) {
   const joinName       = document.getElementById('join-name');
   const roomNameInput  = document.getElementById('room-name');
+  const createName     = document.getElementById('create-name');
+  const createNameField = document.getElementById('create-name-field');
+  const modeHere       = document.getElementById('mode-here');
   const deckTypeSelect = document.getElementById('deck-type');
   const customField    = document.getElementById('custom-cards-field');
   const customCards    = document.getElementById('custom-cards');
@@ -27,10 +30,17 @@ export function initIndexPage(socket, urlRoomId) {
   const joinPanel      = document.getElementById('join-panel');
   const presentPanel   = document.getElementById('present-panel');
 
-  // Only the join tab asks who you are. Creating a room sets up the presenter
-  // screen, and a screen has no name.
   const saved = getSavedName();
-  if (saved) joinName.value = saved;
+  if (saved) { joinName.value = saved; createName.value = saved; }
+
+  // A name is only needed when the creator is taking a seat on this device;
+  // a presenter screen has no name.
+  function renderCreateMode() {
+    createNameField.classList.toggle('hidden', !modeHere.checked);
+  }
+  document.querySelectorAll('input[name="create-mode"]')
+    .forEach(radio => radio.addEventListener('change', renderCreateMode));
+  renderCreateMode();
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
   const TABS = {
@@ -64,11 +74,21 @@ export function initIndexPage(socket, urlRoomId) {
   });
 
   // ── Create room ───────────────────────────────────────────────────────────
+  // Where the creator lands after `room-created`, decided at submit time.
+  let createMode = 'elsewhere';
+
   function doCreate() {
     const deckType = deckTypeSelect.value;
     const roomName = roomNameInput.value.trim();
 
     if (!roomName) { toast(t('toast-enter-room-name'), 'error'); roomNameInput.focus(); return; }
+
+    const seatMeHere = modeHere.checked;
+    if (seatMeHere && !createName.value.trim()) {
+      toast(t('toast-enter-name'), 'error');
+      createName.focus();
+      return;
+    }
 
     let custom = [];
     if (deckType === 'custom') {
@@ -82,6 +102,9 @@ export function initIndexPage(socket, urlRoomId) {
 
     createBtn.disabled    = true;
     createBtn.textContent = t('btn-creating');
+    // Remembered here so the room page can seat you without asking again.
+    if (seatMeHere) saveName(createName.value.trim());
+    createMode = seatMeHere ? 'here' : 'elsewhere';
 
     // The socket is created with autoConnect:false on this page (see main.js),
     // so open it here and send once it is actually up. Emitting straight away
@@ -154,10 +177,13 @@ export function initIndexPage(socket, urlRoomId) {
   presentCode.addEventListener('input',   () => { presentCode.value = presentCode.value.toUpperCase(); });
 
   // ── Socket events ─────────────────────────────────────────────────────────
-  // Creating a room opens the presenter screen for it: the creator is setting
-  // up a display, not taking a seat. Joining is a separate, deliberate act.
+  // Two ways out, chosen on the form. Voting elsewhere makes this screen a
+  // presenter display; voting here seats you straight away, so the room page
+  // is told to skip the join modal — it already has your name.
   socket.on('room-created', ({ roomId }) => {
-    window.location.href = `/presenter.html?id=${roomId}`;
+    window.location.href = createMode === 'here'
+      ? `/room.html?id=${roomId}&autojoin=1`
+      : `/presenter.html?id=${roomId}`;
   });
 
   socket.on('error', ({ message }) => {

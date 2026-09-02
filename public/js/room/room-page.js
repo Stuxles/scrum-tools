@@ -523,9 +523,12 @@ export function initRoomPage(socket, urlRoomId) {
   }
 
   // ── Join flow ─────────────────────────────────────────────────────────────
-  // Always through the modal. The old auto-join relied on a flag the create
-  // flow set, but creating a room now opens the presenter screen instead of
-  // seating anyone, so nothing sets it any more.
+  // `?autojoin=1` comes from creating a room while choosing to play on this
+  // device: the name was captured on that form, so asking for it again in the
+  // modal would be a pointless extra click. A URL parameter rather than a
+  // stored flag, so it cannot go stale and get replayed on an unrelated visit.
+  const wantsAutoJoin = new URLSearchParams(window.location.search).get('autojoin') === '1';
+
   fetch(`/api/rooms/${urlRoomId}`)
     .then(r => r.json())
     .then(data => {
@@ -537,6 +540,11 @@ export function initRoomPage(socket, urlRoomId) {
       joinModalRoom.textContent = `📍 ${data.name || urlRoomId}`;
       if (modalSpectatorChk) modalSpectatorChk.checked = localStorage.getItem('scrum_is_spectator') === 'true';
       modalNameInput.value = getSavedName();
+
+      if (wantsAutoJoin && getSavedName()) {
+        doJoinRoom(getSavedName(), false);
+        return;
+      }
       modalNameInput.focus();
     })
     .catch(() => {
