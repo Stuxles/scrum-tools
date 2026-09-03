@@ -29,18 +29,20 @@ export function initPresenterPage(socket, urlRoomId) {
   const roomName        = document.getElementById('presenter-room-name');
   const roomCode        = document.getElementById('presenter-code');
   const onlineCount     = document.getElementById('presenter-online-count');
-  const invitePanel     = document.getElementById('presenter-invite');
   const qrImg           = document.getElementById('presenter-qr');
   const qrPlaceholder   = document.getElementById('presenter-qr-placeholder');
   const qrUrl           = document.getElementById('presenter-url');
-  const qrToggle        = document.getElementById('presenter-qr-toggle');
+  const side            = document.getElementById('presenter-side');
+  const sideToggle      = document.getElementById('presenter-side-toggle');
+  const sideToggleGlyph = document.getElementById('presenter-side-toggle-glyph');
   const storyWrap       = document.getElementById('presenter-story');
   const storyAddBtn     = document.getElementById('presenter-story-add');
   const storyInput      = document.getElementById('presenter-story-input');
   const storyClearBtn   = document.getElementById('presenter-story-clear');
   const revealBtn       = document.getElementById('presenter-reveal-btn');
   const resetBtn        = document.getElementById('presenter-reset-btn');
-  const autoRevealChk   = document.getElementById('presenter-auto-reveal-chk');
+  const autoRevealBtn   = document.getElementById('presenter-auto-reveal-btn');
+  const autoRevealLabel = document.getElementById('auto-reveal-label');
   const currentDeck     = document.getElementById('presenter-current-deck');
   const deckBtn         = document.getElementById('presenter-deck-btn');
   const deckModal       = document.getElementById('deck-modal');
@@ -108,20 +110,25 @@ export function initPresenterPage(socket, urlRoomId) {
 
   onThemeChange(() => loadQR());
 
-  // The QR folds away by itself once the room has filled — it has done its job
-  // and should not keep a quarter of the screen. `null` means "follow the
-  // room"; once the facilitator decides, their choice sticks.
-  let qrOverride = null;
-  function renderInvite() {
-    const open = qrOverride ?? !currentRoom?.participants.length;
-    invitePanel.classList.toggle('is-collapsed', !open);
-    qrToggle.textContent = open ? t('presenter-hide-qr') : t('presenter-show-qr');
-    qrToggle.setAttribute('aria-expanded', String(open));
+  // ── Sidebar ───────────────────────────────────────────────────────────────
+  // Nothing folds away on its own. A first joiner is no reason to take the QR
+  // off the wall — the next person to walk in still needs it. Collapsing is a
+  // deliberate "give the cards the room", and nothing is lost by it: reveal
+  // and new round are in the header, the rest is in the options modal.
+  let sideCollapsed = false;
+  function renderSide() {
+    side.classList.toggle('hidden', sideCollapsed);
+    sideToggle.setAttribute('aria-expanded', String(!sideCollapsed));
+    sideToggleGlyph.textContent = sideCollapsed ? '«' : '»';
+    const label = t(sideCollapsed ? 'presenter-expand-side' : 'presenter-collapse-side');
+    sideToggle.setAttribute('title', label);
+    sideToggle.setAttribute('aria-label', label);
   }
-  qrToggle.addEventListener('click', () => {
-    qrOverride = invitePanel.classList.contains('is-collapsed');
-    renderInvite();
+  sideToggle.addEventListener('click', () => {
+    sideCollapsed = !sideCollapsed;
+    renderSide();
   });
+  renderSide();
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const emitRoom = (event, extra = {}) => {
@@ -130,9 +137,18 @@ export function initPresenterPage(socket, urlRoomId) {
 
   revealBtn.addEventListener('click', () => emitRoom('reveal'));
   resetBtn.addEventListener('click',  () => emitRoom('reset'));
-  autoRevealChk.addEventListener('change', () => {
-    emitRoom('toggle-auto-reveal', { autoReveal: autoRevealChk.checked });
-    toast(autoRevealChk.checked ? t('toast-auto-reveal-on') : t('toast-auto-reveal-off'), 'info');
+
+  // Unlike the other options this one is the room's, not the screen's, so it
+  // renders from room state rather than from a local preference.
+  function renderAutoReveal() {
+    const on = Boolean(currentRoom?.autoReveal);
+    autoRevealLabel.textContent = t(on ? 'confetti-on' : 'confetti-off');
+    autoRevealBtn.setAttribute('aria-pressed', String(on));
+  }
+  autoRevealBtn.addEventListener('click', () => {
+    const next = !currentRoom?.autoReveal;
+    emitRoom('toggle-auto-reveal', { autoReveal: next });
+    toast(next ? t('toast-auto-reveal-on') : t('toast-auto-reveal-off'), 'info');
   });
 
   const saveStory = () => emitRoom('update-story-title', { storyTitle: storyInput.value.trim() });
@@ -160,6 +176,7 @@ export function initPresenterPage(socket, urlRoomId) {
   const closeDeckModal = () => deckModal.classList.add('hidden');
   deckBtn.addEventListener('click', () => {
     if (!currentRoom) return;
+    optionsModal.classList.add('hidden');   // it launched from there; don't stack
     deckModalType.value = currentRoom.deckType || 'standard';
     deckCustomField.classList.toggle('hidden', deckModalType.value !== 'custom');
     deckModal.classList.remove('hidden');
@@ -204,9 +221,7 @@ export function initPresenterPage(socket, urlRoomId) {
 
     currentDeck.textContent = deckLabel(room.deckType);
     deckModalType.value     = room.deckType;
-    autoRevealChk.checked   = Boolean(room.autoReveal);
-
-    renderInvite();
+    renderAutoReveal();
 
     const hasPeople = room.participants.length > 0;
     emptyState.classList.toggle('hidden', hasPeople);
@@ -315,7 +330,7 @@ export function initPresenterPage(socket, urlRoomId) {
 
   window.addEventListener('lang-changed', () => {
     if (currentRoom) applyRoomState(currentRoom);
-    renderInvite();
+    renderSide();
     renderConfettiToggle();
     renderAustraliaToggle();
     renderVersion();

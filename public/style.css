@@ -1695,6 +1695,14 @@ html.australia-mode body {
 .presenter-header-right { display: flex; align-items: center; gap: 10px; }
 .presenter-header-right .online-indicator { font-size: 1.05rem; }
 
+/* The per-round actions, sized to read from across the room. */
+.presenter-header-action { font-size: 1rem; padding: 10px 22px; }
+.presenter-header-action .btn-glyph { font-size: 1.15rem; }
+@media (max-width: 700px) {
+  .presenter-header-action .btn-text { display: none; }
+  .presenter-header-action { padding: 10px 14px; }
+}
+
 .presenter-story-add {
   align-self: flex-start;
   background: none;
@@ -1722,37 +1730,6 @@ html.australia-mode body {
   font-weight: 600;
   color: var(--purple-200);
 }
-
-.presenter-controls {
-  border-radius: var(--r-lg);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.presenter-auto-reveal {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--text-300);
-  cursor: pointer;
-  padding: 4px 0;
-}
-.presenter-auto-reveal input { width: 16px; height: 16px; cursor: pointer; }
-/* Wraps rather than overflows: a translated deck name plus the button is
-   wider than the column on a narrow viewport, and an overflowing row is
-   what put a scrollbar under this panel. */
-.presenter-deck-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  border-top: 1px solid var(--glass-border);
-  padding-top: 12px;
-}
-.presenter-deck-name { font-size: 0.85rem; color: var(--text-500); }
 
 /* Three columns on purpose. The cards are what the room is looking at, so
    they get the middle and all the width that is left. Participants sit in
@@ -1824,15 +1801,6 @@ html.australia-mode body {
   color: var(--text-500);
   word-break: break-all;
 }
-
-/* Once people are in, the QR has done its job and a quarter of the screen
-   should not stay reserved for it. Collapsed keeps the room code — a latecomer
-   can still type that — and the toggle brings the code back for scanning. */
-.presenter-qr-toggle { margin-top: 12px; width: 100%; justify-content: center; }
-.presenter-invite.is-collapsed .presenter-qr,
-.presenter-invite.is-collapsed .presenter-qr-placeholder,
-.presenter-invite.is-collapsed .presenter-url { display: none; }
-.presenter-invite.is-collapsed .presenter-code { margin-bottom: 0; }
 
 .presenter-stage { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .presenter-progress,
@@ -1912,8 +1880,8 @@ html.australia-mode body {
   gap: 16px;
 }
 
-/* Too narrow for three columns: keep cards and controls side by side and
-   drop the participants underneath, full width. */
+/* Too narrow for three columns: keep the cards and the invite side by side
+   and drop the participants underneath, full width. */
 @media (max-width: 1250px) {
   .presenter-main   { grid-template-columns: minmax(0, 1fr) minmax(230px, 260px); }
   .presenter-stage  { grid-column: 1; grid-row: 1; }
@@ -1924,11 +1892,28 @@ html.australia-mode body {
 @media (max-width: 900px) {
   .presenter-page { padding: 16px; }
   .presenter-main { grid-template-columns: 1fr; }
-  /* One column: cards first, then controls, then the list. */
+  /* One column: cards first, then the invite, then the list. */
   .presenter-stage,
   .presenter-side,
   .presenter-people { grid-column: 1; grid-row: auto; }
   .presenter-stage  { order: -1; }
   .presenter-people { order: 1; max-height: 260px; }
   .presenter-side   { position: static; }
+}
+
+/* ── Collapsed ──────────────────────────────────────────────────
+   Last in the file on purpose: these have to beat the breakpoint rules
+   above, which set the expanded column widths. A `:has()` width swap is
+   the one kind that belongs here — the facilitator asked for it, so the
+   reflow is the point rather than a surprise. */
+@media (min-width: 1251px) {
+  .presenter-main:has(.presenter-side.hidden) {
+    grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+  }
+}
+@media (min-width: 901px) and (max-width: 1250px) {
+  .presenter-main:has(.presenter-side.hidden) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .presenter-main:has(.presenter-side.hidden) .presenter-people { grid-column: 1; }
 }
