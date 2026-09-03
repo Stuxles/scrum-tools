@@ -1,117 +1,40 @@
 # 📋 TODO / Ideeënlijst
 
-Backlog van bugs, ideeën en verbeterpunten uit de codebase-reviews.
-**Gesorteerd op prioriteit:** bugs eerst, daarna functionaliteit op waarde, dan
-technisch onderhoud. Afgeronde items staan onderaan.
+Backlog van ideeën en verbeterpunten uit de codebase-reviews.
+**Gesorteerd op prioriteit:** functionaliteit op waarde, daarna technisch
+onderhoud. Afgeronde items staan onderaan.
 
----
-
-## 🐞 Bugs
-
-Gevonden in de review van 3 september 2026, alle drie gereproduceerd tegen de
-echte socket-handlers.
-
-### 1. Aangepast kaartdek wordt genegeerd bij het aanmaken van een room
-**Prioriteit: hoog.** Stil datafout — de gebruiker krijgt zonder melding een
-ander dek dan hij invulde.
-
-`DECKS` in `src/config.js` bevat alleen `standard`, `fibonacci` en `tshirt`.
-`handleCreateRoom` (`src/socket/handlers/roomHandlers.js:35`) normaliseert met:
-
-```js
-deckType = DECKS[deckType] ? deckType : 'standard';
-```
-
-`DECKS['custom']` bestaat niet, dus `'custom'` wordt `'standard'` — en de regel
-eronder (`deckType === 'custom' ? customCards : [...DECKS[deckType]]`) kan dan
-nooit meer waar zijn. De ingevulde kaarten verdwijnen.
-
-- Gereproduceerd: dek `1,2,4,8` opgevraagd bij aanmaken → room krijgt
-  `deckType: 'standard'` en het volledige standaarddek.
-- `handleChangeDeck` (`smHandlers.js:41`) doet het wél goed: die test op
-  `deckType === 'custom'` vóór de `DECKS`-lookup. Vandaar dat een aangepast dek
-  via **Wijzig deck** werkt en bij het aanmaken niet.
-- Fix: dezelfde volgorde als in `handleChangeDeck` aanhouden, of `custom` als
-  sentinel in `DECKS` opnemen.
-- Neem meteen de testdekking uit #9 mee — zonder die test komt dit terug.
-
-### 2. Offline deelnemer blokkeert auto-reveal en de voortgangsteller
-**Prioriteit: hoog.** Raakt precies het scenario waarvoor de grace-periode
-bestaat: iemands telefoon gaat op slot.
-
-`eligibleVoters()` in `src/utils/autoReveal.js:25` filtert alleen op
-`!p.isSpectator`, niet op `connected`. Een deelnemer die wegvalt houdt zijn
-stoel 10 minuten (`PARTICIPANT_GRACE_MS`) en telt al die tijd mee als iemand op
-wie de ronde wacht.
-
-- Gereproduceerd: Alice stemt, Bob's socket valt weg vóór zijn stem. Auto-reveal
-  staat aan, alle bereikbare stemmers hebben gestemd, en toch blijft
-  `revealed: false` — tien minuten lang.
-- `handleDisconnect` roept vlak na het wegvallen `applyAutoReveal(room)` aan met
-  de opmerking *"A pending voter leaving may complete the round"*
-  (`connectionHandlers.js:139`). Dat kan nooit kloppen zolang de vertrekker in
-  `eligibleVoters()` blijft zitten — die aanroep is dood.
-- Zelfde oorzaak, zichtbaar gevolg: de voortgangsbalk op zowel de room- als de
-  presenter-pagina blijft op `3 / 4 gestemd` hangen.
-- Afweging bij het oplossen: iemand die terugkomt wil nog kunnen stemmen. Het
-  voorstel is de afwezige buiten de auto-reveal-telling houden maar zijn stoel
-  gewoon te bewaren — niet de stoel eerder opruimen.
-
-### 3. Host kicken laat de room zonder host achter
-**Prioriteit: laag** — alleen bereikbaar via een zelfgebouwd socket-bericht, niet
-via de UI (zie #4). Wel een echte gatenkaas in de state.
-
-`handleKickUser` (`connectionHandlers.js:12`) verwijdert de deelnemer maar raakt
-`room.masterId` en `room.masterToken` niet aan.
-
-- Gereproduceerd: presenter-scherm stuurt `kick-user` met de host als doelwit →
-  `masterId` wijst naar een verwijderde stoel, `masterToken` staat nog op de
-  gekickte persoon, en niemand in de room is nog host.
-- De achterblijvers kunnen het via **Claim SM** oplossen, maar krijgen geen
-  signaal dat de rol vrij is.
-- Erger: omdat `masterAbsent` dan waar is en er geen `masterGraceTimer` loopt,
-  wordt de gekickte host bij opnieuw joinen meteen weer host.
-- Fix: bij het kicken van de host `masterId`/`masterToken` leegmaken en dezelfde
-  overdrachtsroute volgen als bij een disconnect.
-
-### 4. Presenter mag kicken maar heeft er geen knop voor
-**Prioriteit: laag.** Documentatie belooft iets wat de UI niet biedt.
-
-`docs/wiki/roles.md:17` zet kicken voor het presenter-scherm op ✅, en de server
-staat het ook toe via `canControlRoom()`. Maar `presenter-page.js:216` roept
-`renderParticipants(..., false, ...)` aan, en die `false` is precies wat de
-kick- en overdrachtsknoppen onderdrukt.
-
-- Kies één kant: knoppen toevoegen aan het presenter-scherm, of de tabel in
-  `roles.md` corrigeren. Los #3 eerst op als je voor de knoppen kiest.
+> De vier bugs uit de review van 3 september 2026 zijn opgelost en staan
+> onderaan bij **Afgerond**, elk met een regressietest in
+> `tests/bugfixes.test.js`.
 
 ---
 
 ## 🎯 Functioneel
 
-### 5. Ronde-historie + export
+### 1. Ronde-historie + export
 **Waarde: hoog.** Nu worden bij elke "nieuwe ronde" de resultaten gewist zonder dat er iets bewaard blijft. Een team dat 10 stories schat, houdt achteraf niets over.
 
 - Log per ronde: `storyTitle`, individuele stemmen, gemiddelde/mediaan, tijdstip.
 - Zichtbaar in een paneel of modal voor de Scrum Master.
 - Knop "Kopieer als Markdown" / "Download als CSV" voor in de sprint-notulen.
 - Sluit direct aan op de bestaande `storyTitle`-functie.
-- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #10).
+- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #6).
 
-### 6. Consensus- en outlier-indicatie
+### 2. Consensus- en outlier-indicatie
 **Waarde: hoog.** De stats tonen gemiddelde/mediaan/verdeling, maar niet het meest bruikbare voor de facilitator: *is er onenigheid?*
 
 - Toon expliciet "iedereen eens" versus "grote spreiding — bespreken".
 - Markeer min/max outliers in de resultatengrid.
 - Let op: de i18n-keys `stat-consensus`, `stat-most-picked` en `stat-total-votes` waren hiervoor ooit bedoeld maar nooit gebruikt; ze zijn inmiddels opgeruimd en moeten opnieuw toegevoegd worden als dit gebouwd wordt.
 
-### 7. Timer per ronde
+### 3. Timer per ronde
 **Waarde: gemiddeld.** Klassieke planning-poker functie om discussies kort te houden.
 
 - Optionele aftelklok die de SM start; zichtbaar voor iedereen.
 - Eventueel automatisch onthullen bij 0 (combineert met auto-reveal).
 
-### 8. Installeerbaar maken als PWA
+### 4. Installeerbaar maken als PWA
 **Waarde: gemiddeld.** Sluit direct aan op de manier waarop de app gebruikt wordt: meestemmen vanaf je telefoon terwijl het presenter-scherm op de tv staat. Levert een icoon op het beginscherm en een standalone weergave zonder browserbalk — dat scheelt schermruimte op een telefoon, en de wake lock (`requestWakeLock()` in `public/js/utils/helpers.js`) zit er al in.
 
 **Wat het níét oplevert: offline werken.** Dit is een real-time app; zonder verbinding is er niets zinvols te tonen. De service worker cachet dus alleen de app-shell (HTML/CSS/JS), nooit room-state.
@@ -135,24 +58,25 @@ kick- en overdrachtsknoppen onderdrukt.
 
 ## 🔧 Technisch
 
-### 9. Testdekking voor kaartdekken
-**Prioriteit: gemiddeld.** Dit is de reden dat #1 kon blijven bestaan.
+### 5. Testdekking voor het stemmen zelf
+**Prioriteit: laag** — het gat dat de kaartdek-bug liet ontstaan is gedicht
+(`tests/bugfixes.test.js` dekt nu elk dektype, aangepaste dekken, een onbekend
+dektype en de ondergrens van 2 kaarten). Wat er nog niet los getest is:
 
-Er is geen enkele test die een dek meegeeft aan `create-room` of `change-deck` —
-`grep -i custom tests/` levert alleen een treffer in `rateLimiter.test.js` op.
+- `handleVote` — een kaart die niet in het dek zit wordt genegeerd, stemmen na
+  een reveal doet niets, en opnieuw op dezelfde kaart klikken haalt de stem weg.
+- `handleToggleSpectator` — de stem wordt gewist bij het omzetten naar
+  toeschouwer, en de resterende stemmers kunnen daardoor compleet zijn.
+- Deze paden gaan via `applyAutoReveal()` en delen dus het predicaat dat bij
+  bug 2 is rechtgezet; ze zijn nu alleen indirect gedekt.
 
-- Test per dektype dat `room.deck` klopt na `create-room`.
-- Test dat een aangepast dek overleeft, en dat < 2 kaarten een `error` oplevert.
-- Test dat `change-deck` en `create-room` hetzelfde gedrag geven — dat is precies
-  waar ze nu uit elkaar lopen.
-
-### 10. State overleeft geen herstart
+### 6. State overleeft geen herstart
 **Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
 
 - Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
 - **Bewuste trade-off:** de README verkoopt "geen database nodig" als feature. Alleen oppakken als dit in de praktijk stoort.
 
-### 11. Dode i18n-keys en CSS opruimen
+### 7. Dode i18n-keys en CSS opruimen
 **Prioriteit: laag.** Puur onderhoud, geen zichtbaar effect.
 
 - Ongebruikte i18n-keys (in beide talen aanwezig, nergens aangeroepen):
@@ -166,7 +90,7 @@ Er is geen enkele test die een dek meegeeft aan `create-room` of `change-deck` �
   keys en lopen niet uit de pas, en elke `getElementById` in de frontend heeft
   een bestaand element. Geen dubbele id's op enige pagina.
 
-### 12. Presenter-scherm: reveal-theater en grote-schermtest
+### 8. Presenter-scherm: reveal-theater en grote-schermtest
 **Prioriteit: laag.** Twee dingen die overbleven na de code review van het presenter-scherm, geen van beide een bug.
 
 - **Geen omgekeerde kaarten tijdens het stemmen.** `presenter.html` toont nu alleen een voortgangsbalk zolang er niet onthuld is. Klassieke planning-poker-schermen laten per deelnemer een omgekeerde kaart zien die bij reveal omdraait — dat maakt het moment zelf theatraler. Zou in `presenter-page.js` + `render-voting.js`-achtige component moeten, met een flip-animatie op `#results-cards-grid` zoals `render-results.js` al deels heeft (`animation: flipIn`).
@@ -176,6 +100,42 @@ Er is geen enkele test die een dek meegeeft aan `create-room` of `change-deck` �
 ---
 
 ## ✅ Afgerond
+
+### De vier bugs uit de review van 3 september 2026
+
+Alle vier eerst gereproduceerd, daarna opgelost, en vastgezet met 13
+regressietests in `tests/bugfixes.test.js`.
+
+- ✅ **Aangepast kaartdek werd genegeerd bij het aanmaken van een room.** `DECKS`
+  heeft geen `custom`-sleutel — dat is een markering voor "gebruik de kaarten uit
+  deze payload" — maar `handleCreateRoom` deed de `DECKS`-lookup vóór de test op
+  `custom`, en schreef `custom` dus om naar `standard`. De ingevoerde kaarten
+  verdwenen zonder melding. Nu dezelfde volgorde als in `handleChangeDeck`, dat
+  het altijd al goed deed; vandaar dat het via **Wijzig deck** wél werkte.
+- ✅ **Een offline deelnemer blokkeerde auto-reveal en de voortgangsteller.**
+  `eligibleVoters()` filterde op toeschouwer maar niet op verbinding, dus een
+  telefoon die op slot ging hield de ronde tien minuten tegen. Het predicaat is
+  nu: geen toeschouwer, én niet offline-zonder-stem. Wie stemde en dáárna wegviel
+  telt gewoon mee — zijn stem hoort bij de ronde. De frontend bouwde datzelfde
+  filter op vier plekken met de hand na; die delen nu één `eligibleVoters()` in
+  `public/js/utils/stats.js`, zodat de balk en de reveal elkaar niet meer kunnen
+  tegenspreken. Meteen de dode `applyAutoReveal()`-aanroep in `handleDisconnect`
+  hersteld: die kon zijn eigen commentaar nooit waarmaken.
+- ✅ **De host kicken liet de room zonder host achter.** `handleKickUser` liet
+  `masterId` naar een verwijderde stoel wijzen en `masterToken` op de gekickte
+  persoon staan — waardoor die bij opnieuw joinen de rol meteen terugkreeg. Een
+  kick is bewust en definitief, dus anders dan bij een disconnect volgt er geen
+  grace-periode: de rol gaat direct naar de eerste verbonden achterblijver, of
+  wordt leeggemaakt als er niemand meer is.
+- ✅ **Presenter-scherm mocht kicken maar had er geen knop voor.** De server stond
+  het toe en `roles.md` beloofde het; alleen gaf `presenter-page.js` een harde
+  `false` mee als `isMaster`. `renderParticipants()` neemt nu twee losse rechten
+  (`canKick`, `canTransfer`) in plaats van één vlag, want de twee aanroepers
+  hebben niet dezelfde rechten: `sm-transfer-master` eist dat de afzender de
+  stoel zelf bezit, en een scherm heeft er geen. Eén boolean kon alleen maar naar
+  één kant fout staan.
+
+### Eerder
 
 - **Socket-hardening** — safe dispatch, null-prototype store, `normalizeRoomId()` (PR #5).
 - **Dependency-updates** — express 5, supertest 7 (PR #6).

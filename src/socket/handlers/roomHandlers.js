@@ -32,18 +32,24 @@ function cleanText(raw, maxLength, fallback) {
  * @param {import('socket.io').Socket} socket
  */
 export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
-  deckType = DECKS[deckType] ? deckType : 'standard';
-
-  // Copy the preset — assigning DECKS[deckType] by reference would make every
-  // room share one array, so a single in-place mutation anywhere would corrupt
-  // the deck globally, for every room and every future room.
-  const deck = deckType === 'custom'
-    ? (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30)
-    : [...DECKS[deckType]];
-
-  if (deckType === 'custom' && deck.length < 2) {
-    socket.emit('error', { message: 'Voer minimaal 2 kaarten in voor een aangepast deck.' });
-    return;
+  // Test for 'custom' BEFORE falling back on the presets, exactly as
+  // handleChangeDeck does. There is no DECKS.custom — it is a marker for
+  // "use the cards in this payload" — so a `DECKS[deckType] ? ... : 'standard'`
+  // guard up front rewrote every custom deck to the standard one and silently
+  // threw the supplied cards away.
+  let deck;
+  if (deckType === 'custom') {
+    deck = (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30);
+    if (deck.length < 2) {
+      socket.emit('error', { message: 'Voer minimaal 2 kaarten in voor een aangepast deck.' });
+      return;
+    }
+  } else {
+    deckType = DECKS[deckType] ? deckType : 'standard';
+    // Copy the preset — assigning DECKS[deckType] by reference would make every
+    // room share one array, so a single in-place mutation anywhere would corrupt
+    // the deck globally, for every room and every future room.
+    deck = [...DECKS[deckType]];
   }
 
   let roomId;

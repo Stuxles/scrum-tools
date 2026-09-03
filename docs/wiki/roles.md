@@ -17,11 +17,22 @@ Scrum Poker separates three things that used to be bundled into one role: **who 
 | **Kick Participants (`kick-user`)** | ✅ Yes | ❌ No | ❌ No | ✅ Yes |
 | **Hand the host role to someone (`sm-transfer-master`)** | ✅ Yes | ❌ No | ❌ No | ❌ No (not a participant) |
 | **Enlarge Full-Screen QR Code Modal** | ✅ Yes | ❌ No | ❌ No | ✅ Shows it permanently |
-| **Counted in Voting Progress Bar (%)** | ✅ **Included** | ✅ **Included** | ❌ **Excluded** | ❌ Not in `participants` |
+| **Counted in Voting Progress Bar (%)** | ✅ **Included** | ✅ **Included** (unless offline and not yet voted) | ❌ **Excluded** | ❌ Not in `participants` |
 | **Included in Average / Median / Chart** | ✅ **Included** | ✅ **Included** | ❌ **Excluded** | ❌ Not in `participants` |
 | **Toggle Spectator Role Live** | ✅ Yes | ✅ Can become Spectator | ✅ Can become Voter | ❌ n/a |
 
 A host who does not want to estimate toggles **spectator**, the same as anyone else. That is now the only way to sit a round out.
+
+### Who the round is waiting on
+
+The denominator behind every "3 / 4 gestemd", and the condition auto-reveal fires on, is one predicate — `eligibleVoters()`, in `src/utils/autoReveal.js` on the server and mirrored in `public/js/utils/stats.js` on the client. The two must agree, or the bar contradicts the reveal that just replaced it.
+
+Someone is part of the round unless:
+
+- they are a **spectator** — they opted out; or
+- they are **offline and have not voted**. Their seat is held for the grace window (a locked phone should not cost you your place), but a round cannot wait on someone who is not there. Before this rule, one dropped connection stalled auto-reveal and pinned the progress bar for the full ten minutes.
+
+Someone who voted and *then* dropped off still counts: their vote is in the round, so dropping them would change the tally.
 
 ---
 

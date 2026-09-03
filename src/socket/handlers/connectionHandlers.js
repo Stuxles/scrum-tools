@@ -25,7 +25,31 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
     clearTimeout(room.participantGraceTimers[targetId]);
     delete room.participantGraceTimers[targetId];
   }
+  const wasMaster = room.masterId === targetId;
   delete room.participants[targetId];
+
+  // Deleting the seat used to leave masterId pointing at it. The room then had
+  // no reachable host, and — because an absent master with no grace timer is
+  // what hands the role to the next joiner — the person just kicked got it
+  // straight back on rejoin. A kick is deliberate and final, so unlike a
+  // disconnect it gets no grace window: hand the role on right now.
+  if (wasMaster) {
+    if (room.masterGraceTimer) {
+      clearTimeout(room.masterGraceTimer);
+      room.masterGraceTimer = null;
+    }
+    const heir = Object.values(room.participants).find(p => p.connected !== false);
+    room.masterId    = heir ? heir.id : null;
+    room.masterName  = heir ? heir.name : '';
+    room.masterToken = heir ? (heir.sessionToken || null) : null;
+    if (heir) {
+      io.to(heir.id).emit('became-master', {});
+      info('kick', `SM ${targetId} gekickt uit ${roomId}; rol naar ${heir.name}`);
+    } else {
+      info('kick', `SM ${targetId} gekickt uit ${roomId}; niemand over om de rol aan te geven`);
+    }
+  }
+
   // The remaining voters may now all have voted
   applyAutoReveal(room);
   broadcastRoomState(roomId);

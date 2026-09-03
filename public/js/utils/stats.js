@@ -8,6 +8,26 @@
  */
 
 /**
+ * Everyone who is part of the current round — the denominator behind every
+ * "x / y gestemd" on screen, and the population the consensus check runs over.
+ *
+ * Mirrors `eligibleVoters()` in src/utils/autoReveal.js, which decides when a
+ * round auto-reveals. The two must agree: if the server reveals at 3/3 while
+ * the bar still reads 3/4, the screen contradicts itself.
+ *
+ * Spectators opted out. Someone offline who never voted drops out too — their
+ * seat is held for the grace window, but a round cannot wait on someone who
+ * is not there. Someone who voted and then dropped off stays: their vote is
+ * part of the round.
+ *
+ * @param {Array<{ isSpectator?: boolean, connected?: boolean, hasVoted: boolean }>} participants
+ * @returns {Array<object>}
+ */
+export function eligibleVoters(participants) {
+  return participants.filter(p => !p.isSpectator && (p.connected !== false || p.hasVoted));
+}
+
+/**
  * @param {Array<{ hasVoted: boolean, vote: string|null }>} participants
  * @returns {{
  *   votes: string[],

@@ -5,12 +5,20 @@ import { toast } from '../utils/toast.js';
 /**
  * Participants list renderer.
  *
+ * Takes two separate capabilities rather than one `isMaster` flag, because the
+ * two callers do not have the same rights. The server lets a presenter screen
+ * kick (`canControlRoom()`), but `sm-transfer-master` insists the sender *is*
+ * the host — a screen holds no seat, so it has nothing to hand over. One
+ * boolean could only have been wrong in one direction or the other.
+ *
  * @param {HTMLElement}                       participantsList
  * @param {object}                            room
- * @param {boolean}                           isMaster
  * @param {import('socket.io-client').Socket} socket
+ * @param {{ canKick?: boolean, canTransfer?: boolean }} [caps]
  */
-export function renderParticipants(participantsList, room, isMaster, socket) {
+export function renderParticipants(participantsList, room, socket, caps = {}) {
+  const { canKick = false, canTransfer = false } = caps;
+
   // The whole list is rebuilt on every room-state, which arrives on every vote
   // from anyone. Remember which chip was expanded first, or a teammate voting
   // would snap it shut under the finger of a host reaching for kick.
@@ -69,7 +77,12 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
 
     li.appendChild(statusEl);
 
-    if (isMaster && p.id !== socket.id) {
+    // `p.id !== socket.id` is what stops the host offering to kick themselves.
+    // On a presenter screen the socket id is the display's and never matches a
+    // participant, so every row gets its buttons there.
+    const isSelf = p.id === socket.id;
+
+    if (canTransfer && !isSelf) {
       const transferBtn = document.createElement('button');
       transferBtn.className = 'btn btn-secondary btn-icon transfer-btn';
       transferBtn.textContent = '👑';
@@ -82,7 +95,9 @@ export function renderParticipants(participantsList, room, isMaster, socket) {
         }
       });
       li.appendChild(transferBtn);
+    }
 
+    if (canKick && !isSelf) {
       const kickBtn = document.createElement('button');
       kickBtn.className = 'btn btn-danger btn-icon kick-btn';
       kickBtn.textContent = '✕';

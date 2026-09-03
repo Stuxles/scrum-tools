@@ -14,7 +14,7 @@ import { renderVoting, selectVoteCard } from './render-voting.js';
 import { renderResults }            from './render-results.js';
 import { renderParticipants }       from './render-users.js';
 import { initQrModule }             from './qr-module.js';
-import { computeVoteStats, isUnanimousConsensus } from '../utils/stats.js';
+import { computeVoteStats, isUnanimousConsensus, eligibleVoters } from '../utils/stats.js';
 import { celebrateConsensus }       from '../utils/confetti.js';
 
 export function initRoomPage(socket, urlRoomId) {
@@ -365,7 +365,7 @@ export function initRoomPage(socket, urlRoomId) {
       storyTitleInput.value = storyText;
     }
 
-    renderParticipants(participantsList, room, isMaster, socket);
+    renderParticipants(participantsList, room, socket, { canKick: isMaster, canTransfer: isMaster });
 
     const votingCtx = {
       votingPhase, resultsPhase, votingPhaseTitle, votingPhaseSub,
@@ -388,7 +388,7 @@ export function initRoomPage(socket, urlRoomId) {
       renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
 
       if (!hasCelebratedThisReveal) {
-        const eligible = room.participants.filter(p => !p.isSpectator);
+        const eligible = eligibleVoters(room.participants);
         const stats    = computeVoteStats(room.participants);
         if (isUnanimousConsensus(stats.votes, eligible.length) && getConfettiEnabled()) {
           celebrateConsensus();
@@ -409,7 +409,7 @@ export function initRoomPage(socket, urlRoomId) {
 
     // SM progress bar
     if (isMaster) {
-      const voters = room.participants.filter(p => !p.isSpectator);
+      const voters = eligibleVoters(room.participants);
       const voted  = voters.filter(p => p.hasVoted).length;
       const total  = voters.length;
       const pct    = total > 0 ? Math.round((voted / total) * 100) : 0;
