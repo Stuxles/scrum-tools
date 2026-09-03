@@ -46,6 +46,24 @@
           <div class="online-dot" aria-hidden="true"></div>
           <span id="presenter-online-count">0</span>
         </div>
+        <!-- The two per-round actions live in the header, not in the sidebar:
+             they are the controls that must stay put whether the sidebar is
+             open, collapsed to a rail, or stacked away on a narrow screen. -->
+        <button class="btn btn-primary presenter-header-action" id="presenter-reveal-btn"
+          data-i18n-title="sm-reveal-label" title="Reveal">
+          <span class="btn-glyph" aria-hidden="true">🃏</span>
+          <span class="btn-text" data-i18n="sm-reveal-label">Reveal</span>
+        </button>
+        <button class="btn btn-secondary presenter-header-action" id="presenter-reset-btn"
+          data-i18n-title="sm-reset-label" title="Nieuwe ronde">
+          <span class="btn-glyph" aria-hidden="true">🔄</span>
+          <span class="btn-text" data-i18n="sm-reset-label">Nieuwe ronde</span>
+        </button>
+        <!-- Label and title come from JS, which knows which way it swings. -->
+        <button class="btn btn-secondary btn-icon" id="presenter-side-toggle" aria-expanded="true"
+          aria-controls="presenter-side" title="Inklappen">
+          <span id="presenter-side-toggle-glyph" aria-hidden="true">»</span>
+        </button>
         <button class="btn btn-secondary btn-icon" id="presenter-options-btn" title="Opties & instellingen"
           data-i18n-title="options-btn-title" aria-label="Opties">⚙️</button>
       </div>
@@ -64,37 +82,12 @@
 
     <main class="presenter-main">
 
-      <aside class="presenter-side">
-
-      <!-- ── Invite ─────────────────────────────────────────────── -->
-      <section class="presenter-invite glass" id="presenter-invite" aria-labelledby="presenter-invite-title">
-        <h2 class="presenter-section-title" id="presenter-invite-title" data-i18n="presenter-join-title">Doe mee</h2>
-        <div class="presenter-code" id="presenter-code">——</div>
-        <img class="presenter-qr hidden" id="presenter-qr" src="" alt="QR-code om mee te doen" />
-        <div class="presenter-qr-placeholder" id="presenter-qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
-        <p class="presenter-url" id="presenter-url"></p>
-        <button class="btn btn-secondary btn-sm presenter-qr-toggle" id="presenter-qr-toggle"
-          data-i18n="presenter-show-qr">📱 Toon QR</button>
-      </section>
-
-      <!-- ── Controls ───────────────────────────────────────────── -->
-      <section class="presenter-controls glass" aria-labelledby="presenter-controls-title">
-        <h2 class="presenter-section-title" id="presenter-controls-title" data-i18n="sm-section-actions">Acties</h2>
-
-        <button class="btn btn-primary btn-lg btn-full" id="presenter-reveal-btn" data-i18n="sm-reveal-btn">🃏 Reveal</button>
-        <button class="btn btn-secondary btn-full" id="presenter-reset-btn" data-i18n="sm-reset-btn">🔄 Nieuwe ronde</button>
-
-        <label class="presenter-auto-reveal">
-          <input type="checkbox" id="presenter-auto-reveal-chk" />
-          <span data-i18n="sm-auto-reveal">Auto-reveal</span>
-        </label>
-
-        <div class="presenter-deck-row">
-          <span class="presenter-deck-name" id="presenter-current-deck">—</span>
-          <button class="btn btn-secondary btn-sm" id="presenter-deck-btn" data-i18n="sm-change-deck-btn">🎴 Wijzig deck</button>
-        </div>
-      </section>
-
+      <!-- ── People: own column, so a long list never pushes the cards ── -->
+      <!-- Left, and controls right — the same sides as the room page, so the
+           host is not hunting for the buttons after switching screens. -->
+      <aside class="presenter-people glass" id="presenter-participants-wrap">
+        <h2 class="presenter-section-title" data-i18n="panel-title-participants">Deelnemers</h2>
+        <ul class="participants-list" id="participants-list" role="list"></ul>
       </aside>
 
       <!-- ── Stage: the thing everyone in the room is looking at ── -->
@@ -124,10 +117,22 @@
 
       </section>
 
-      <!-- ── People: own column, so a long list never pushes the cards ── -->
-      <aside class="presenter-people glass" id="presenter-participants-wrap">
-        <h2 class="presenter-section-title" data-i18n="panel-title-participants">Deelnemers</h2>
-        <ul class="participants-list" id="participants-list" role="list"></ul>
+      <!-- Just the invitation. Everything that is set once per session lives
+           in the options modal, and the per-round actions in the header — so
+           this whole column can fold away by hand when the cards want the
+           room. By hand, never by itself: what belongs on the screen is the
+           facilitator's call, not a head count's. -->
+      <aside class="presenter-side" id="presenter-side">
+
+        <!-- ── Invite ─────────────────────────────────────────────── -->
+        <section class="presenter-invite glass" id="presenter-invite" aria-labelledby="presenter-invite-title">
+          <h2 class="presenter-section-title" id="presenter-invite-title" data-i18n="presenter-join-title">Doe mee</h2>
+          <div class="presenter-code" id="presenter-code">——</div>
+          <img class="presenter-qr hidden" id="presenter-qr" src="" alt="QR-code om mee te doen" />
+          <div class="presenter-qr-placeholder" id="presenter-qr-placeholder" data-i18n="qr-placeholder">Laden…</div>
+          <p class="presenter-url" id="presenter-url"></p>
+        </section>
+
       </aside>
     </main>
 
@@ -142,6 +147,30 @@
         <p class="modal-subtitle" data-i18n="presenter-options-sub">Instellingen van dit scherm.</p>
 
         <div class="options-list" style="display: flex; flex-direction: column; gap: 12px; margin: 16px 0;">
+          <!-- Room-wide, unlike the three below it, which are per device. It
+               is here because it is set once for a session, not per round. -->
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="sm-auto-reveal">Auto-reveal</div>
+              <div class="option-row-sub" data-i18n="sm-auto-reveal-title">Onthul automatisch zodra iedereen gestemd heeft</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="presenter-auto-reveal-btn"
+              data-i18n-title="sm-auto-reveal" title="Auto-reveal">
+              <span id="auto-reveal-label" data-i18n="confetti-off">Uit</span>
+            </button>
+          </div>
+
+          <!-- Also room-wide, and changing it wipes every vote — which is
+               exactly why it does not sit next to the cards. -->
+          <div class="option-row">
+            <div>
+              <div class="option-row-title" data-i18n="sm-section-deck">Kaartdek</div>
+              <div class="option-row-sub" id="presenter-current-deck">—</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="presenter-deck-btn"
+              data-i18n="sm-change-deck-btn">🎴 Wijzig deck</button>
+          </div>
+
           <div class="option-row">
             <div>
               <div class="option-row-title" data-i18n="options-label-lang">Taal / Language</div>

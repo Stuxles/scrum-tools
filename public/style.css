@@ -1667,9 +1667,12 @@ html.australia-mode body {
 @media (min-width: 1251px) {
   .presenter-page { height: 100vh; overflow: hidden; padding-bottom: 24px; }
   .presenter-main { min-height: 0; align-items: stretch; }
+  /* `overflow-y: auto` alone turns overflow-x into `auto` too, so a single
+     pixel of overshoot hangs a horizontal scrollbar under a column. These
+     columns only ever scroll vertically. */
   .presenter-side,
   .presenter-stage,
-  .presenter-people { min-height: 0; overflow-y: auto; }
+  .presenter-people { min-height: 0; overflow-x: hidden; overflow-y: auto; }
 }
 
 .presenter-header {
@@ -1691,6 +1694,14 @@ html.australia-mode body {
 }
 .presenter-header-right { display: flex; align-items: center; gap: 10px; }
 .presenter-header-right .online-indicator { font-size: 1.05rem; }
+
+/* The per-round actions, sized to read from across the room. */
+.presenter-header-action { font-size: 1rem; padding: 10px 22px; }
+.presenter-header-action .btn-glyph { font-size: 1.15rem; }
+@media (max-width: 700px) {
+  .presenter-header-action .btn-text { display: none; }
+  .presenter-header-action { padding: 10px 14px; }
+}
 
 .presenter-story-add {
   align-self: flex-start;
@@ -1720,45 +1731,28 @@ html.australia-mode body {
   color: var(--purple-200);
 }
 
-.presenter-controls {
-  border-radius: var(--r-lg);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.presenter-auto-reveal {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--text-300);
-  cursor: pointer;
-  padding: 4px 0;
-}
-.presenter-auto-reveal input { width: 16px; height: 16px; cursor: pointer; }
-.presenter-deck-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border-top: 1px solid var(--glass-border);
-  padding-top: 12px;
-}
-.presenter-deck-name { font-size: 0.85rem; color: var(--text-500); }
-
 /* Three columns on purpose. The cards are what the room is looking at, so
    they get the middle and all the width that is left. Participants sit in
    their own column and scroll internally — in one stacked column a team of
-   fifteen would push the cards off the bottom of the screen. */
+   fifteen would push the cards off the bottom of the screen.
+   People left, controls right: the same sides as the room page.
+   Both side columns keep a fixed width band, so nothing shifts or reflows
+   when the QR folds away or someone joins. */
 .presenter-main {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(230px, 260px) minmax(0, 1fr) minmax(210px, 260px);
+  grid-template-columns: minmax(210px, 260px) minmax(0, 1fr) minmax(240px, 280px);
   gap: 20px;
   align-items: start;
 }
+
+/* Placed by hand rather than by source order: the participants panel is
+   hidden while the room is still empty, and auto-placement would then slide
+   the stage into its track and hand the cards' width to the controls. */
+.presenter-people { grid-column: 1; grid-row: 1; }
+.presenter-stage  { grid-column: 2; grid-row: 1; }
+.presenter-side   { grid-column: 3; grid-row: 1; }
 
 .presenter-section-title {
   font-size: 0.8rem;
@@ -1806,20 +1800,6 @@ html.australia-mode body {
   font-size: 0.75rem;
   color: var(--text-500);
   word-break: break-all;
-}
-
-/* Once people are in, the QR has done its job and a quarter of the screen
-   should not stay reserved for it. Collapsed keeps the room code — a latecomer
-   can still type that — and the toggle brings the code back for scanning. */
-.presenter-qr-toggle { margin-top: 12px; width: 100%; justify-content: center; }
-.presenter-invite.is-collapsed .presenter-qr,
-.presenter-invite.is-collapsed .presenter-qr-placeholder,
-.presenter-invite.is-collapsed .presenter-url { display: none; }
-.presenter-invite.is-collapsed .presenter-code { margin-bottom: 0; }
-
-/* Hand the width back to the cards, not just the vertical space. */
-.presenter-main:has(.presenter-invite.is-collapsed) {
-  grid-template-columns: minmax(150px, 180px) minmax(0, 1fr) minmax(210px, 260px);
 }
 
 .presenter-stage { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -1900,13 +1880,40 @@ html.australia-mode body {
   gap: 16px;
 }
 
+/* Too narrow for three columns: keep the cards and the invite side by side
+   and drop the participants underneath, full width. */
 @media (max-width: 1250px) {
-  .presenter-main { grid-template-columns: minmax(210px, 240px) minmax(0, 1fr); }
-  .presenter-people { grid-column: 1 / -1; max-height: 320px; }
+  .presenter-main   { grid-template-columns: minmax(0, 1fr) minmax(230px, 260px); }
+  .presenter-stage  { grid-column: 1; grid-row: 1; }
+  .presenter-side   { grid-column: 2; grid-row: 1; }
+  .presenter-people { grid-column: 1 / -1; grid-row: 2; max-height: 320px; }
 }
 
 @media (max-width: 900px) {
   .presenter-page { padding: 16px; }
   .presenter-main { grid-template-columns: 1fr; }
-  .presenter-side { position: static; }
+  /* One column: cards first, then the invite, then the list. */
+  .presenter-stage,
+  .presenter-side,
+  .presenter-people { grid-column: 1; grid-row: auto; }
+  .presenter-stage  { order: -1; }
+  .presenter-people { order: 1; max-height: 260px; }
+  .presenter-side   { position: static; }
+}
+
+/* ── Collapsed ──────────────────────────────────────────────────
+   Last in the file on purpose: these have to beat the breakpoint rules
+   above, which set the expanded column widths. A `:has()` width swap is
+   the one kind that belongs here — the facilitator asked for it, so the
+   reflow is the point rather than a surprise. */
+@media (min-width: 1251px) {
+  .presenter-main:has(.presenter-side.hidden) {
+    grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
+  }
+}
+@media (min-width: 901px) and (max-width: 1250px) {
+  .presenter-main:has(.presenter-side.hidden) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .presenter-main:has(.presenter-side.hidden) .presenter-people { grid-column: 1; }
 }
