@@ -17,7 +17,7 @@ import { onThemeChange }      from '../theme.js';
 import { getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { renderParticipants } from '../room/render-users.js';
 import { renderResults }      from '../room/render-results.js';
-import { computeVoteStats, isUnanimousConsensus } from '../utils/stats.js';
+import { computeVoteStats, isUnanimousConsensus, eligibleVoters } from '../utils/stats.js';
 import { celebrateConsensus } from '../utils/confetti.js';
 
 export function initPresenterPage(socket, urlRoomId) {
@@ -227,10 +227,12 @@ export function initPresenterPage(socket, urlRoomId) {
     emptyState.classList.toggle('hidden', hasPeople);
     participantsWrap.classList.toggle('hidden', !hasPeople);
 
-    // `isMaster` is false: a screen never renders kick or transfer buttons.
-    renderParticipants(participantsList, room, false, socket);
+    // Kick yes, transfer no — the server draws the same line. `canControlRoom()`
+    // lets a screen kick, but `sm-transfer-master` requires the sender to hold
+    // the seat being handed over, and a screen holds none.
+    renderParticipants(participantsList, room, socket, { canKick: true, canTransfer: false });
 
-    const voters = room.participants.filter(p => !p.isSpectator);
+    const voters = eligibleVoters(room.participants);
     const voted  = voters.filter(p => p.hasVoted).length;
     const pct    = voters.length > 0 ? Math.round((voted / voters.length) * 100) : 0;
     progressFill.style.width = `${pct}%`;

@@ -9,20 +9,33 @@
 import { info } from './logger.js';
 
 /**
- * Everyone whose vote the round is waiting on: every participant that is not
- * a spectator. Shared by the auto-reveal check and the reveal logging so the
- * two can never disagree about who counts.
+ * Everyone who is part of this round. Shared by the auto-reveal check and the
+ * reveal logging so the two can never disagree about who counts.
+ *
+ * Three things drop out, each for its own reason:
+ *
+ * - Spectators, who opted out of voting.
+ * - Anyone offline who has not voted. Their seat is kept for the grace window
+ *   (a locked phone should not lose your place), but the round cannot be
+ *   waiting on someone who is not there — that stalled auto-reveal and the
+ *   progress bar for the full ten minutes.
+ * - Nobody else. Someone who voted and *then* dropped off still counts: their
+ *   vote is in the round, so removing them would change the tally.
  *
  * The host is an ordinary voter. Presenting is a separate thing now — a
  * presenter screen is not a participant at all (see `room.displays`) — so
  * holding the role no longer implies sitting a round out. A host who does not
  * want to vote toggles spectator, same as anyone else.
  *
+ * Mirrored on the client by `eligibleVoters()` in public/js/utils/stats.js;
+ * the two must agree or the progress bar and the reveal disagree on screen.
+ *
  * @param {object} room
  * @returns {Array<object>}
  */
 function eligibleVoters(room) {
-  return Object.values(room.participants).filter(p => !p.isSpectator);
+  return Object.values(room.participants)
+    .filter(p => !p.isSpectator && (p.connected !== false || p.hasVoted));
 }
 
 /**

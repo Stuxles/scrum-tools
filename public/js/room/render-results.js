@@ -1,6 +1,6 @@
 import { escHtml } from '../utils/helpers.js';
 import { t }       from '../utils/i18n.js';
-import { computeVoteStats } from '../utils/stats.js';
+import { computeVoteStats, eligibleVoters } from '../utils/stats.js';
 
 /**
  * Results phase renderer — cards grid and statistics panel.
@@ -15,9 +15,11 @@ export function renderResults(ctx, room) {
   votingPhase.classList.add('hidden');
   resultsPhase.classList.remove('hidden');
 
-  // Spectators are the only ones excluded from the tally; the host votes like
+  // The same population the progress bar counted and the server revealed on,
+  // so the subtitle can't contradict the bar it just replaced. Spectators and
+  // people who went offline without voting are out; the host votes like
   // everyone else, and a presenter screen is not a participant to begin with.
-  const eligible = room.participants.filter(p => !p.isSpectator);
+  const eligible = eligibleVoters(room.participants);
   const voters   = eligible.filter(p => p.hasVoted);
 
   resultsSubtitle.textContent = t('progress-text', { voted: voters.length, total: eligible.length });
