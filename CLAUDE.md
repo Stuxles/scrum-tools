@@ -20,16 +20,19 @@ Examples:
 Commit messages and pull requests — titles and bodies both — are written in
 **English**. That is the repo's history and the part a stranger reads first.
 
-`todo.md` and the server's console output are English too, so everything a
-reader outside the team meets — history, PRs, backlog, `docker logs` — is in
-one language.
+The rule is **system in English, UI bilingual**. Everything technical is
+English: `git log`, PR titles and bodies, `todo.md`, the server's console
+output, API error bodies, and the error strings the server sends over the
+socket. There is no Dutch left in `src/` or `server.js`.
 
-The app's UI stays bilingual through `public/js/utils/i18n.js` (NL/EN, 169
-keys each). The Dutch left in `src/` is deliberate and is not log output: it
-is the text the server *sends* to a client — socket `error` events and the
-`error` field of a REST response. Those are the source strings
-`translateServerMsg()` matches on to pick an i18n key, so changing one means
-changing its matcher in the same commit.
+The app's UI stays bilingual through `public/js/utils/i18n.js` (NL/EN), and
+`translateServerMsg()` at the bottom of that file is the one seam between the
+two. It matches the server's English error sentences by substring to pick an
+i18n key — so reword a message in `src/` and the arm that catches it stops
+matching, with nothing failing and a Dutch viewer silently getting English.
+`tests/serverMessages.test.js` is what prevents that: it provokes each error
+against a real server and pushes whatever the handler actually emitted
+through the real matcher. Add a message, add a case there.
 
 `.github/pull_request_template.md` is the layout to fill in — what changed and
 why, how it was verified, what is left open.

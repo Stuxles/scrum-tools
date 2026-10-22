@@ -168,37 +168,7 @@ places where two pieces of code disagree with each other.
   have not drifted apart, and every `getElementById` in the frontend has an
   element that exists. No duplicate ids on any page.
 
-### 10. The error strings the server sends are still Dutch
-**Priority: low.** Deliberately left when the logs were translated on
-22 October 2026. Nothing is broken; this is about the seam being fragile
-rather than about the language.
-
-These are the messages in `socket.emit('error', { message })` and the `error`
-field of a REST response — not log output, which is English now.
-`translateServerMsg()` in `public/js/utils/i18n.js` matches them by
-**substring** to pick an i18n key, so the Dutch text is a source string for
-the bilingual UI rather than something a user reads raw.
-
-- The fragile part: reword one of those strings in `src/` and its matcher
-  stops matching silently. The toast then shows the raw Dutch to an English
-  user, and nothing fails. There is no test that pins a server string to its
-  key.
-- Four of the five matchers already accept an English variant next to the
-  Dutch one (`Too many actions`, `Could not generate`, `does not exist`,
-  `Something went wrong`), so most of the groundwork for switching the source
-  strings to English is already there. Only `Voer minimaal 2 kaarten in` has
-  no English alternative.
-- If this is picked up, the two halves have to move together: the strings in
-  `src/` and the matchers in `translateServerMsg()`. Five assertions across
-  four test files match on the Dutch as well — `tests/api.test.js` (×2),
-  `tests/bugfixes.test.js`, `tests/presenter.test.js` and
-  `tests/socketRateLimit.test.js`.
-- Worth considering instead of translating: send a key rather than a sentence
-  (`{ error: 'room-not-found' }`) and let the client look it up. That removes
-  the substring matching altogether, which is the actual weak point, and is
-  roughly the same amount of work.
-
-### 11. Presenter screen: reveal theatre and a large-screen test
+### 10. Presenter screen: reveal theatre and a large-screen test
 **Priority: low.** Two things left over after the code review of the presenter
 screen, neither of them a bug.
 
@@ -271,6 +241,26 @@ and re-run afterwards; six new tests, 143 → 149.
   socket was a screen at all. With a test for the one case that could have
   broken: a socket that is both a screen and a seat.
 - ✅ **Unused import** (`releaseWakeLock` in `room-page.js`) removed.
+
+- ✅ **The error strings the server sends were still Dutch.** Parked on this
+  list when the logs were translated and picked up the same day, once the
+  rule was settled: system in English, UI bilingual, and these are system.
+  Five socket messages and five API error bodies translated, so there is no
+  Dutch left in `src/` or `server.js` at all. The API bodies were free — no
+  client reads the `error` field, they go by the status code.
+- ✅ **… and the seam they cross is no longer unguarded.** The messages are
+  matched by substring in `translateServerMsg()` to pick an i18n key, so
+  rewording one in `src/` used to break the match silently and show raw text
+  to a Dutch viewer, with every test still green. Four of the five matchers
+  already accepted an English variant, so the matcher change was nearly
+  nothing — the work was `tests/serverMessages.test.js`, which provokes each
+  error against a real server and pushes what the handler *actually* emitted
+  through the real matcher, rather than asserting on a copy of the sentence
+  that would drift along with it. Checked by rewording a message and watching
+  it fail. Sending an error code instead of a sentence would remove the
+  substring matching altogether and remains the better shape, but it changes
+  the wire format and three client handlers for no gain the test does not
+  already cover.
 
 ### The four bugs from the review of 3 September 2026
 

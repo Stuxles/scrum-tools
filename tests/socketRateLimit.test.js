@@ -81,7 +81,7 @@ describe('Per-socket rate limiter (max 35 events/sec)', () => {
 
     assert.strictEqual(errors.length, 5, 'exactly the 5 over-budget events should be rejected');
     assert.ok(
-      errors.every(e => /Te veel acties/.test(e.message)),
+      errors.every(e => /Too many actions/.test(e.message)),
       'rejected events must carry the rate-limit message',
     );
 

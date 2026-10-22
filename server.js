@@ -47,7 +47,7 @@ app.get('/health', (req, res, next) => { req.url = '/health'; apiRouter(req, res
 // 404 catch-all
 app.use((req, res) => {
   if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io/')) {
-    return res.status(404).json({ error: 'Route niet gevonden' });
+    return res.status(404).json({ error: 'Route not found' });
   }
   res.redirect('/');
 });

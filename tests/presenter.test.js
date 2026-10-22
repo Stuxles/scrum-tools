@@ -137,7 +137,7 @@ describe('Presenter screens (displays are not participants)', () => {
     await waitForConnect(screen);
     screen.emit('watch-room', { roomId: 'NOPE12' });
     const err = await onceEvent(screen, 'error');
-    assert.match(err.message, /niet gevonden/);
+    assert.match(err.message, /does not exist/);
   });
 
   test('the first participant to join becomes host, not the creator', async () => {

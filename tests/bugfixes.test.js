@@ -126,7 +126,7 @@ describe('Regressions from the codebase review', () => {
       creator.emit('create-room', { deckType: 'custom', customCards: ['1'], roomName: 'Too small' });
       const err = await onceEvent(creator, 'error');
 
-      assert.match(err.message, /minimaal 2 kaarten/i);
+      assert.match(err.message, /at least 2 cards/i);
       assert.equal(Object.keys(rooms).length, before);
     });
 

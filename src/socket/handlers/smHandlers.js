@@ -42,7 +42,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
   if (deckType === 'custom') {
     const cards = parseCustomDeck(customCards);
     if (cards.length < DECK_MIN_CARDS) {
-      socket.emit('error', { message: 'Voer minimaal 2 kaarten in.' });
+      socket.emit('error', { message: 'Enter at least 2 cards.' });
       return;
     }
     room.deck = cards;

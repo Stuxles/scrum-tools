@@ -45,7 +45,7 @@ export function createRateLimiter({ windowMs, max, keyFn = defaultKeyFn }) {
     if (entry.count > max) {
       warn('rate-limit', `${key} exceeded ${max} req/${windowMs / 1000}s on ${req.method} ${req.originalUrl}`);
       res.setHeader('Retry-After', String(Math.ceil((entry.resetAt - now) / 1000)));
-      return res.status(429).json({ error: 'Te veel verzoeken. Probeer het over een minuut opnieuw.' });
+      return res.status(429).json({ error: 'Too many requests. Try again in a minute.' });
     }
 
     next();

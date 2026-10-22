@@ -48,7 +48,7 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   if (deckType === 'custom') {
     deck = parseCustomDeck(customCards);
     if (deck.length < DECK_MIN_CARDS) {
-      socket.emit('error', { message: 'Voer minimaal 2 kaarten in voor een aangepast deck.' });
+      socket.emit('error', { message: 'Enter at least 2 cards for a custom deck.' });
       return;
     }
   } else {
@@ -64,7 +64,7 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   do {
     roomId = generateRoomId();
     if (++attempts > 100) {
-      socket.emit('error', { message: 'Kon geen unieke room-code genereren. Server zit vol.' });
+      socket.emit('error', { message: 'Could not generate a unique room code. The server is full.' });
       return;
     }
   } while (rooms[roomId]);
@@ -116,7 +116,7 @@ export function handleWatchRoom(socket, { roomId } = {}) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room) {
-    socket.emit('error', { message: `Room "${roomId}" niet gevonden. Controleer de code.` });
+    socket.emit('error', { message: `Room "${roomId}" does not exist. Check the code.` });
     return;
   }
 
@@ -151,7 +151,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
 
   const room = rooms[roomId];
   if (!room) {
-    socket.emit('error', { message: `Room "${roomId}" niet gevonden. Controleer de code.` });
+    socket.emit('error', { message: `Room "${roomId}" does not exist. Check the code.` });
     return;
   }
 
