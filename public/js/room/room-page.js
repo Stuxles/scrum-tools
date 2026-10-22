@@ -7,7 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, getSessionToken, setSessionToken, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
+import { getSavedName, saveName, getSessionToken, setSessionToken, getSpectatorPref, setSpectatorPref, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
@@ -465,7 +465,7 @@ export function initRoomPage(socket, urlRoomId) {
   // normal join flow instead of auto-joining behind the modal.
   socket.on('connect', () => {
     if (!urlRoomId || !window._isInScrumRoom) return;
-    const savedSpec = localStorage.getItem('scrum_is_spectator') === 'true';
+    const savedSpec = getSpectatorPref(urlRoomId);
     socket.emit('join-room', {
       roomId:       urlRoomId,
       name:         getSavedName() || 'Anoniem',
@@ -538,7 +538,7 @@ export function initRoomPage(socket, urlRoomId) {
         return;
       }
       joinModalRoom.textContent = `📍 ${data.name || urlRoomId}`;
-      if (modalSpectatorChk) modalSpectatorChk.checked = localStorage.getItem('scrum_is_spectator') === 'true';
+      if (modalSpectatorChk) modalSpectatorChk.checked = getSpectatorPref(urlRoomId);
       modalNameInput.value = getSavedName();
 
       if (wantsAutoJoin && getSavedName()) {
@@ -558,7 +558,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (isSpectator === undefined && modalSpectatorChk) {
       isSpectator = modalSpectatorChk.checked;
     }
-    localStorage.setItem('scrum_is_spectator', isSpectator ? 'true' : 'false');
+    setSpectatorPref(urlRoomId, Boolean(isSpectator));
     window._scrumSocket = socket;
     window._scrumRoomId = urlRoomId;
     socket.emit('join-room', {
@@ -573,7 +573,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (!currentRoom) return;
     const me = currentRoom.participants.find(p => p.id === socket.id);
     const newSpec = targetSpec !== undefined ? targetSpec : !(me && me.isSpectator);
-    localStorage.setItem('scrum_is_spectator', newSpec ? 'true' : 'false');
+    setSpectatorPref(urlRoomId, newSpec);
     socket.emit('toggle-spectator', { roomId: currentRoom.id, isSpectator: newSpec });
     toast(newSpec ? t('toast-spectator-on') : t('toast-spectator-off'), 'info');
   }

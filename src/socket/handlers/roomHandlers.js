@@ -120,8 +120,12 @@ export function handleWatchRoom(socket, { roomId } = {}) {
   room.displays.add(socket.id);
   socket.join(roomId);
 
+  // `room-watched` is the whole handover: a display owns no state, so nothing
+  // about the room changed for anyone else. The `broadcastRoomState()` that
+  // used to follow it re-rendered every phone in the room — and the screen
+  // itself a second time — for every attach, which on a flaky connection is
+  // every reconnect. That is what the presenter screen is re-attaching after.
   socket.emit('room-watched', { room: sanitizeRoom(room, null) });
-  broadcastRoomState(roomId);
 
   info('watch', `presenter-scherm → ${roomId} (${room.displays.size} scherm(en))`);
 }

@@ -28,6 +28,25 @@ export const setSessionToken = (roomId, token) => {
   if (roomId && token) localStorage.setItem(`scrum_token_${roomId}`, token);
 };
 
+/**
+ * Whether this browser sits out the round, remembered per room so it can be
+ * replayed on reconnect. Scoped per room for the same reason the session
+ * token is: one global flag followed you into the next room, so joining a
+ * second room silently pre-checked "toeschouwer" there — and, worse, the
+ * reconnect path replays this value, so a stale `true` arriving on a
+ * reconnect wiped the vote the grace window had just handed back.
+ *
+ * @param {string} roomId
+ * @returns {boolean}
+ */
+export const getSpectatorPref = (roomId) =>
+  Boolean(roomId) && localStorage.getItem(`scrum_spectator_${roomId}`) === 'true';
+
+/** @param {string} roomId @param {boolean} isSpectator */
+export const setSpectatorPref = (roomId, isSpectator) => {
+  if (roomId) localStorage.setItem(`scrum_spectator_${roomId}`, isSpectator ? 'true' : 'false');
+};
+
 /** localStorage key for the personal confetti on/off preference ("no fun mode"). */
 export const LS_CONFETTI = 'scrum_confetti_enabled';
 

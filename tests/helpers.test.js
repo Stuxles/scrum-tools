@@ -1,6 +1,6 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI, getAustraliaModeEnabled, setAustraliaModeEnabled, LS_AUSTRALIA } from '../public/js/utils/helpers.js';
+import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI, getAustraliaModeEnabled, setAustraliaModeEnabled, LS_AUSTRALIA, getSpectatorPref, setSpectatorPref } from '../public/js/utils/helpers.js';
 
 describe('escHtml (XSS-prevention HTML escaping)', () => {
   test('escapes all special characters', () => {
@@ -117,5 +117,64 @@ describe('Australia mode preference (getAustraliaModeEnabled/setAustraliaModeEna
     assert.strictEqual(getAustraliaModeEnabled(), false);
     store.set(LS_AUSTRALIA, 'garbage');
     assert.strictEqual(getAustraliaModeEnabled(), false, 'defensive: fail closed (right-side up) on an unexpected stored value');
+  });
+});
+
+describe('spectator preference is scoped per room (getSpectatorPref/setSpectatorPref)', () => {
+  let originalLocalStorage;
+  let store;
+
+  beforeEach(() => {
+    originalLocalStorage = globalThis.localStorage;
+    store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+    };
+  });
+
+  afterEach(() => {
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  test('defaults to voting (false) in a room never seen before', () => {
+    assert.strictEqual(getSpectatorPref('ABC123'), false);
+  });
+
+  test('persists under a room-specific key', () => {
+    setSpectatorPref('ABC123', true);
+    assert.strictEqual(store.get('scrum_spectator_ABC123'), 'true');
+    assert.strictEqual(getSpectatorPref('ABC123'), true);
+  });
+
+  test('sitting out one room does not make you a spectator in the next', () => {
+    setSpectatorPref('ABC123', true);
+    assert.strictEqual(getSpectatorPref('ABC123'), true);
+    assert.strictEqual(
+      getSpectatorPref('XYZ789'), false,
+      'a single global flag used to follow you into every later room — and, replayed on ' +
+      'reconnect, wiped the vote the grace window had just restored',
+    );
+  });
+
+  test('switching back to voter clears it for that room only', () => {
+    setSpectatorPref('ABC123', true);
+    setSpectatorPref('XYZ789', true);
+    setSpectatorPref('ABC123', false);
+    assert.strictEqual(getSpectatorPref('ABC123'), false);
+    assert.strictEqual(getSpectatorPref('XYZ789'), true);
+  });
+
+  test('no room id reads as voting and writes nothing', () => {
+    setSpectatorPref('', true);
+    setSpectatorPref(undefined, true);
+    assert.strictEqual(store.size, 0);
+    assert.strictEqual(getSpectatorPref(''), false);
+    assert.strictEqual(getSpectatorPref(undefined), false);
+  });
+
+  test('opt-in semantics: only the literal string "true" counts', () => {
+    store.set('scrum_spectator_ABC123', 'garbage');
+    assert.strictEqual(getSpectatorPref('ABC123'), false, 'defensive: fail closed (voting) on an unexpected stored value');
   });
 });
