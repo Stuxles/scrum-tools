@@ -2,16 +2,23 @@ name: PR Title Check
 
 # Enforces that PR titles follow Conventional Commits (feat:, fix:, ...).
 # GitHub's default merge-commit body is the PR title, and
-# .github/workflows/version-bump.yml scans commit messages for these same
+# the version-bump job in docker-build.yml scans commit messages for these same
 # prefixes to decide the semver bump on merge - so a correctly formatted
 # title is what keeps that automation meaningful, not just tidy history.
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    # No `synchronize`: a code push cannot change the PR title. The reason to
+    # keep it would be a required status check needing a result on the new
+    # head SHA, and main has no required checks.
+    types: [opened, edited, reopened]
 
 permissions:
   pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   title-check:
