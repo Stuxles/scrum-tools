@@ -153,6 +153,25 @@ regressietests in `tests/bugfixes.test.js`.
 
 ### Eerder
 
+- **De version-bump kon per ongeluk een major-bump doen** — het patroon
+  `'^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'` leest in ERE als
+  *`^…!:` óf `BREAKING CHANGE` ergens*, want `|` bindt het zwakst. De losse
+  woorden werden dus op elke regel van elke commit-body gematcht: een commit
+  die ze alleen nóemde ("dit is expliciet geen BREAKING CHANGE") of een
+  docs-commit die de conventie uitlegt, sprong van 1.6.1 naar 2.0.0. Beide
+  alternatieven staan nu geankerd en de footer eist zijn dubbele punt
+  (`BREAKING-CHANGE:` is het door de spec toegestane synoniem). Doorgerekend
+  over acht commit-vormen voordat het de deur uit ging.
+- **Aangepast dek accepteerde dubbele kaarten** — `['5', '5', '8']` leverde
+  twee knoppen met dezelfde `data-val`, en omdat `selectVoteCard()` op de
+  waarde matcht lichtte één klik ze allebei op. Nu ontdubbeld aan de poort,
+  vóór de ondergrens van 2 wordt gecontroleerd, dus een dek van één kaart
+  twee keer wordt netjes afgewezen. Die validatie stond trouwens twee keer
+  uitgeschreven (aanmaken én wijzigen) — precies het paar dat eerder al uit
+  elkaar was gelopen — en zit nu in één `parseCustomDeck()` in `config.js`,
+  samen met de limieten 10/30/2 die daar volgens dat bestand zelf al hadden
+  moeten staan.
+
 - **De host verloor zijn rol aan wie het eerst terugverbond** — uit een echte
   log van 21 oktober: één blip haalde binnen dezelfde seconde alle telefoons
   én het presenter-scherm weg, en de room lag 61 seconden stil. Het

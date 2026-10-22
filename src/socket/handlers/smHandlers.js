@@ -1,5 +1,5 @@
 import { rooms, canControlRoom } from '../../store/rooms.js';
-import { DECKS }            from '../../config.js';
+import { DECKS, DECK_MIN_CARDS, parseCustomDeck } from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }  from '../../utils/roomId.js';
 import { applyAutoReveal, countVoters } from '../../utils/autoReveal.js';
@@ -39,8 +39,8 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
   if (!room || !canControlRoom(room, socket.id)) return;
 
   if (deckType === 'custom') {
-    const cards = (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30);
-    if (cards.length < 2) {
+    const cards = parseCustomDeck(customCards);
+    if (cards.length < DECK_MIN_CARDS) {
       socket.emit('error', { message: 'Voer minimaal 2 kaarten in.' });
       return;
     }

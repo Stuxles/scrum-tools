@@ -83,7 +83,14 @@ jobs:
           echo "Commit messages considered for this bump:"
           echo "$MESSAGES"
 
-          if echo "$MESSAGES" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'; then
+          # Both alternatives are anchored, and the footer needs its colon.
+          # `|` binds loosest in ERE, so `^a|b` means "^a, or b anywhere":
+          # the old pattern matched the bare words BREAKING CHANGE on any
+          # line of any body, so a commit that merely mentioned them — "this
+          # is explicitly not a BREAKING CHANGE", or a docs commit explaining
+          # the convention — bumped the major version. `BREAKING-CHANGE:` is
+          # the spec's accepted synonym.
+          if echo "$MESSAGES" | grep -qE '^([a-zA-Z]+(\([^)]*\))?!:|BREAKING[ -]CHANGE:)'; then
             echo "type=major" >> "$GITHUB_OUTPUT"
           elif echo "$MESSAGES" | grep -qE '^feat(\([^)]*\))?:'; then
             echo "type=minor" >> "$GITHUB_OUTPUT"

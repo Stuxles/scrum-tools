@@ -7,6 +7,7 @@ import {
   REST_RATE_LIMIT_GLOBAL_MAX, REST_RATE_LIMIT_GLOBAL_WINDOW_MS,
   REST_RATE_LIMIT_ROOM_MAX, REST_RATE_LIMIT_ROOM_WINDOW_MS,
   MASTER_GRACE_MS, ROOM_CLEANUP_INTERVAL_MS,
+  parseCustomDeck, DECK_CARD_MAX_LENGTH, DECK_MAX_CARDS, DECK_MIN_CARDS,
   QR_CODE_SIZE_PX, QR_CODE_MARGIN,
 } from '../src/config.js';
 import { translations } from '../public/js/utils/i18n.js';
@@ -93,5 +94,41 @@ describe('Config & i18n Dictionary verification', () => {
     // Find missing keys in NL
     const missingInNl = enKeys.filter(k => !translations.nl[k]);
     assert.strictEqual(missingInNl.length, 0, `Keys missing in NL dictionary: ${missingInNl.join(', ')}`);
+  });
+});
+
+describe('parseCustomDeck (shared custom-deck validation)', () => {
+  test('trims, caps each label and drops blanks', () => {
+    assert.deepStrictEqual(
+      parseCustomDeck(['  1 ', '2', '', '   ', 'EENHEELLANGEKAART']),
+      ['1', '2', 'EENHEELLAN'],
+      'labels are capped at DECK_CARD_MAX_LENGTH',
+    );
+    assert.strictEqual(parseCustomDeck(['EENHEELLANGEKAART'])[0].length, DECK_CARD_MAX_LENGTH);
+  });
+
+  test('drops duplicates — two cards with the same value cannot be told apart', () => {
+    // `selectVoteCard()` matches on the card's value, and the value is the
+    // only handle a vote has, so a duplicate lit up both buttons at once.
+    assert.deepStrictEqual(parseCustomDeck(['5', '5', '8']), ['5', '8']);
+    assert.deepStrictEqual(parseCustomDeck([' 5', '5 ', '5']), ['5'], 'deduped after trimming');
+  });
+
+  test('caps the number of cards', () => {
+    const many = Array.from({ length: 50 }, (_, i) => String(i));
+    assert.strictEqual(parseCustomDeck(many).length, DECK_MAX_CARDS);
+  });
+
+  test('deduping happens before the minimum is checked, so it can fail the deck', () => {
+    assert.ok(
+      parseCustomDeck(['5', '5']).length < DECK_MIN_CARDS,
+      'a deck of one card twice is a deck of one card, and callers must reject it',
+    );
+  });
+
+  test('non-array and empty input yield an empty deck rather than throwing', () => {
+    for (const input of [undefined, null, 'niet-een-array', 42, {}, []]) {
+      assert.deepStrictEqual(parseCustomDeck(input), [], `handles ${JSON.stringify(input) ?? 'undefined'}`);
+    }
   });
 });

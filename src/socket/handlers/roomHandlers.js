@@ -1,5 +1,5 @@
 import { rooms, sanitizeRoom } from '../../store/rooms.js';
-import { DECKS }               from '../../config.js';
+import { DECKS, DECK_MIN_CARDS, parseCustomDeck } from '../../config.js';
 import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
   broadcastRoomState,
@@ -39,8 +39,8 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   // threw the supplied cards away.
   let deck;
   if (deckType === 'custom') {
-    deck = (customCards || []).map(s => String(s).trim().slice(0, 10)).filter(Boolean).slice(0, 30);
-    if (deck.length < 2) {
+    deck = parseCustomDeck(customCards);
+    if (deck.length < DECK_MIN_CARDS) {
       socket.emit('error', { message: 'Voer minimaal 2 kaarten in voor een aangepast deck.' });
       return;
     }
