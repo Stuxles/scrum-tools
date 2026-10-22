@@ -152,16 +152,53 @@ places where two pieces of code disagree with each other.
 
 - Unused i18n keys (present in both languages, called nowhere):
   `footer-text`, `voting-phase-waiting`, `btn-switch-to-spectator`,
-  `toast-room-not-found-generic`, `toast-rate-limit`, `toast-server-full`,
-  `toast-generic-error`, `story-btn-edit`, `claim-sm-btn`, `transfer-sm-btn`,
-  `toast-sm-claimed`, `toast-sm-transferred`, `options-theme-btn`.
+  `story-btn-edit`, `claim-sm-btn`, `transfer-sm-btn`, `toast-sm-claimed`,
+  `toast-sm-transferred`, `options-theme-btn`.
+- **Not** dead, though this list said they were until 22 October 2026:
+  `toast-rate-limit`, `toast-server-full`, `toast-generic-error` and
+  `toast-room-not-found-generic`. All four are called by
+  `translateServerMsg()` at the bottom of `i18n.js`, which is the one place
+  that resolves a key the page never names. Delete them and `t()` falls back
+  to returning the key, so an error toast would read `toast-rate-limit` at
+  the user. Grep `i18n.js` itself before removing anything from the list
+  above, not just the pages.
 - Unused CSS classes: `badge`, `badge-amber`, `badge-green`, `badge-purple`,
   `field-row`, `my-name-btn`, `spinner`, `sr-only`, `waiting-overlay`.
 - Good news from the same sweep: `nl` and `en` both have exactly 169 keys and
   have not drifted apart, and every `getElementById` in the frontend has an
   element that exists. No duplicate ids on any page.
 
-### 10. Presenter screen: reveal theatre and a large-screen test
+### 10. The error strings the server sends are still Dutch
+**Priority: low.** Deliberately left when the logs were translated on
+22 October 2026. Nothing is broken; this is about the seam being fragile
+rather than about the language.
+
+These are the messages in `socket.emit('error', { message })` and the `error`
+field of a REST response — not log output, which is English now.
+`translateServerMsg()` in `public/js/utils/i18n.js` matches them by
+**substring** to pick an i18n key, so the Dutch text is a source string for
+the bilingual UI rather than something a user reads raw.
+
+- The fragile part: reword one of those strings in `src/` and its matcher
+  stops matching silently. The toast then shows the raw Dutch to an English
+  user, and nothing fails. There is no test that pins a server string to its
+  key.
+- Four of the five matchers already accept an English variant next to the
+  Dutch one (`Too many actions`, `Could not generate`, `does not exist`,
+  `Something went wrong`), so most of the groundwork for switching the source
+  strings to English is already there. Only `Voer minimaal 2 kaarten in` has
+  no English alternative.
+- If this is picked up, the two halves have to move together: the strings in
+  `src/` and the matchers in `translateServerMsg()`. Five assertions across
+  four test files match on the Dutch as well — `tests/api.test.js` (×2),
+  `tests/bugfixes.test.js`, `tests/presenter.test.js` and
+  `tests/socketRateLimit.test.js`.
+- Worth considering instead of translating: send a key rather than a sentence
+  (`{ error: 'room-not-found' }`) and let the client look it up. That removes
+  the substring matching altogether, which is the actual weak point, and is
+  roughly the same amount of work.
+
+### 11. Presenter screen: reveal theatre and a large-screen test
 **Priority: low.** Two things left over after the code review of the presenter
 screen, neither of them a bug.
 
