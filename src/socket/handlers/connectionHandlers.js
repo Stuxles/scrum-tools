@@ -44,9 +44,9 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
     room.masterToken = heir ? (heir.sessionToken || null) : null;
     if (heir) {
       io.to(heir.id).emit('became-master', {});
-      info('kick', `SM ${targetId} gekickt uit ${roomId}; rol naar ${heir.name}`);
+      info('kick', `SM ${targetId} kicked from ${roomId}; role handed to ${heir.name}`);
     } else {
-      info('kick', `SM ${targetId} gekickt uit ${roomId}; niemand over om de rol aan te geven`);
+      info('kick', `SM ${targetId} kicked from ${roomId}; nobody left to hand the role to`);
     }
   }
 
@@ -90,13 +90,13 @@ export function expireParticipantGrace(roomId, socketId) {
     room.masterToken = heir ? (heir.sessionToken || null) : null;
     if (heir) {
       emitToSocket(heir.id, 'became-master');
-      info('grace', `SM ${name} verlopen in ${roomId}; rol naar ${heir.name}`);
+      info('grace', `SM ${name} expired in ${roomId}; role handed to ${heir.name}`);
     }
   }
 
   applyAutoReveal(room);
   broadcastRoomState(roomId);
-  info('grace', `${name} verwijderd uit room ${roomId} na ${PARTICIPANT_GRACE_MS / 60000}m zonder reconnect.`);
+  info('grace', `${name} removed from room ${roomId} after ${PARTICIPANT_GRACE_MS / 60000}m without a reconnect.`);
 }
 
 /**
@@ -184,7 +184,7 @@ export function handleDisconnect(io, socket) {
     // `Set.delete` reports whether it was there, so this is the test too.
     if (room.displays?.delete(socket.id)) {
       wasInAnyRoom = true;
-      info('disconnect', `presenter-scherm ← ${roomId} (${room.displays.size} over)`);
+      info('disconnect', `presenter screen ← ${roomId} (${room.displays.size} left)`);
       if (isRoomUnattended(room)) scheduleEmptyRoomCleanup(roomId);
     }
 

@@ -91,7 +91,7 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   // out the 24h cleanup instead of the 30m one. See scheduleEmptyRoomCleanup.
   scheduleEmptyRoomCleanup(roomId);
   socket.emit('room-created', { roomId });
-  info('room', `${roomId} aangemaakt (${rooms[roomId].name})`);
+  info('room', `${roomId} created (${rooms[roomId].name})`);
 }
 
 /**
@@ -138,7 +138,7 @@ export function handleWatchRoom(socket, { roomId } = {}) {
   // every reconnect. That is what the presenter screen is re-attaching after.
   socket.emit('room-watched', { room: sanitizeRoom(room, null) });
 
-  info('watch', `presenter-scherm → ${roomId} (${room.displays.size} scherm(en))`);
+  info('watch', `presenter screen → ${roomId} (${room.displays.size} screen(s))`);
 }
 
 /**
@@ -212,7 +212,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
     delete room.participants[oldId];
     room.participants[socket.id] = { ...oldParticipant, id: socket.id };
     if (room.masterId === oldId) room.masterId = socket.id;
-    info('reconnect', `${name} zit weer in room ${roomId} (stem/rol hersteld)`);
+    info('reconnect', `${name} is back in room ${roomId} (vote/role restored)`);
   }
 
   // Assign master, or hand the role back to the departed SM while their claim

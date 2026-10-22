@@ -14,7 +14,7 @@ export function handleReveal(socket, { roomId }) {
 
   room.revealed = true;
   const { voted, total } = countVoters(room);
-  info('reveal', `${roomId}: ${voted}/${total} gestemd`);
+  info('reveal', `${roomId}: ${voted}/${total} voted`);
   broadcastRoomState(roomId);
 }
 
@@ -24,7 +24,7 @@ export function handleReset(socket, { roomId }) {
   const room = rooms[roomId];
   if (!room || !canControlRoom(room, socket.id)) return;
 
-  info('reset', `${roomId}: nieuwe ronde`);
+  info('reset', `${roomId}: new round`);
   room.revealed = false;
   for (const p of Object.values(room.participants)) {
     p.vote     = null;
@@ -52,7 +52,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
     return;
   }
 
-  info('change-deck', `${roomId}: ${deckType} (${room.deck.length} kaarten)`);
+  info('change-deck', `${roomId}: ${deckType} (${room.deck.length} cards)`);
   room.deckType = deckType;
   room.revealed = false;
   for (const p of Object.values(room.participants)) {

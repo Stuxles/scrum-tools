@@ -92,12 +92,12 @@ export function scheduleRoomCleanup(roomId) {
     // Deliberately ignores displays: a room nobody has joined in 24 hours is
     // done, even if a forgotten screen is still pointed at it.
     if (Object.keys(r.participants).length > 0) {
-      info('cleanup', `Room ${roomId} nog in gebruik na 24u, verlengd.`);
+      info('cleanup', `Room ${roomId} still in use after 24h, extended.`);
       scheduleRoomCleanup(roomId);
       return;
     }
     closeRoom(roomId);
-    info('cleanup', `Room ${roomId} verwijderd na 24u inactiviteit.`);
+    info('cleanup', `Room ${roomId} deleted after 24h of inactivity.`);
   }, ROOM_CLEANUP_INTERVAL_MS);
 }
 

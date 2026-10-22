@@ -57,6 +57,6 @@ export function applyAutoReveal(room) {
   if (!shouldAutoReveal(room)) return false;
   room.revealed = true;
   const { total } = countVoters(room);
-  info('auto-reveal', `${room.id || '?'}: ${total} stemmers, iedereen heeft gestemd`);
+  info('auto-reveal', `${room.id || '?'}: ${total} voters, everyone has voted`);
   return true;
 }

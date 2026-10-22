@@ -67,12 +67,12 @@ server.listen(PORT, '0.0.0.0', () => {
   // IP, so they all share one REST rate-limit bucket. That is invisible from
   // the outside — worth stating rather than leaving to be guessed.
   const proxyState = TRUST_PROXY
-    ? `aan (${TRUST_PROXY}) — req.ip komt uit X-Forwarded-For`
-    : 'uit — req.ip is de directe verbinding (achter een proxy: het proxy-IP)';
+    ? `on (${TRUST_PROXY}) — req.ip comes from X-Forwarded-For`
+    : 'off — req.ip is the direct connection (behind a proxy: the proxy IP)';
 
   console.log(`\n🃏  ${APP_NAME}`);
-  console.log(`    Lokaal :  http://localhost:${PORT}`);
-  console.log(`    Netwerk:  ${PUBLIC_URL}`);
+  console.log(`    Local  :  http://localhost:${PORT}`);
+  console.log(`    Network:  ${PUBLIC_URL}`);
   console.log(`    Proxy  :  ${proxyState}`);
-  console.log(`    (Tip: Stel PUBLIC_URL in via env-variabele voor reverse proxies of Docker bridge)\n`);
+  console.log(`    (Tip: set PUBLIC_URL via an env variable for reverse proxies or a Docker bridge)\n`);
 });
