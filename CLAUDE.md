@@ -20,10 +20,12 @@ Examples:
 Commit messages and pull requests — titles and bodies both — are written in
 **English**. That is the repo's history and the part a stranger reads first.
 
+`todo.md` is English too, so everything a reader outside the team meets —
+history, PRs, backlog — is in one language.
+
 The app itself stays as it is: the UI is bilingual through
-`public/js/utils/i18n.js` (NL/EN, 169 keys each), `todo.md` is Dutch, and the
-server log messages are a mix. None of that changes; this rule is about
-`git log` and the PR list only.
+`public/js/utils/i18n.js` (NL/EN, 169 keys each) and the server log messages
+are Dutch. Neither changes, so a log line quoted in a doc stays Dutch.
 
 `.github/pull_request_template.md` is the layout to fill in — what changed and
 why, how it was verified, what is left open.

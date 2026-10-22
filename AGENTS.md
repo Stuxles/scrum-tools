@@ -3,7 +3,7 @@
 See [CLAUDE.md](./CLAUDE.md) — same conventions apply regardless of which AI tool you are. In short:
 
 - Commit messages and PR titles **must** follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`, `style:`, `ci:`, `perf:`, `revert:`). This isn't just style — the `version-bump` job in `.github/workflows/docker-build.yml` parses these prefixes to auto-bump `package.json`'s version on every merge to `main`, and `.github/workflows/pr-title-check.yml` enforces the format on PR titles via CI.
-- Write commit messages and pull requests **in English**, titles and bodies both. The app's own UI is bilingual (NL/EN) and `todo.md` is Dutch — this rule is about `git log` and the PR list only.
+- Write commit messages, pull requests and `todo.md` **in English**, titles and bodies both. The app's own UI is bilingual (NL/EN) and the server log messages are Dutch — those stay as they are.
 - Fill in `.github/pull_request_template.md` rather than writing a PR from scratch: what changed and why, how it was verified, what is left open.
 - Validate any GitHub Actions workflow YAML locally before pushing: `python -c "import yaml; yaml.safe_load(open('.github/workflows/YOUR_FILE.yml'))"`.
 - No unnecessary dependencies — this repo hand-rolls small utilities rather than pulling in a package.

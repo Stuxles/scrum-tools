@@ -1,313 +1,427 @@
-# 📋 TODO / Ideeënlijst
+# 📋 TODO / Ideas
 
-Backlog van ideeën en verbeterpunten uit de codebase-reviews.
-**Gesorteerd op prioriteit:** eerst functionaliteit op waarde, daarna
-technisch onderhoud, en binnen elk blok het zwaarste bovenaan. Elk item zegt
-zelf wat die prioriteit is en waarom. Afgeronde items staan onderaan.
+Backlog of ideas and improvements from the codebase reviews.
+**Sorted by priority:** features by value first, then technical maintenance,
+and within each block the heaviest on top. Every item states its own priority
+and why. Completed items are at the bottom.
 
-> De zeven punten uit de audit van 22 oktober 2026 zijn opgelost en staan
-> onderaan bij **Afgerond**. De vier bugs uit de review van 3 september 2026
-> daarvóór ook, elk met een regressietest in `tests/bugfixes.test.js`.
-
----
-
-## 🎯 Functioneel
-
-### 1. Ronde-historie + export
-**Waarde: hoog.** Nu worden bij elke "nieuwe ronde" de resultaten gewist zonder dat er iets bewaard blijft. Een team dat 10 stories schat, houdt achteraf niets over.
-
-- Log per ronde: `storyTitle`, individuele stemmen, gemiddelde/mediaan, tijdstip.
-- Zichtbaar in een paneel of modal voor de Scrum Master.
-- Knop "Kopieer als Markdown" / "Download als CSV" voor in de sprint-notulen.
-- Sluit direct aan op de bestaande `storyTitle`-functie.
-- Aandachtspunt: historie in-memory houden per room (verdwijnt bij herstart, zie #6).
-
-### 2. Consensus- en outlier-indicatie
-**Waarde: hoog.** De stats tonen gemiddelde/mediaan/verdeling, maar niet het meest bruikbare voor de facilitator: *is er onenigheid?*
-
-- Toon expliciet "iedereen eens" versus "grote spreiding — bespreken".
-- Markeer min/max outliers in de resultatengrid.
-- Let op: de i18n-keys `stat-consensus`, `stat-most-picked` en `stat-total-votes` waren hiervoor ooit bedoeld maar nooit gebruikt; ze zijn inmiddels opgeruimd en moeten opnieuw toegevoegd worden als dit gebouwd wordt.
-
-### 3. Timer per ronde
-**Waarde: gemiddeld.** Klassieke planning-poker functie om discussies kort te houden.
-
-- Optionele aftelklok die de SM start; zichtbaar voor iedereen.
-- Eventueel automatisch onthullen bij 0 (combineert met auto-reveal).
-
-### 4. Installeerbaar maken als PWA
-**Waarde: gemiddeld.** Sluit direct aan op de manier waarop de app gebruikt wordt: meestemmen vanaf je telefoon terwijl het presenter-scherm op de tv staat. Levert een icoon op het beginscherm en een standalone weergave zonder browserbalk — dat scheelt schermruimte op een telefoon, en de wake lock (`requestWakeLock()` in `public/js/utils/helpers.js`) zit er al in.
-
-**Wat het níét oplevert: offline werken.** Dit is een real-time app; zonder verbinding is er niets zinvols te tonen. De service worker cachet dus alleen de app-shell (HTML/CSS/JS), nooit room-state.
-
-**Benodigd:**
-- `public/manifest.webmanifest` plus echte PNG-iconen (192 en 512). Het huidige favicon is een inline SVG data-URI in de `<head>` van `index.html`, `room.html` en `presenter.html` — bruikbaar als tab-icoon, maar niet genoeg om installeerbaar te zijn. Voor iOS ook een `apple-touch-icon`.
-- Service worker met de hand schrijven, geen Workbox: dit repo hand-rolt kleine utilities in plaats van er een package voor te trekken (zie `CLAUDE.md`).
-
-**De belangrijkste val — cache versus versienummer.** `/api/config` voedt het versienummer in het opties-scherm. Een service worker die de shell cachet, serveert na een deploy de oude JS/HTML terwijl `/api/config` al de nieuwe versie meldt. Dat is precies het "versie staat stil"-faalgeval waar `CLAUDE.md` voor waarschuwt, alleen dan via de cache in plaats van via een gemiste version-bump.
-- Nooit `/api/*` of Socket.IO-verkeer cachen.
-- De shell-cache benoemen naar `APP_VERSION`, zodat een nieuwe versie de oude cache automatisch ongeldig maakt.
-
-**HTTPS is een harde eis.** Service workers draaien alleen in een secure context. De deployment op een publiek domein voldoet daaraan; toegang via het LAN-adres (`http://192.168.x.x:3000`) niet. De README verkoopt LAN-gebruik juist als feature, en `copyToClipboard()` heeft al een expliciete fallback voor insecure contexts — installeerbaarheid wordt dus een extraatje voor de HTTPS-deployment, geen vervanging van de LAN-route.
-
-**Aandachtspunten:**
-- `start_url` wordt `/`. Joinen gaat via een QR-code of link, en die opent de browser, niet de geïnstalleerde app. Start je standalone op, dan land je dus op de homepagina en moet je de room-code intypen. Overweeg of dat acceptabel is, of dat een `share_target`/deeplink-oplossing nodig is.
-- iOS heeft beperkte PWA-ondersteuning; in standalone modus kan de socket bij backgrounden sneuvelen. Dat valt onder het bestaande re-join-pad op `socket.on('connect')` in `public/js/room/room-page.js`.
-- Docker vereist geen wijziging: `COPY public ./public` staat al in de `Dockerfile`, dus manifest, service worker en iconen liften automatisch mee.
+> The seven points from the audit of 22 October 2026 are fixed and listed at
+> the bottom under **Done**. So are the four bugs from the review of
+> 3 September 2026 before it, each with a regression test in
+> `tests/bugfixes.test.js`.
 
 ---
 
-## 🔧 Technisch
+## 🎯 Features
 
-### 5. Geen plafond op rooms en deelnemers
-**Prioriteit: hangt af van blootstelling.** Op een LAN met het eigen team
-onschuldig; achter de nginx-opstelling uit de README, op een publiek domein, is
-dit het enige dat de server nog plat kan krijgen.
+### 1. Round history + export
+**Value: high.** Today every "new round" wipes the results without keeping
+anything. A team that estimates 10 stories has nothing to show afterwards.
 
-- `create-room` vraagt niets: geen naam, geen login, geen bestaande room. Sinds
-  de audit leeft een room die niemand joint nog 30 minuten in plaats van 24 uur,
-  maar een stroom berichten kan nog altijd een vol grace-venster aan rooms
-  vasthouden. Het `shortcut:`-commentaar bij `scheduleEmptyRoomCleanup()` in
-  `src/utils/broadcast.js` benoemt precies dit.
-- Ook geen plafond op het aantal deelnemers per room. Minder dringend: daarvoor
-  is de room-code nodig, en die is 32^6.
-- Als dit opgepakt wordt: tellen per IP, niet één globaal maximum — een globaal
-  maximum laat één bezoeker iedereen buitensluiten. De socket-limiter (35/s)
-  helpt hier niet, want die telt per socket en een client opent er gewoon meer.
-- `CORS_ORIGIN` staat standaard op `*`, dus elke willekeurige webpagina kan dit
-  ook vanuit de browser van een teamlid doen.
+- Log per round: `storyTitle`, individual votes, average/median, timestamp.
+- Visible in a panel or modal for the Scrum Master.
+- A "Copy as Markdown" / "Download as CSV" button, for the sprint notes.
+- Builds directly on the existing `storyTitle` feature.
+- Watch out: keeping history in memory per room means it disappears on a
+  restart (see #6).
 
-### 6. State overleeft geen herstart
-**Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
+### 2. Consensus and outlier indication
+**Value: high.** The stats show average/median/distribution, but not the thing
+a facilitator actually needs: *is there disagreement?*
 
-- Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
-- **Bewuste trade-off:** de README verkoopt "geen database nodig" als feature. Alleen oppakken als dit in de praktijk stoort.
+- Say it outright: "everyone agrees" versus "wide spread — discuss this".
+- Mark the min/max outliers in the results grid.
+- Note: the i18n keys `stat-consensus`, `stat-most-picked` and
+  `stat-total-votes` were once meant for this but never used; they have since
+  been cleaned up and will have to be added again if this gets built.
 
-### 7. Testdekking voor het stemmen zelf
-**Prioriteit: laag** — het gat dat de kaartdek-bug liet ontstaan is gedicht
-(`tests/bugfixes.test.js` dekt nu elk dektype, aangepaste dekken, een onbekend
-dektype en de ondergrens van 2 kaarten). Wat er nog niet los getest is:
+### 3. Per-round timer
+**Value: medium.** The classic planning-poker feature for keeping discussions
+short.
 
-- `handleVote` — een kaart die niet in het dek zit wordt genegeerd, stemmen na
-  een reveal doet niets, en opnieuw op dezelfde kaart klikken haalt de stem weg.
-- `handleToggleSpectator` — de stem wordt gewist bij het omzetten naar
-  toeschouwer, en de resterende stemmers kunnen daardoor compleet zijn.
-- Deze paden gaan via `applyAutoReveal()` en delen dus het predicaat dat bij
-  bug 2 is rechtgezet; ze zijn nu alleen indirect gedekt.
+- An optional countdown the SM starts, visible to everyone.
+- Possibly auto-reveal at 0 (combines with auto-reveal).
 
-### 8. Kleine inconsistenties uit de flikker-review
-**Prioriteit: laag.** Niets hiervan is zichtbaar voor een gebruiker vandaag,
-maar het zijn wel plekken waar twee stukken code het niet met elkaar eens zijn.
+### 4. Make it installable as a PWA
+**Value: medium.** It fits how the app is actually used: voting from your phone
+while the presenter screen is on the TV. It gives you an icon on the home
+screen and a standalone view with no browser chrome — which saves screen space
+on a phone — and the wake lock (`requestWakeLock()` in
+`public/js/utils/helpers.js`) is already there.
 
-- **De rol "Scrum Master" staat hardcoded in `render-users.js`.** Naast
-  `role-spectator` en `role-participant`, die netjes door `t()` gaan. Er is geen
-  `role-master`-key; die moet er eerst bij in beide talen.
-- **De REST-endpoints normaliseren de room-code niet.** `/api/rooms/:id` en
-  `/api/rooms/:id/qr` doen `rooms[req.params.id]` rechtstreeks, waar elke
-  socket-handler eerst `normalizeRoomId()` aanroept. Nu onschuldig, want
-  `main.js` zet de code uit de URL altijd al in kapitalen; wie het endpoint
-  direct met kleine letters aanroept krijgt een 404 op een room die wél bestaat.
-- **`#header-spectator-btn` staat niet in de header.** Hij verhuisde naar het
-  optiesmenu maar hield zijn naam, wat bij het zoeken naar de knop (en bij het
-  schrijven van een test) de verkeerde kant op wijst.
+**What it does not buy you: working offline.** This is a real-time app; with no
+connection there is nothing meaningful to show. So the service worker caches
+only the app shell (HTML/CSS/JS), never room state.
 
-### 9. Dode i18n-keys en CSS opruimen
-**Prioriteit: laag.** Puur onderhoud, geen zichtbaar effect.
+**Needed:**
+- `public/manifest.webmanifest` plus real PNG icons (192 and 512). The current
+  favicon is an inline SVG data URI in the `<head>` of `index.html`,
+  `room.html` and `presenter.html` — fine as a tab icon, not enough to be
+  installable. For iOS, an `apple-touch-icon` as well.
+- Write the service worker by hand, no Workbox: this repo hand-rolls small
+  utilities rather than pulling in a package (see `CLAUDE.md`).
 
-- Ongebruikte i18n-keys (in beide talen aanwezig, nergens aangeroepen):
+**The main trap — cache versus version number.** `/api/config` feeds the
+version number in the options modal. A service worker that caches the shell
+serves the old JS/HTML after a deploy while `/api/config` already reports the
+new version. That is exactly the "the version goes stale" failure `CLAUDE.md`
+warns about, only through the cache instead of through a missed version bump.
+- Never cache `/api/*` or Socket.IO traffic.
+- Name the shell cache after `APP_VERSION`, so a new version invalidates the
+  old cache by itself.
+
+**HTTPS is a hard requirement.** Service workers only run in a secure context.
+The deployment on a public domain qualifies; reaching it on the LAN address
+(`http://192.168.x.x:3000`) does not. The README sells LAN use as a feature,
+and `copyToClipboard()` already has an explicit fallback for insecure contexts
+— so installability is a bonus for the HTTPS deployment, not a replacement for
+the LAN route.
+
+**Things to watch:**
+- `start_url` becomes `/`. Joining happens through a QR code or a link, and
+  those open the browser, not the installed app. Launch it standalone and you
+  land on the home page and have to type the room code. Decide whether that is
+  acceptable, or whether a `share_target`/deeplink solution is needed.
+- iOS has limited PWA support; in standalone mode the socket can die when
+  backgrounded. That falls under the existing re-join path on
+  `socket.on('connect')` in `public/js/room/room-page.js`.
+- Docker needs no change: `COPY public ./public` is already in the
+  `Dockerfile`, so the manifest, service worker and icons come along.
+
+---
+
+## 🔧 Technical
+
+### 5. No ceiling on rooms or participants
+**Priority: depends on exposure.** Harmless on a LAN with your own team; behind
+the nginx setup from the README, on a public domain, this is the only thing
+left that can take the server down.
+
+- `create-room` asks for nothing: no name, no login, no existing room. Since
+  the audit, a room nobody joins lives 30 minutes instead of 24 hours, but a
+  stream of messages can still hold a full grace window's worth of rooms. The
+  `shortcut:` comment on `scheduleEmptyRoomCleanup()` in
+  `src/utils/broadcast.js` names exactly this.
+- There is no ceiling on participants per room either. Less urgent: that needs
+  the room code, and the code space is 32^6.
+- If this gets picked up: count per IP, not one global maximum — a global
+  maximum lets a single visitor lock everyone else out. The socket limiter
+  (35/s) does not help here, because it counts per socket and a client simply
+  opens more of them.
+- `CORS_ORIGIN` defaults to `*`, so any web page at all can do this from a team
+  member's browser too.
+
+### 6. State does not survive a restart
+**Value: depends on use.** Everything is in memory, so every Docker redeploy
+wipes active sessions.
+
+- Option: a periodic JSON snapshot to disk, read back on startup.
+- **Deliberate trade-off:** the README sells "no database needed" as a feature.
+  Only pick this up if it actually gets in the way in practice.
+
+### 7. Test coverage for voting itself
+**Priority: low** — the gap that let the card-deck bug through is closed
+(`tests/bugfixes.test.js` now covers every deck type, custom decks, an unknown
+deck type and the lower bound of 2 cards). What is still not tested on its own:
+
+- `handleVote` — a card that is not in the deck is ignored, voting after a
+  reveal does nothing, and clicking the same card again clears the vote.
+- `handleToggleSpectator` — the vote is cleared when switching to spectator,
+  and the remaining voters may be complete because of it.
+- These paths go through `applyAutoReveal()` and so share the predicate that
+  bug 2 corrected; right now they are only covered indirectly.
+
+### 8. Small inconsistencies from the flicker review
+**Priority: low.** None of this is visible to a user today, but these are
+places where two pieces of code disagree with each other.
+
+- **The role "Scrum Master" is hardcoded in `render-users.js`.** Next to
+  `role-spectator` and `role-participant`, which go through `t()` properly.
+  There is no `role-master` key; that has to be added in both languages first.
+- **The REST endpoints do not normalize the room code.** `/api/rooms/:id` and
+  `/api/rooms/:id/qr` do `rooms[req.params.id]` directly, where every socket
+  handler calls `normalizeRoomId()` first. Harmless today, because `main.js`
+  always uppercases the code from the URL; call the endpoint directly in
+  lowercase and you get a 404 on a room that does exist.
+- **`#header-spectator-btn` is not in the header.** It moved to the options
+  modal but kept its name, which points the wrong way when you go looking for
+  the button (and when writing a test).
+
+### 9. Clean up dead i18n keys and CSS
+**Priority: low.** Pure maintenance, no visible effect.
+
+- Unused i18n keys (present in both languages, called nowhere):
   `footer-text`, `voting-phase-waiting`, `btn-switch-to-spectator`,
   `toast-room-not-found-generic`, `toast-rate-limit`, `toast-server-full`,
   `toast-generic-error`, `story-btn-edit`, `claim-sm-btn`, `transfer-sm-btn`,
   `toast-sm-claimed`, `toast-sm-transferred`, `options-theme-btn`.
-- Ongebruikte CSS-klassen: `badge`, `badge-amber`, `badge-green`, `badge-purple`,
+- Unused CSS classes: `badge`, `badge-amber`, `badge-green`, `badge-purple`,
   `field-row`, `my-name-btn`, `spinner`, `sr-only`, `waiting-overlay`.
-- Positief punt uit dezelfde controle: `nl` en `en` hebben allebei exact 169
-  keys en lopen niet uit de pas, en elke `getElementById` in de frontend heeft
-  een bestaand element. Geen dubbele id's op enige pagina.
+- Good news from the same sweep: `nl` and `en` both have exactly 169 keys and
+  have not drifted apart, and every `getElementById` in the frontend has an
+  element that exists. No duplicate ids on any page.
 
-### 10. Presenter-scherm: reveal-theater en grote-schermtest
-**Prioriteit: laag.** Twee dingen die overbleven na de code review van het presenter-scherm, geen van beide een bug.
+### 10. Presenter screen: reveal theatre and a large-screen test
+**Priority: low.** Two things left over after the code review of the presenter
+screen, neither of them a bug.
 
-- **Geen omgekeerde kaarten tijdens het stemmen.** `presenter.html` toont nu alleen een voortgangsbalk zolang er niet onthuld is. Klassieke planning-poker-schermen laten per deelnemer een omgekeerde kaart zien die bij reveal omdraait — dat maakt het moment zelf theatraler. Zou in `presenter-page.js` + `render-voting.js`-achtige component moeten, met een flip-animatie op `#results-cards-grid` zoals `render-results.js` al deels heeft (`flipIn`, aangezet via de klasse `is-flipping-in` die de grid bij een verse reveal krijgt).
-- **Nooit getest op een echt 1920×1080-scherm.** Alleen 1100×800, 1500×850 en 1600×900 in de browser-pane geverifieerd. De resultaatkaarten hebben een `clamp()`-bovengrens van 132px breed (`public/style.css`, `.presenter-page .result-card-face`) — op een grotere/verdere TV kunnen ze relatief klein ogen. Bovengrens optrekken of schalen op `vw` in plaats van een vast plafond, ná een echte test op zo'n scherm.
-- **Lege kolom bij een lege room.** De deelnemerskolom krijgt `hidden` zolang er niemand is, maar houdt zijn baan in het grid bezet. Bewust: zo verspringt er niets zodra de eerste deelnemer binnenkomt. Alleen aanpakken als die lege strook echt stoort.
+- **No face-down cards while voting.** `presenter.html` currently shows only a
+  progress bar until the reveal. Classic planning-poker screens show a
+  face-down card per participant that flips over on reveal — which makes the
+  moment itself more theatrical. It would want a `presenter-page.js` +
+  `render-voting.js`-style component, with a flip animation on
+  `#results-cards-grid` the way `render-results.js` already partly has
+  (`flipIn`, switched on by the `is-flipping-in` class the grid gets on a fresh
+  reveal).
+- **Never tested on a real 1920×1080 screen.** Only 1100×800, 1500×850 and
+  1600×900 verified in the browser pane. The result cards have a `clamp()`
+  upper bound of 132px wide (`public/style.css`,
+  `.presenter-page .result-card-face`) — on a bigger or more distant TV they
+  may look relatively small. Raise the bound, or scale on `vw` instead of a
+  fixed ceiling, after an actual test on such a screen.
+- **Empty column on an empty room.** The participants column gets `hidden`
+  while nobody is there, but keeps its track in the grid. Deliberate: nothing
+  jumps when the first participant arrives. Only worth addressing if that empty
+  strip actually bothers someone.
 
 ---
 
-## ✅ Afgerond
+## ✅ Done
 
-### De zeven punten uit de audit van 22 oktober 2026
+### The seven points from the audit of 22 October 2026
 
-Audit van de hele repo (PR #30). Vier bugs, daarna de duplicatie die er twee
-van had laten passeren. De vier bugs zijn eerst tegen echte sockets
-gereproduceerd en daarna opnieuw gedraaid; zes nieuwe tests, 143 → 149.
+Audit of the whole repo (PR #30). Four bugs, then the duplication that had let
+two of them through. The four bugs were reproduced against real sockets first
+and re-run afterwards; six new tests, 143 → 149.
 
-- ✅ **Een verlaten room bleef 24 uur in het geheugen staan.** De
-  30-minutentimer bestond al, maar werd alleen bij een disconnect opgezet — en
-  een room die niemand joint heeft niemand die hem verlaat. Een aangemaakte en
-  daarna in de steek gelaten room viel dus door naar de 24-uursopruiming.
-  `create-room` vraagt geen enkele vorm van authenticatie, dus dat was een dag
-  geheugen per bericht. De timer en zijn `isRoomUnattended()` staan nu in
-  `utils/broadcast.js`, naast de twee andere room-timers, en `handleCreateRoom`
-  zet hem op; joinen of er een scherm op richten wist hem al. Het restrisico
-  staat als `shortcut:` in de code en als #5 hierboven.
-- ✅ **De room openen in een tweede tabblad zei tegen het eerste dat het
-  gekickt was.** Het reconnect-token staat in localStorage, en dat delen alle
-  tabbladen van één browser. Het pad voor een token-botsing wordt daardoor veel
-  vaker bereikt door een tweede tabblad dan door de haperende reconnect waar het
-  voor geschreven is. Dat de stoel meeverhuist klopt; het rode "je bent uit de
-  room verwijderd" niet. Dat pad stuurt nu `reason: 'superseded'` en de client
-  toont een neutrale melding. Een echte kick stuurt nog steeds geen reason en
-  leest precies als voorheen.
-- ✅ **Een eigen kaart met de naam `toString` sloopte de hele
-  verdelingsgrafiek.** Kaartwaarden zijn sleutels in de telling, en op een gewone
-  `{}` vindt `dist['toString'] || 0` de geërfde functie in plaats van 0. De telling
-  wordt een string, `Math.max` over de waarden wordt `NaN`, en dat bepaalde de
-  breedte van *élke* balk, niet alleen die ene. Een kaart `__proto__` verdween
-  juist helemaal uit de grafiek. Beide tellingen zijn nu `Object.create(null)`,
-  net als `src/store/rooms.js` al was.
-- ✅ **`update-name` struikelde over een naam die geen tekst was.**
-  `(name || '').trim()` dwingt niets af, dus `{ name: 42 }` gooide een
-  `TypeError` die de safe dispatch tot "er ging iets mis" maakte. `cleanText()`
-  is nu geëxporteerd en wordt door `update-name` én `update-story-title`
-  gebruikt: drie schrijfwijzen van één regel teruggebracht tot één.
-- ✅ **De regel voor wie een ronde tegenhoudt stond twee keer**, één keer per
-  kant, allebei met een commentaar dat de twee het eens moesten blijven. Precies
-  zo kwam de offline-check indertijd in maar één van de twee terecht. De
-  serverkopie is weg: `autoReveal.js` importeert `eligibleVoters()` uit
-  `public/js/utils/stats.js`, zoals `config.js` al uit `public/` importeerde.
-- ✅ **Disconnect liep de roomlijst twee keer af**, één keer voor schermen en
-  één keer voor stoelen. Nu één keer, waarbij `Set.delete` meteen de test is of
-  de socket überhaupt een scherm was. Met een test voor het enige geval dat
-  daardoor stuk kon: een socket die zowel scherm als stoel is.
-- ✅ **Ongebruikte import** (`releaseWakeLock` in `room-page.js`) verwijderd.
+- ✅ **An abandoned room stayed in memory for 24 hours.** The 30-minute timer
+  already existed, but was only ever armed on a disconnect — and a room nobody
+  joins has nobody to leave it. So a room that was created and then abandoned
+  fell through to the 24-hour cleanup. `create-room` asks for no authentication
+  whatsoever, which made that a day of memory per message. The timer and its
+  `isRoomUnattended()` now live in `utils/broadcast.js`, next to the other two
+  room timers, and `handleCreateRoom` arms it; joining or pointing a screen at
+  the room already cleared it. The residual risk is marked `shortcut:` in the
+  code and listed as #5 above.
+- ✅ **Opening the room in a second tab told the first one it had been
+  kicked.** The reconnect token lives in localStorage, which every tab of one
+  browser shares. The token-collision path is therefore reached far more often
+  by a second tab than by the flaky reconnect it was written for. The seat
+  moving across is correct; the red "you have been removed from the room"
+  (`toast-kicked`) was not. That path now sends `reason: 'superseded'` and the
+  client shows a neutral notice. A real kick still sends no reason and reads
+  exactly as before.
+- ✅ **A custom card named `toString` broke the whole distribution chart.**
+  Card values are keys in the tally, and on a plain `{}` `dist['toString'] || 0`
+  finds the inherited function instead of 0. The count becomes a string,
+  `Math.max` over the values becomes `NaN`, and that sized *every* bar, not
+  just that one. A card called `__proto__` disappeared from the chart
+  altogether instead. Both tallies are now `Object.create(null)`, as
+  `src/store/rooms.js` already was.
+- ✅ **`update-name` tripped over a name that was not text.**
+  `(name || '').trim()` coerces nothing, so `{ name: 42 }` threw a `TypeError`
+  that the safe dispatch turned into "something went wrong". `cleanText()` is
+  now exported and used by both `update-name` and `update-story-title`: three
+  spellings of one rule reduced to one.
+- ✅ **The rule for who a round is waiting on existed twice**, once per side,
+  both carrying a comment saying the two had to stay in agreement. That is
+  precisely how the offline check once ended up in only one of them. The server
+  copy is gone: `autoReveal.js` imports `eligibleVoters()` from
+  `public/js/utils/stats.js`, the way `config.js` already imported from
+  `public/`.
+- ✅ **Disconnect walked the room list twice**, once for screens and once for
+  seats. One pass now, with `Set.delete` doubling as the test for whether the
+  socket was a screen at all. With a test for the one case that could have
+  broken: a socket that is both a screen and a seat.
+- ✅ **Unused import** (`releaseWakeLock` in `room-page.js`) removed.
 
-### De vier bugs uit de review van 3 september 2026
+### The four bugs from the review of 3 September 2026
 
-Alle vier eerst gereproduceerd, daarna opgelost, en vastgezet met 13
-regressietests in `tests/bugfixes.test.js`.
+All four reproduced first, then fixed, and pinned down with 13 regression tests
+in `tests/bugfixes.test.js`.
 
-- ✅ **Aangepast kaartdek werd genegeerd bij het aanmaken van een room.** `DECKS`
-  heeft geen `custom`-sleutel — dat is een markering voor "gebruik de kaarten uit
-  deze payload" — maar `handleCreateRoom` deed de `DECKS`-lookup vóór de test op
-  `custom`, en schreef `custom` dus om naar `standard`. De ingevoerde kaarten
-  verdwenen zonder melding. Nu dezelfde volgorde als in `handleChangeDeck`, dat
-  het altijd al goed deed; vandaar dat het via **Wijzig deck** wél werkte.
-- ✅ **Een offline deelnemer blokkeerde auto-reveal en de voortgangsteller.**
-  `eligibleVoters()` filterde op toeschouwer maar niet op verbinding, dus een
-  telefoon die op slot ging hield de ronde tien minuten tegen. Het predicaat is
-  nu: geen toeschouwer, én niet offline-zonder-stem. Wie stemde en dáárna wegviel
-  telt gewoon mee — zijn stem hoort bij de ronde. De frontend bouwde datzelfde
-  filter op vier plekken met de hand na; die delen nu één `eligibleVoters()` in
-  `public/js/utils/stats.js`, zodat de balk en de reveal elkaar niet meer kunnen
-  tegenspreken. Meteen de dode `applyAutoReveal()`-aanroep in `handleDisconnect`
-  hersteld: die kon zijn eigen commentaar nooit waarmaken.
-- ✅ **De host kicken liet de room zonder host achter.** `handleKickUser` liet
-  `masterId` naar een verwijderde stoel wijzen en `masterToken` op de gekickte
-  persoon staan — waardoor die bij opnieuw joinen de rol meteen terugkreeg. Een
-  kick is bewust en definitief, dus anders dan bij een disconnect volgt er geen
-  grace-periode: de rol gaat direct naar de eerste verbonden achterblijver, of
-  wordt leeggemaakt als er niemand meer is.
-- ✅ **Presenter-scherm mocht kicken maar had er geen knop voor.** De server stond
-  het toe en `roles.md` beloofde het; alleen gaf `presenter-page.js` een harde
-  `false` mee als `isMaster`. `renderParticipants()` neemt nu twee losse rechten
-  (`canKick`, `canTransfer`) in plaats van één vlag, want de twee aanroepers
-  hebben niet dezelfde rechten: `sm-transfer-master` eist dat de afzender de
-  stoel zelf bezit, en een scherm heeft er geen. Eén boolean kon alleen maar naar
-  één kant fout staan.
+- ✅ **A custom card deck was ignored when creating a room.** `DECKS` has no
+  `custom` key — that is a marker for "use the cards in this payload" — but
+  `handleCreateRoom` did the `DECKS` lookup before testing for `custom`, and so
+  rewrote `custom` to `standard`. The cards you entered vanished without a
+  word. Now in the same order as `handleChangeDeck`, which always did it right;
+  hence it did work through **Change deck**.
+- ✅ **An offline participant blocked auto-reveal and the progress counter.**
+  `eligibleVoters()` filtered on spectator but not on connection, so a phone
+  that locked its screen held the round up for ten minutes. The predicate is
+  now: not a spectator, and not offline-without-a-vote. Someone who voted and
+  *then* dropped off still counts — their vote belongs to the round. The
+  frontend rebuilt that same filter by hand in four places; those now share one
+  `eligibleVoters()` in `public/js/utils/stats.js`, so the bar and the reveal
+  can no longer contradict each other. The dead `applyAutoReveal()` call in
+  `handleDisconnect` was restored at the same time: it could never live up to
+  its own comment.
+- ✅ **Kicking the host left the room without one.** `handleKickUser` left
+  `masterId` pointing at a deleted seat and `masterToken` on the person just
+  kicked — so they got the role straight back on rejoining. A kick is
+  deliberate and final, so unlike a disconnect it gets no grace period: the
+  role goes straight to the first connected survivor, or is cleared if there is
+  nobody left.
+- ✅ **The presenter screen was allowed to kick but had no button for it.** The
+  server permitted it and `roles.md` promised it; only `presenter-page.js`
+  passed a hard `false` as `isMaster`. `renderParticipants()` now takes two
+  separate capabilities (`canKick`, `canTransfer`) instead of one flag, because
+  the two callers do not have the same rights: `sm-transfer-master` requires
+  the sender to hold the seat being handed over, and a screen holds none. One
+  boolean could only ever be wrong in one direction or the other.
 
-### Eerder
+### Earlier
 
-- **De version-bump kon per ongeluk een major-bump doen** — het patroon
-  `'^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'` leest in ERE als
-  *`^…!:` óf `BREAKING CHANGE` ergens*, want `|` bindt het zwakst. De losse
-  woorden werden dus op elke regel van elke commit-body gematcht: een commit
-  die ze alleen nóemde ("dit is expliciet geen BREAKING CHANGE") of een
-  docs-commit die de conventie uitlegt, sprong van 1.6.1 naar 2.0.0. Beide
-  alternatieven staan nu geankerd en de footer eist zijn dubbele punt
-  (`BREAKING-CHANGE:` is het door de spec toegestane synoniem). Doorgerekend
-  over acht commit-vormen voordat het de deur uit ging.
-- **Aangepast dek accepteerde dubbele kaarten** — `['5', '5', '8']` leverde
-  twee knoppen met dezelfde `data-val`, en omdat `selectVoteCard()` op de
-  waarde matcht lichtte één klik ze allebei op. Nu ontdubbeld aan de poort,
-  vóór de ondergrens van 2 wordt gecontroleerd, dus een dek van één kaart
-  twee keer wordt netjes afgewezen. Die validatie stond trouwens twee keer
-  uitgeschreven (aanmaken én wijzigen) — precies het paar dat eerder al uit
-  elkaar was gelopen — en zit nu in één `parseCustomDeck()` in `config.js`,
-  samen met de limieten 10/30/2 die daar volgens dat bestand zelf al hadden
-  moeten staan.
+- **The version bump could accidentally do a major bump** — the pattern
+  `'^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'` reads in ERE as
+  *`^…!:` or `BREAKING CHANGE` anywhere*, because `|` binds loosest. The bare
+  words were therefore matched on every line of every commit body: a commit
+  that merely mentioned them ("this is explicitly not a BREAKING CHANGE"), or a
+  docs commit explaining the convention, jumped from 1.6.1 to 2.0.0. Both
+  alternatives are anchored now and the footer requires its colon
+  (`BREAKING-CHANGE:` is the synonym the spec allows). Worked through eight
+  commit shapes before it went out.
+- **A custom deck accepted duplicate cards** — `['5', '5', '8']` produced two
+  buttons with the same `data-val`, and because `selectVoteCard()` matches on
+  the value, one click lit up both. Now deduped at the door, before the lower
+  bound of 2 is checked, so a deck of one card twice is rejected properly. That
+  validation was written out twice, by the way (create and change) — exactly
+  the pair that had already drifted apart once — and now lives in a single
+  `parseCustomDeck()` in `config.js`, together with the 10/30/2 limits that by
+  that file's own account should have been there all along.
 
-- **De host verloor zijn rol aan wie het eerst terugverbond** — uit een echte
-  log van 21 oktober: één blip haalde binnen dezelfde seconde alle telefoons
-  én het presenter-scherm weg, en de room lag 61 seconden stil. Het
-  30-seconden claim-venster (`masterGraceTimer`) ging af terwijl er niemand
-  online was, vond niemand om de rol aan te geven en gaf hem op. Vanaf dat
-  moment pakte de eerste telefoon die terugkwam de rol — en omdat dat ook
-  `masterToken` overschrijft, was de echte host, drie seconden later terug mét
-  die token, definitief gedegradeerd. Twee keer in één sessie. Het venster
-  wordt nu opnieuw opgezet zolang er niemand is om aan over te dragen, zodat
-  een reconnect-race niet meer bepaalt wie de sessie leidt. Het gat dat dat
-  achterlaat is ook gedicht: loopt de stoel van een afwezige host alsnog af,
-  dan gaat de rol direct naar de eerste verbonden achterblijver, net als bij
-  een kick. Gereproduceerd, daarna opgelost, met drie regressietests in
-  `tests/participantGrace.test.js` (via een geëxporteerde `runMasterHandover()`,
-  zodat de echte 30 seconden niet uitgezeten hoeven te worden).
-- **`[grace]` logde een socket-id in plaats van een naam** — `[disconnect]`
-  toont al wie wegging, maar bij het verlopen van een stoel tien minuten later
-  stond er alleen `eOw2bITUb4GNNe67AACw verwijderd uit room …`, wat betekende
-  terugscrollen naar de bijbehorende `[connect]` om te zien wie dat was.
+- **The host lost the role to whoever reconnected first** — from a real log of
+  21 October: one blip took out every phone *and* the presenter screen within
+  the same second, and the room sat still for 61 seconds. The 30-second claim
+  window (`masterGraceTimer`) fired while nobody was online, found nobody to
+  hand the role to, and gave it up. From that moment the first phone back took
+  the role — and because that also overwrites `masterToken`, the real host,
+  back three seconds later holding that token, was demoted for good. Twice in
+  one session. The window is now re-armed as long as there is nobody to hand
+  over to, so a reconnect race no longer decides who runs the session. The gap
+  that leaves is closed too: if an absent host's seat does expire, the role
+  goes straight to the first connected survivor, same as on a kick. Reproduced,
+  then fixed, with three regression tests in `tests/participantGrace.test.js`
+  (through an exported `runMasterHandover()`, so the real 30 seconds need not
+  be waited out).
+- **`[grace]` logged a socket id instead of a name** — `[disconnect]` already
+  shows who left, but when a seat expired ten minutes later all it said was
+  `eOw2bITUb4GNNe67AACw verwijderd uit room …`, which meant scrolling back to
+  the matching `[connect]` to work out who that was.
 
-- **Presenter-scherm knipperde bij elke room-state** — gereproduceerd in een
-  echte browser: `renderResults()` gooide de resultaatkaarten weg en bouwde ze
-  opnieuw op bij *elke* `room-state`, en een nieuwe `.result-card` begint zijn
-  `flipIn` op `opacity: 0`. Een rename, een join, een telefoon die
-  terugverbindt — gebeurtenissen die niets aan de stemmen veranderen — lieten
-  de hele grid dus uitdoven en terugklappen, gemeten 0,00 opacity gedurende
-  twee frames en daarna een halve seconde animatie. Hoe meer mensen in de room,
-  hoe meer van die room-states, vandaar dat het bij vier man opvalt. Drie dingen
-  aangepast: de kaarten en de deelnemerslijst worden nu op hun id bijgewerkt in
-  plaats van herbouwd, de flip hangt aan een klasse die de grid alleen bij een
-  *verse* reveal krijgt (het reveal-theater zelf blijft dus, ook in ronde twee),
-  en `watch-room` broadcast niet meer naar de hele room — een scherm bezit geen
-  state, dus er viel niets te melden. Datzelfde herbouwen zat ook op het
-  kaartdek van de deelnemers: elke stem van een teamgenoot verving je kaarten
-  terwijl je ernaar reikte.
-- **Deelnemerslijst verloor zijn eigen state** — door hetzelfde herbouwen
-  verdween de kick-knop onder een hoverende muis (hij staat op `:hover`) en
-  klapte een uitgeklapte chip op een telefoon dicht zodra iemand stemde.
-- **Animaties op een groot scherm** — de drie drijvende, 80px geblurde orbs
-  staan stil op het presenter-scherm: elke `.glass`-panel erboven heeft een
-  `backdrop-filter`, en een bewegende achtergrond moet per frame voor elk
-  paneel opnieuw geblurd worden. Verder respecteert de app nu
-  `prefers-reduced-motion` voor alles wat oneindig doorloopt.
-- **Stagger van de resultaatkaarten liep na tien kaarten dood** — tien
-  handgeschreven `nth-child`-regels; kaart elf en verder klapten zonder
-  vertraging in. De index gaat nu als custom property mee, afgetopt op 600ms.
-- **Toeschouwer-voorkeur was globaal** — één `scrum_is_spectator` in
-  localStorage volgde je naar de volgende room, en omdat de reconnect die waarde
-  terugstuurt kon een blijven-hangen `true` de stem wissen die de grace-periode
-  net had teruggegeven. Nu per room, net als het sessietoken.
+- **The presenter screen blinked on every room-state** — reproduced in a real
+  browser: `renderResults()` threw the result cards away and rebuilt them on
+  *every* `room-state`, and a new `.result-card` starts its `flipIn` at
+  `opacity: 0`. A rename, a join, a phone reconnecting — events that change
+  nothing about the votes — made the whole grid fade out and flip back in,
+  measured at 0.00 opacity for two frames followed by half a second of
+  animation. The more people in the room, the more of those room-states, which
+  is why it stands out at four people. Three things changed: the cards and the
+  participants list are now updated by id instead of rebuilt, the flip hangs on
+  a class the grid only gets on a *fresh* reveal (so the reveal theatre itself
+  survives, round two included), and `watch-room` no longer broadcasts to the
+  whole room — a screen owns no state, so there was nothing to report. That
+  same rebuilding was on the participants' card deck too: every vote by a
+  teammate replaced your cards while you were reaching for them.
+- **The participants list lost its own state** — through the same rebuilding,
+  the kick button vanished from under a hovering mouse (it is on `:hover`) and
+  an expanded chip on a phone snapped shut as soon as anyone voted.
+- **Animations on a large screen** — the three drifting, 80px-blurred orbs are
+  held still on the presenter screen: every `.glass` panel above them has a
+  `backdrop-filter`, and a moving background has to be re-blurred for each
+  panel every frame. Beyond that, the app now respects `prefers-reduced-motion`
+  for everything that loops forever.
+- **The result cards' stagger died after ten cards** — ten hand-written
+  `nth-child` rules; card eleven and beyond flipped in with no delay at all.
+  The index now travels as a custom property, capped at 600ms.
+- **The spectator preference was global** — one `scrum_is_spectator` in
+  localStorage followed you into the next room, and because the reconnect
+  replays that value, a stale `true` could wipe the vote the grace period had
+  just handed back. Now per room, like the session token.
 
-- **Socket-hardening** — safe dispatch, null-prototype store, `normalizeRoomId()` (PR #5).
-- **Dependency-updates** — express 5, supertest 7 (PR #6).
-- **Documentatie & diagram-correcties** (PR #7).
-- **Deelnemer-knoppen alleen op hover**, met touch-fallback (PR #8).
-- **CI draait de testsuite** op Node 26, blokkeert de Docker-build bij falen.
-- **Alles op de nieuwste versies** — Node 26 (Dockerfile, CI, `engines`), `actions/setup-node@v7`.
-- **Dode i18n-keys opgeruimd** (`stat-consensus`, `stat-most-picked`, `stat-total-votes`).
-- **Auto-reveal** — optioneel automatisch onthullen zodra iedereen gestemd heeft.
-- **Rate limiting op de REST-endpoints** — per-IP limiter (60 req/min) op `/api/*`; `/health` blijft uitgezonderd zodat de Docker-healthcheck nooit geraakt wordt.
-- **Room-code alfabet verbeterd** — Crockford Base32 (32 tekens, geen I/L/O/U), crypto-random zonder modulo-bias, ~64x meer combinaties dan het oude hex-only alfabet. De `uuid`-dependency is niet meer nodig en verwijderd.
-- **Frontend-tests** — `computeVoteStats` (uit `render-results.js`), `escHtml`, `generateRoomId`/`normalizeRoomId` en de rate limiter zijn nu allemaal los getest als pure functies (geen jsdom nodig).
-- **Persoonlijke reconnect-grace** — een deelnemer die disconnect (bijv. scherm uit) wordt niet meer direct verwijderd, maar 10 minuten (override via `PARTICIPANT_GRACE_MINUTES`) als "afwezig" bewaard met stem/rol intact; reconnect herstelt de plek direct. SM kan een afwezige alsnog meteen kicken; master-overdracht naar een afwezige wordt geweigerd.
-- **Identiteit via sessietoken** — herkennen op naam is vervangen door een 128-bits token per browser per room (`src/utils/sessionToken.js`). Dat sloot twee gaten tegelijk: twee mensen die "Jan" heetten werden als één persoon behandeld, en de SM-rol was over te nemen door simpelweg de naam van de SM in te typen.
-- **Versienummer in het opties-scherm** — uit `package.json`, via `/api/config`.
-- **Consensus-animatie bij unanieme stem** — confetti-burst (dependency-vrij, CSS+JS) wanneer alle stemmers exact hetzelfde kaartje kiezen; respecteert `prefers-reduced-motion`, vuurt precies één keer per reveal. Persoonlijke "no fun mode"-toggle in het opties-scherm (localStorage, per apparaat) om 'm uit te zetten.
-- **Geen `join-room` meer bij elke tab-focus** — de `visibilitychange`-handler brengt alleen nog een gevallen verbinding omhoog. Zolang de socket verbonden is, heeft de server de stoel nog, dus viel er niets te herstellen. Het opnieuw joinen zit nu op één plek: `socket.on('connect')` in `room-page.js`, dat zowel de automatische reconnect als een handmatige `.connect()` afvangt — waar het oude `socket.io.on('reconnect')` alleen de eerste dekte.
-- **Log laat nu zien of er geschat is** — `[reveal]` met aantal stemmers, `[reset]`, `[change-deck]` met dektype, en `[auto-reveal]` vanuit `applyAutoReveal()` zelf zodat alle vijf de aanroeppaden erin zitten. `[join]` toont hoeveel mensen er in de room zitten en `[disconnect]` toont de naam plus of het de SM was. Individuele stemmen worden bewust niet gelogd.
-- **Socket alleen nog waar hij nodig is** — de indexpagina verbindt pas als je daadwerkelijk een room aanmaakt (`autoConnect: isRoomPage || isPresenterPage`), niet meer bij elke pageload. Scheelt een stroom connect/disconnect-paren in het log van bezoekers die alleen even kijken.
-- **Presenter-scherm als eigen ingang** — een presenter-scherm is geen deelnemer meer maar een *display*: het joint met `watch-room`, komt in `room.displays` in plaats van `room.participants`, en valt daardoor automatisch buiten elke stemberekening. Het bedient de room wél (reveal, nieuwe ronde, deck, story-titel, auto-reveal) via één predicaat `canControlRoom()` — dat is immers de plek waar de facilitator staat. Nieuwe derde tab "Presenteer" opent een scherm voor een bestaande room op code. Meerdere schermen op één room mogen, want een display bezit geen state. De host is voortaan een gewone stemmer — wie niet wil stemmen zet zichzelf op spectator.
-- **Room aanmaken vraagt waar je zelf meedoet** — "op mijn telefoon of ander apparaat" (standaard) maakt van dit scherm het presenter-scherm; "op dit apparaat" vraagt om een naam en zet je meteen in de room via `room.html?id=…&autojoin=1`. Een URL-parameter in plaats van een opgeslagen vlag, zodat hij niet kan blijven hangen en later op een onverwacht bezoek opnieuw afgaat.
-- **Onbeheerde room leeft 30 minuten** — `RECONNECT_GRACE_PERIOD_MS` van 15 naar 30 minuten, en de timer start pas als er niets meer aan hangt: geen verbonden deelnemer én geen presenter-scherm. Een team dat gaat lunchen met het scherm aan raakt de room dus niet kwijt. `deleteRoom()` lichtte niemand in; `closeRoom()` stuurt nu eerst `room-closed` naar de schermen die nog kijken.
-- **Presenter-indeling rechtgetrokken** (PR #27) — de QR klapte zichzelf dicht zodra iemand joinde, waarna een `:has()`-regel de hele zijkolom van 260px naar 180px kneep, inclusief de knoppen die daar toevallig ook stonden: scheve uitlijning, een overlopende deck-rij en een scrollbalk eronder. Kolommen liggen nu vast en worden expliciet geplaatst (een verborgen deelnemerspaneel schoof anders de kaarten in zijn baan). Deelnemers staan links en de bediening rechts, net als op de room-pagina.
-- **Presenter-bediening geordend op hoe vaak je iets aanraakt** (PR #27) — reveal en nieuwe ronde staan in de header naast het tandwiel en blijven dus altijd op hun plek; auto-reveal en kaartdek verhuisden naar het optiesmenu (het dek wist alle stemmen, dat hoort niet naast de kaarten); de zijbalk houdt alleen nog de uitnodiging over en klapt met de hand helemaal weg. Niets vouwt zichzelf meer op op basis van het aantal deelnemers.
+- **Socket hardening** — safe dispatch, null-prototype store,
+  `normalizeRoomId()` (PR #5).
+- **Dependency updates** — express 5, supertest 7 (PR #6).
+- **Documentation and diagram corrections** (PR #7).
+- **Participant buttons on hover only**, with a touch fallback (PR #8).
+- **CI runs the test suite** on Node 26, and blocks the Docker build on a
+  failure.
+- **Everything on the latest versions** — Node 26 (Dockerfile, CI, `engines`),
+  `actions/setup-node@v7`.
+- **Dead i18n keys cleaned up** (`stat-consensus`, `stat-most-picked`,
+  `stat-total-votes`).
+- **Auto-reveal** — optionally reveal automatically once everyone has voted.
+- **Rate limiting on the REST endpoints** — per-IP limiter (60 req/min) on
+  `/api/*`; `/health` stays exempt so the Docker healthcheck is never hit.
+- **Better room-code alphabet** — Crockford Base32 (32 characters, no I/L/O/U),
+  crypto-random with no modulo bias, ~64x more combinations than the old
+  hex-only alphabet. The `uuid` dependency is no longer needed and was removed.
+- **Frontend tests** — `computeVoteStats` (out of `render-results.js`),
+  `escHtml`, `generateRoomId`/`normalizeRoomId` and the rate limiter are now
+  all tested on their own as pure functions (no jsdom needed).
+- **Personal reconnect grace** — a participant who disconnects (screen off, for
+  instance) is no longer removed immediately, but kept as "away" for 10 minutes
+  (override with `PARTICIPANT_GRACE_MINUTES`) with vote and role intact;
+  reconnecting restores the seat at once. The SM can still kick an away
+  participant immediately; transferring master to an away participant is
+  refused.
+- **Identity through a session token** — recognising people by name was
+  replaced by a 128-bit token per browser per room
+  (`src/utils/sessionToken.js`). That closed two holes at once: two people
+  called "Jan" were treated as one person, and the SM role could be taken over
+  by simply typing the SM's name.
+- **Version number in the options modal** — from `package.json`, via
+  `/api/config`.
+- **Consensus animation on a unanimous vote** — a confetti burst
+  (dependency-free, CSS+JS) when every voter picks exactly the same card;
+  respects `prefers-reduced-motion` and fires exactly once per reveal. A
+  personal "no fun mode" toggle in the options modal (localStorage, per device)
+  turns it off.
+- **No more `join-room` on every tab focus** — the `visibilitychange` handler
+  now only brings a dropped connection back up. While the socket is connected
+  the server still holds the seat, so there was nothing to restore. Re-joining
+  lives in one place now: `socket.on('connect')` in `room-page.js`, which
+  catches both the automatic reconnect and a manual `.connect()` — where the
+  old `socket.io.on('reconnect')` covered only the first.
+- **The log now shows whether anything was estimated** — `[reveal]` with the
+  number of voters, `[reset]`, `[change-deck]` with the deck type, and
+  `[auto-reveal]` from `applyAutoReveal()` itself so all five call paths are
+  covered. `[join]` shows how many people are in the room and `[disconnect]`
+  shows the name plus whether it was the SM. Individual votes are deliberately
+  not logged.
+- **A socket only where one is needed** — the index page connects only when you
+  actually create a room (`autoConnect: isRoomPage || isPresenterPage`), no
+  longer on every page load. Saves a stream of connect/disconnect pairs in the
+  log from visitors who only had a look.
+- **The presenter screen as its own entry point** — a presenter screen is no
+  longer a participant but a *display*: it joins with `watch-room`, lands in
+  `room.displays` instead of `room.participants`, and so falls outside every
+  vote calculation automatically. It does drive the room (reveal, new round,
+  deck, story title, auto-reveal) through one predicate, `canControlRoom()` —
+  that is where the facilitator stands, after all. A new third tab, "Present",
+  opens a screen for an existing room by code. Several screens on one room are
+  fine, because a display owns no state. The host is an ordinary voter from now
+  on — anyone who does not want to vote switches themselves to spectator.
+- **Creating a room asks where you are taking part** — "on my phone or another
+  device" (the default) turns this screen into the presenter screen; "on this
+  device" asks for a name and seats you straight away through
+  `room.html?id=…&autojoin=1`. A URL parameter rather than a stored flag, so it
+  cannot linger and fire again on an unrelated visit later.
+- **An unattended room lives 30 minutes** — `RECONNECT_GRACE_PERIOD_MS` from 15
+  to 30 minutes, and the timer only starts once nothing is attached any more:
+  no connected participant *and* no presenter screen. So a team going to lunch
+  with the screen still up does not lose the room. `deleteRoom()` told nobody;
+  `closeRoom()` now sends `room-closed` to the screens still watching first.
+- **Presenter layout straightened out** (PR #27) — the QR folded itself away as
+  soon as anyone joined, after which a `:has()` rule squeezed the entire side
+  column from 260px to 180px, including the buttons that happened to live there
+  too: crooked alignment, an overflowing deck row and a scrollbar underneath.
+  The columns are fixed now and placed explicitly (a hidden participants panel
+  otherwise pushed the cards into its track). Participants on the left and the
+  controls on the right, same as on the room page.
+- **Presenter controls ordered by how often you touch them** (PR #27) — reveal
+  and new round sit in the header next to the gear and so always stay put;
+  auto-reveal and the card deck moved into the options modal (changing the deck
+  wipes every vote, which does not belong next to the cards); the sidebar keeps
+  only the invitation and folds away entirely by hand. Nothing collapses itself
+  based on the number of participants any more.

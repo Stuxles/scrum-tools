@@ -1,7 +1,7 @@
 <!--
-Write pull requests and commit messages in English. The app itself is
-bilingual (NL/EN) and todo.md is Dutch — this is about the repo's history,
-not its UI.
+Write pull requests and commit messages in English, as todo.md now is too.
+The app itself is bilingual (NL/EN) and the server log messages are Dutch —
+this is about the repo's history, not its UI.
 
 The PR title must follow Conventional Commits: `<type>(<scope>): <subject>`.
 `.github/workflows/pr-title-check.yml` enforces it on every PR, and the type
