@@ -20,6 +20,15 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+# Superseded PR runs are cancelled: pushing a fixup six times in twenty
+# minutes used to leave six full runs racing each other, with the cheap
+# jobs queued minutes behind the pile. Pushes to main are never cancelled -
+# killing version-bump mid-run can leave a bumped commit pushed without its
+# tag, or publish an image built from the pre-bump package.json.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -142,7 +151,11 @@ jobs:
         if: github.event_name != 'push'
         uses: actions/checkout@v7
 
+      # Only the push path publishes, so only it needs arm64 - and arm64 is
+      # the slow leg, emulated, whenever a package.json change misses the
+      # cache. A PR build exists to prove the Dockerfile still builds.
       - name: Set up QEMU
+        if: github.event_name != 'pull_request'
         uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
@@ -175,6 +188,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
