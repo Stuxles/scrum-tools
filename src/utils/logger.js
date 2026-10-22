@@ -2,7 +2,7 @@
  * Structured, leveled, column-aligned console logging.
  *
  * Every line: `<timestamp> <LEVEL> <[tag]> <message>`, e.g.
- *   2026-07-22 11:32:31.137 INFO  [room]             E7MNGT aangemaakt door Alice SM
+ *   2026-07-22 11:32:31.137 INFO  [room]             E7MNGT created by Alice SM
  *   2026-07-22 11:32:41.902 WARN  [rate-limit]       socket abc123 exceeded 35 events/sec
  *   2026-07-22 11:32:55.310 ERROR [handler:vote]     xyz789 TypeError: ...
  *

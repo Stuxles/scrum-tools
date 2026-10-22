@@ -8,7 +8,9 @@ describe('computeVoteStats (pure vote-statistics calculation)', () => {
     assert.strictEqual(stats.avg, null);
     assert.strictEqual(stats.median, null);
     assert.deepStrictEqual(stats.votes, []);
-    assert.deepStrictEqual(stats.dist, {});
+    // Keys, not the object: `dist` has a null prototype on purpose (see the
+    // built-in-property test below) and deepStrictEqual compares prototypes.
+    assert.deepStrictEqual(Object.keys(stats.dist), []);
     assert.strictEqual(stats.maxCount, 1, 'maxCount floors at 1 to avoid divide-by-zero in bar width');
   });
 
@@ -68,6 +70,31 @@ describe('computeVoteStats (pure vote-statistics calculation)', () => {
     assert.strictEqual(stats.avg, null);
     assert.strictEqual(stats.median, null);
     assert.strictEqual(stats.dist['☕'], 2);
+  });
+
+  test('a card named after a built-in property is counted like any other', () => {
+    // A custom deck allows any label up to ten characters, so `toString` and
+    // `valueOf` are legal cards. On a plain-object tally `dist['toString']`
+    // finds the inherited function, the count becomes a string, and maxCount
+    // goes NaN — which sized every bar in the chart, not just that card's.
+    const stats = computeVoteStats([
+      { hasVoted: true, vote: 'toString' },
+      { hasVoted: true, vote: 'toString' },
+      { hasVoted: true, vote: '__proto__' },
+      { hasVoted: true, vote: '5' },
+    ]);
+
+    // Spelled out rather than compared to a literal: `{ __proto__: 1 }` in an
+    // object literal sets the prototype instead of a key, so the expected
+    // value would quietly be missing the very entry under test.
+    assert.strictEqual(stats.dist['toString'], 2);
+    assert.strictEqual(stats.dist['__proto__'], 1);
+    assert.strictEqual(stats.dist['5'], 1);
+    assert.strictEqual(Object.keys(stats.dist).length, 3);
+    assert.strictEqual(stats.maxCount, 2);
+    for (const count of Object.values(stats.dist)) {
+      assert.ok(Number.isFinite(Math.round((count / stats.maxCount) * 100)), 'every bar has a real width');
+    }
   });
 
   test('maxCount reflects the highest single-vote-value frequency for bar scaling', () => {

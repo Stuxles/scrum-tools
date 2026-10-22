@@ -1,7 +1,8 @@
 <!--
-Write pull requests and commit messages in English. The app itself is
-bilingual (NL/EN) and todo.md is Dutch — this is about the repo's history,
-not its UI.
+System in English, UI bilingual. Pull requests, commit messages, todo.md and
+everything the server emits are English; only the app's UI is NL/EN, through
+public/js/utils/i18n.js. Rewording a server error string means updating its
+matcher in translateServerMsg() and tests/serverMessages.test.js too.
 
 The PR title must follow Conventional Commits: `<type>(<scope>): <subject>`.
 `.github/workflows/pr-title-check.yml` enforces it on every PR, and the type

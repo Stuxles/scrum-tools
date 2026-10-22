@@ -23,7 +23,7 @@ export function initSocketHandlers(io) {
       if (now - lastReset > SOCKET_RATE_LIMIT_WINDOW_MS) { eventCount = 0; lastReset = now; }
       if (++eventCount > SOCKET_RATE_LIMIT_MAX) {
         warn('rate-limit', `socket ${socket.id} exceeded ${SOCKET_RATE_LIMIT_MAX} events/${SOCKET_RATE_LIMIT_WINDOW_MS / 1000}s`);
-        socket.emit('error', { message: 'Te veel acties achter elkaar. Wacht een seconde.' });
+        socket.emit('error', { message: 'Too many actions in a row. Please wait a second.' });
         return;
       }
       next();
@@ -37,7 +37,7 @@ export function initSocketHandlers(io) {
           handler(data || {});
         } catch (err) {
           logError(`handler:${event}`, socket.id, err);
-          socket.emit('error', { message: 'Er ging iets mis. Probeer het opnieuw.' });
+          socket.emit('error', { message: 'Something went wrong. Please try again.' });
         }
       });
     };

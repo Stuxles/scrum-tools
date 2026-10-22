@@ -133,6 +133,7 @@ export const translations = {
     'toast-name-updated': 'Naam bijgewerkt ✓',
     'toast-sm-promoted': 'Je bent nu de Scrum Master 👑',
     'toast-kicked': 'Je bent uit de room verwijderd.',
+    'toast-superseded': 'Deze room staat nu open in een ander tabblad.',
     'toast-kicked-success': '{name} is uit de room verwijderd.',
     'confirm-kick': 'Weet je zeker dat je "{name}" uit de room wilt verwijderen?',
     'btn-kick-title': '{name} uit de room verwijderen',
@@ -315,6 +316,7 @@ export const translations = {
     'toast-name-updated': 'Name updated ✓',
     'toast-sm-promoted': 'You are now the Scrum Master 👑',
     'toast-kicked': 'You have been removed from the room.',
+    'toast-superseded': 'This room is now open in another tab.',
     'toast-kicked-success': '{name} has been removed from the room.',
     'confirm-kick': 'Are you sure you want to remove "{name}" from the room?',
     'btn-kick-title': 'Remove {name} from the room',
@@ -393,16 +395,30 @@ export function t(key, params = {}) {
 }
 
 /**
- * Translate incoming server error string to local language if known.
+ * Translate an incoming server error string into the viewer's language.
+ *
+ * The server speaks English everywhere now — logs, API bodies and these
+ * messages — and this is the one seam where that meets the bilingual UI. The
+ * match is on a substring rather than an error code, which is the weak point:
+ * reword one of these sentences in `src/` without touching the arm that
+ * catches it and the toast silently shows the raw English to a Dutch viewer,
+ * with nothing failing anywhere. `tests/serverMessages.test.js` is what stops
+ * that — it drives the real handlers and feeds what they actually emit
+ * through here. Keep that test in step when adding a message.
+ *
+ * Anything unrecognised passes through untouched, which is also how
+ * already-translated client strings survive the trip (every `toast()` goes
+ * through here).
+ *
  * @param {string} msg
  * @returns {string}
  */
 export function translateServerMsg(msg) {
-  if (msg.includes('Te veel acties') || msg.includes('Too many actions')) return t('toast-rate-limit');
-  if (msg.includes('Voer minimaal 2 kaarten in')) return t('toast-min-cards');
-  if (msg.includes('Kon geen unieke room-code') || msg.includes('Could not generate')) return t('toast-server-full');
-  if (msg.includes('niet gevonden') || msg.includes('Controleer de code') || msg.includes('does not exist')) return t('toast-room-not-found-generic');
-  if (msg.includes('Er ging iets mis') || msg.includes('Something went wrong')) return t('toast-generic-error');
+  if (msg.includes('Too many actions')) return t('toast-rate-limit');
+  if (msg.includes('Enter at least 2 cards')) return t('toast-min-cards');
+  if (msg.includes('Could not generate')) return t('toast-server-full');
+  if (msg.includes('does not exist')) return t('toast-room-not-found-generic');
+  if (msg.includes('Something went wrong')) return t('toast-generic-error');
   return msg;
 }
 

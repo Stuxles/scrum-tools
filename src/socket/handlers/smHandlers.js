@@ -3,6 +3,7 @@ import { DECKS, DECK_MIN_CARDS, parseCustomDeck } from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }  from '../../utils/roomId.js';
 import { applyAutoReveal, countVoters } from '../../utils/autoReveal.js';
+import { cleanText }      from './roomHandlers.js';
 import { info }             from '../../utils/logger.js';
 
 /** @param {import('socket.io').Socket} socket */
@@ -13,7 +14,7 @@ export function handleReveal(socket, { roomId }) {
 
   room.revealed = true;
   const { voted, total } = countVoters(room);
-  info('reveal', `${roomId}: ${voted}/${total} gestemd`);
+  info('reveal', `${roomId}: ${voted}/${total} voted`);
   broadcastRoomState(roomId);
 }
 
@@ -23,7 +24,7 @@ export function handleReset(socket, { roomId }) {
   const room = rooms[roomId];
   if (!room || !canControlRoom(room, socket.id)) return;
 
-  info('reset', `${roomId}: nieuwe ronde`);
+  info('reset', `${roomId}: new round`);
   room.revealed = false;
   for (const p of Object.values(room.participants)) {
     p.vote     = null;
@@ -41,7 +42,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
   if (deckType === 'custom') {
     const cards = parseCustomDeck(customCards);
     if (cards.length < DECK_MIN_CARDS) {
-      socket.emit('error', { message: 'Voer minimaal 2 kaarten in.' });
+      socket.emit('error', { message: 'Enter at least 2 cards.' });
       return;
     }
     room.deck = cards;
@@ -51,7 +52,7 @@ export function handleChangeDeck(socket, { roomId, deckType, customCards }) {
     return;
   }
 
-  info('change-deck', `${roomId}: ${deckType} (${room.deck.length} kaarten)`);
+  info('change-deck', `${roomId}: ${deckType} (${room.deck.length} cards)`);
   room.deckType = deckType;
   room.revealed = false;
   for (const p of Object.values(room.participants)) {
@@ -67,7 +68,7 @@ export function handleUpdateName(socket, { roomId, name }) {
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
-  name = (name || '').trim().slice(0, 40);
+  name = cleanText(name, 40, '');
   if (!name) return;
 
   // Keep masterName in sync when the SM renames themselves
@@ -99,6 +100,6 @@ export function handleUpdateStoryTitle(socket, { roomId, storyTitle }) {
   const room = rooms[roomId];
   if (!room || !canControlRoom(room, socket.id)) return;
 
-  room.storyTitle = String(storyTitle || '').trim().slice(0, 200);
+  room.storyTitle = cleanText(storyTitle, 200, '');
   broadcastRoomState(roomId);
 }

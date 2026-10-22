@@ -41,7 +41,7 @@ describe('REST API Routes (/api & /health)', () => {
   test('GET /api/rooms/:id should return 404 if room does not exist', async () => {
     const res = await request(app).get('/api/rooms/NONEXISTENT');
     assert.strictEqual(res.status, 404);
-    assert.strictEqual(res.body.error, 'Room niet gevonden');
+    assert.strictEqual(res.body.error, 'Room not found');
   });
 
   test('GET /api/rooms/:id should return room info if room exists', async () => {
@@ -55,7 +55,7 @@ describe('REST API Routes (/api & /health)', () => {
   test('GET /api/rooms/:id/qr should return 404 if room does not exist', async () => {
     const res = await request(app).get('/api/rooms/NONEXISTENT/qr');
     assert.strictEqual(res.status, 404);
-    assert.strictEqual(res.body.error, 'Room niet gevonden');
+    assert.strictEqual(res.body.error, 'Room not found');
   });
 
   test('GET /api/rooms/:id/qr should generate base64 QR PNG image when room exists', async () => {

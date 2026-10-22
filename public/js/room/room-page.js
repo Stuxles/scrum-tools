@@ -7,7 +7,7 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, getSessionToken, setSessionToken, getSpectatorPref, setSpectatorPref, copyToClipboard, requestWakeLock, releaseWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
+import { getSavedName, saveName, getSessionToken, setSessionToken, getSpectatorPref, setSpectatorPref, copyToClipboard, requestWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
@@ -446,10 +446,13 @@ export function initRoomPage(socket, urlRoomId) {
     }
   });
 
-  socket.on('kicked', () => {
+  // `superseded` means this tab's seat moved to another tab of the same
+  // browser — they share the reconnect token — not that the host removed us.
+  socket.on('kicked', ({ reason } = {}) => {
     window._isInScrumRoom = false;
     currentRoom = null;
-    toast(t('toast-kicked'), 'error');
+    const moved = reason === 'superseded';
+    toast(t(moved ? 'toast-superseded' : 'toast-kicked'), moved ? 'info' : 'error');
     setTimeout(() => { window.location.href = '/'; }, 2000);
   });
 

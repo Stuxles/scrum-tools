@@ -40,7 +40,7 @@ router.get('/config', (_req, res) => res.json({ appName: APP_NAME, version: APP_
 // ─── Room info ────────────────────────────────────────────────────────────────
 router.get('/rooms/:id', roomLimiter, (req, res) => {
   const room = rooms[req.params.id];
-  if (!room) return res.status(404).json({ error: 'Room niet gevonden' });
+  if (!room) return res.status(404).json({ error: 'Room not found' });
   res.json({ exists: true, name: room.name });
 });
 
@@ -102,7 +102,7 @@ function resolveQrOrigin(req) {
 
 router.get('/rooms/:id/qr', roomLimiter, async (req, res) => {
   const room = rooms[req.params.id];
-  if (!room) return res.status(404).json({ error: 'Room niet gevonden' });
+  if (!room) return res.status(404).json({ error: 'Room not found' });
 
   const url   = `${resolveQrOrigin(req).replace(/\/$/, '')}/room.html?id=${room.id}`;
   const theme = req.query.theme === 'light' ? 'light' : 'dark';
@@ -114,7 +114,7 @@ router.get('/rooms/:id/qr', roomLimiter, async (req, res) => {
     const qr = await QRCode.toDataURL(url, { width: QR_CODE_SIZE_PX, margin: QR_CODE_MARGIN, color });
     res.json({ qr, url });
   } catch {
-    res.status(500).json({ error: 'QR generatie mislukt' });
+    res.status(500).json({ error: 'QR generation failed' });
   }
 });
 

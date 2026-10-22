@@ -4,6 +4,7 @@ import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
   broadcastRoomState,
   scheduleRoomCleanup,
+  scheduleEmptyRoomCleanup,
 } from '../../utils/broadcast.js';
 import { applyAutoReveal }     from '../../utils/autoReveal.js';
 import { generateSessionToken, normalizeSessionToken } from '../../utils/sessionToken.js';
@@ -14,12 +15,18 @@ import { info }                from '../../utils/logger.js';
  * picks the whitespace string *before* trimming it and yields '', leaving a
  * participant with a blank display name.
  *
+ * `String(raw ?? '')` before anything else is what makes this safe on a
+ * payload field that is not text. `update-name` hand-rolled its own version
+ * without it and threw a TypeError on `{ name: 42 }` — caught by the safe
+ * dispatch, so the client just got "something went wrong". Exported so every
+ * handler that cleans a user-supplied string shares one rule.
+ *
  * @param {unknown} raw
  * @param {number}  maxLength
  * @param {string}  fallback
  * @returns {string}
  */
-function cleanText(raw, maxLength, fallback) {
+export function cleanText(raw, maxLength, fallback) {
   return String(raw ?? '').trim().slice(0, maxLength) || fallback;
 }
 
@@ -41,7 +48,7 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   if (deckType === 'custom') {
     deck = parseCustomDeck(customCards);
     if (deck.length < DECK_MIN_CARDS) {
-      socket.emit('error', { message: 'Voer minimaal 2 kaarten in voor een aangepast deck.' });
+      socket.emit('error', { message: 'Enter at least 2 cards for a custom deck.' });
       return;
     }
   } else {
@@ -57,7 +64,7 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   do {
     roomId = generateRoomId();
     if (++attempts > 100) {
-      socket.emit('error', { message: 'Kon geen unieke room-code genereren. Server zit vol.' });
+      socket.emit('error', { message: 'Could not generate a unique room code. The server is full.' });
       return;
     }
   } while (rooms[roomId]);
@@ -79,8 +86,12 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   };
 
   scheduleRoomCleanup(roomId);
+  // A new room is unattended until someone joins or points a screen at it,
+  // and both of those clear this timer. Without it an abandoned room waited
+  // out the 24h cleanup instead of the 30m one. See scheduleEmptyRoomCleanup.
+  scheduleEmptyRoomCleanup(roomId);
   socket.emit('room-created', { roomId });
-  info('room', `${roomId} aangemaakt (${rooms[roomId].name})`);
+  info('room', `${roomId} created (${rooms[roomId].name})`);
 }
 
 /**
@@ -105,7 +116,7 @@ export function handleWatchRoom(socket, { roomId } = {}) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room) {
-    socket.emit('error', { message: `Room "${roomId}" niet gevonden. Controleer de code.` });
+    socket.emit('error', { message: `Room "${roomId}" does not exist. Check the code.` });
     return;
   }
 
@@ -127,7 +138,7 @@ export function handleWatchRoom(socket, { roomId } = {}) {
   // every reconnect. That is what the presenter screen is re-attaching after.
   socket.emit('room-watched', { room: sanitizeRoom(room, null) });
 
-  info('watch', `presenter-scherm → ${roomId} (${room.displays.size} scherm(en))`);
+  info('watch', `presenter screen → ${roomId} (${room.displays.size} screen(s))`);
 }
 
 /**
@@ -140,7 +151,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
 
   const room = rooms[roomId];
   if (!room) {
-    socket.emit('error', { message: `Room "${roomId}" niet gevonden. Controleer de code.` });
+    socket.emit('error', { message: `Room "${roomId}" does not exist. Check the code.` });
     return;
   }
 
@@ -182,9 +193,15 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
     if (oldParticipant.connected !== false) {
       // Old socket hasn't been marked away yet — evict it so it can't
       // coexist with the new connection holding the same token.
+      //
+      // `superseded` is what separates this from a real kick. The token lives
+      // in localStorage, which every tab of one browser shares, so the most
+      // common way to land here is not a flaky reconnect at all: it is opening
+      // the room in a second tab. The seat moving is right; telling the first
+      // tab it was removed from the room by the host is not.
       const oldSocket = io.sockets.sockets.get(oldId);
       if (oldSocket) {
-        oldSocket.emit('kicked', {});
+        oldSocket.emit('kicked', { reason: 'superseded' });
         oldSocket.disconnect(true);
       }
     }
@@ -195,7 +212,7 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
     delete room.participants[oldId];
     room.participants[socket.id] = { ...oldParticipant, id: socket.id };
     if (room.masterId === oldId) room.masterId = socket.id;
-    info('reconnect', `${name} zit weer in room ${roomId} (stem/rol hersteld)`);
+    info('reconnect', `${name} is back in room ${roomId} (vote/role restored)`);
   }
 
   // Assign master, or hand the role back to the departed SM while their claim

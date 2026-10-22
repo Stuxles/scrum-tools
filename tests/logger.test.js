@@ -113,7 +113,7 @@ describe('info/warn/error (leveled, column-aligned console wrapper)', () => {
   });
 
   test('no ANSI color codes are emitted when the destination stream is not a TTY', () => {
-    info('room', 'ABC123 aangemaakt door Alice');
+    info('room', 'ABC123 created by Alice');
     const [prefix] = logCalls[0];
     assert.ok(!ANSI_RE.test(prefix), 'non-TTY output must be plain text');
   });
@@ -137,7 +137,7 @@ describe('info/warn/error color output (TTY)', () => {
   });
 
   test('ANSI color codes are included when the destination stream is a TTY', () => {
-    info('room', 'ABC123 aangemaakt door Alice');
+    info('room', 'ABC123 created by Alice');
     const [prefix] = logCalls[0];
     assert.match(prefix, ANSI_RE, 'TTY output should include ANSI color codes');
   });
