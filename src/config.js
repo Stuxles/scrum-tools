@@ -89,6 +89,39 @@ export const QR_CODE_SIZE_PX = 280;
 export const QR_CODE_MARGIN  = 2;
 
 // ─── Deck Definitions ────────────────────────────────────────────────────────
+
+/** Shape limits for a custom deck. */
+export const DECK_CARD_MAX_LENGTH = 10;
+export const DECK_MAX_CARDS       = 30;
+export const DECK_MIN_CARDS       = 2;
+
+/**
+ * Clean up a client-supplied custom deck: trim, cap each label, drop blanks,
+ * drop duplicates, cap the count.
+ *
+ * Shared by `handleCreateRoom` and `handleChangeDeck` rather than written out
+ * twice. The two had already drifted apart once — creating a room ran the
+ * `DECKS` lookup before testing for `custom` and silently threw the supplied
+ * cards away, while changing the deck did it right — so the way to keep them
+ * honest is to give them nothing to disagree about.
+ *
+ * Duplicates are new here. Nothing rejected `['5', '5', '8']`, which built two
+ * buttons carrying the same `data-val`: clicking either lit up both, because
+ * `selectVoteCard()` matches on the value and a card value is the only handle
+ * a vote has. Deduping at the door is cheaper than teaching the whole vote
+ * path to tell two identical cards apart.
+ *
+ * @param {unknown} cards
+ * @returns {string[]} Cleaned cards; may be shorter than `DECK_MIN_CARDS`,
+ *                     which callers must check and report.
+ */
+export function parseCustomDeck(cards) {
+  const cleaned = (Array.isArray(cards) ? cards : [])
+    .map(s => String(s).trim().slice(0, DECK_CARD_MAX_LENGTH))
+    .filter(Boolean);
+  return [...new Set(cleaned)].slice(0, DECK_MAX_CARDS);
+}
+
 export const DECKS = {
   standard:  ['0','1','2','3','4','5','6','8','12','16','24','32','40','♾️','❓','☕'],
   fibonacci: ['0','1','2','3','5','8','13','21','34','55','89','❓','☕'],

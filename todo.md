@@ -93,9 +93,25 @@ dektype en de ondergrens van 2 kaarten). Wat er nog niet los getest is:
 ### 8. Presenter-scherm: reveal-theater en grote-schermtest
 **Prioriteit: laag.** Twee dingen die overbleven na de code review van het presenter-scherm, geen van beide een bug.
 
-- **Geen omgekeerde kaarten tijdens het stemmen.** `presenter.html` toont nu alleen een voortgangsbalk zolang er niet onthuld is. Klassieke planning-poker-schermen laten per deelnemer een omgekeerde kaart zien die bij reveal omdraait — dat maakt het moment zelf theatraler. Zou in `presenter-page.js` + `render-voting.js`-achtige component moeten, met een flip-animatie op `#results-cards-grid` zoals `render-results.js` al deels heeft (`animation: flipIn`).
+- **Geen omgekeerde kaarten tijdens het stemmen.** `presenter.html` toont nu alleen een voortgangsbalk zolang er niet onthuld is. Klassieke planning-poker-schermen laten per deelnemer een omgekeerde kaart zien die bij reveal omdraait — dat maakt het moment zelf theatraler. Zou in `presenter-page.js` + `render-voting.js`-achtige component moeten, met een flip-animatie op `#results-cards-grid` zoals `render-results.js` al deels heeft (`flipIn`, aangezet via de klasse `is-flipping-in` die de grid bij een verse reveal krijgt).
 - **Nooit getest op een echt 1920×1080-scherm.** Alleen 1100×800, 1500×850 en 1600×900 in de browser-pane geverifieerd. De resultaatkaarten hebben een `clamp()`-bovengrens van 132px breed (`public/style.css`, `.presenter-page .result-card-face`) — op een grotere/verdere TV kunnen ze relatief klein ogen. Bovengrens optrekken of schalen op `vw` in plaats van een vast plafond, ná een echte test op zo'n scherm.
 - **Lege kolom bij een lege room.** De deelnemerskolom krijgt `hidden` zolang er niemand is, maar houdt zijn baan in het grid bezet. Bewust: zo verspringt er niets zodra de eerste deelnemer binnenkomt. Alleen aanpakken als die lege strook echt stoort.
+
+### 9. Kleine inconsistenties uit de flikker-review
+**Prioriteit: laag.** Niets hiervan is zichtbaar voor een gebruiker vandaag,
+maar het zijn wel plekken waar twee stukken code het niet met elkaar eens zijn.
+
+- **De rol "Scrum Master" staat hardcoded in `render-users.js`.** Naast
+  `role-spectator` en `role-participant`, die netjes door `t()` gaan. Er is geen
+  `role-master`-key; die moet er eerst bij in beide talen.
+- **De REST-endpoints normaliseren de room-code niet.** `/api/rooms/:id` en
+  `/api/rooms/:id/qr` doen `rooms[req.params.id]` rechtstreeks, waar elke
+  socket-handler eerst `normalizeRoomId()` aanroept. Nu onschuldig, want
+  `main.js` zet de code uit de URL altijd al in kapitalen; wie het endpoint
+  direct met kleine letters aanroept krijgt een 404 op een room die wél bestaat.
+- **`#header-spectator-btn` staat niet in de header.** Hij verhuisde naar het
+  optiesmenu maar hield zijn naam, wat bij het zoeken naar de knop (en bij het
+  schrijven van een test) de verkeerde kant op wijst.
 
 ---
 
@@ -136,6 +152,76 @@ regressietests in `tests/bugfixes.test.js`.
   één kant fout staan.
 
 ### Eerder
+
+- **De version-bump kon per ongeluk een major-bump doen** — het patroon
+  `'^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'` leest in ERE als
+  *`^…!:` óf `BREAKING CHANGE` ergens*, want `|` bindt het zwakst. De losse
+  woorden werden dus op elke regel van elke commit-body gematcht: een commit
+  die ze alleen nóemde ("dit is expliciet geen BREAKING CHANGE") of een
+  docs-commit die de conventie uitlegt, sprong van 1.6.1 naar 2.0.0. Beide
+  alternatieven staan nu geankerd en de footer eist zijn dubbele punt
+  (`BREAKING-CHANGE:` is het door de spec toegestane synoniem). Doorgerekend
+  over acht commit-vormen voordat het de deur uit ging.
+- **Aangepast dek accepteerde dubbele kaarten** — `['5', '5', '8']` leverde
+  twee knoppen met dezelfde `data-val`, en omdat `selectVoteCard()` op de
+  waarde matcht lichtte één klik ze allebei op. Nu ontdubbeld aan de poort,
+  vóór de ondergrens van 2 wordt gecontroleerd, dus een dek van één kaart
+  twee keer wordt netjes afgewezen. Die validatie stond trouwens twee keer
+  uitgeschreven (aanmaken én wijzigen) — precies het paar dat eerder al uit
+  elkaar was gelopen — en zit nu in één `parseCustomDeck()` in `config.js`,
+  samen met de limieten 10/30/2 die daar volgens dat bestand zelf al hadden
+  moeten staan.
+
+- **De host verloor zijn rol aan wie het eerst terugverbond** — uit een echte
+  log van 21 oktober: één blip haalde binnen dezelfde seconde alle telefoons
+  én het presenter-scherm weg, en de room lag 61 seconden stil. Het
+  30-seconden claim-venster (`masterGraceTimer`) ging af terwijl er niemand
+  online was, vond niemand om de rol aan te geven en gaf hem op. Vanaf dat
+  moment pakte de eerste telefoon die terugkwam de rol — en omdat dat ook
+  `masterToken` overschrijft, was de echte host, drie seconden later terug mét
+  die token, definitief gedegradeerd. Twee keer in één sessie. Het venster
+  wordt nu opnieuw opgezet zolang er niemand is om aan over te dragen, zodat
+  een reconnect-race niet meer bepaalt wie de sessie leidt. Het gat dat dat
+  achterlaat is ook gedicht: loopt de stoel van een afwezige host alsnog af,
+  dan gaat de rol direct naar de eerste verbonden achterblijver, net als bij
+  een kick. Gereproduceerd, daarna opgelost, met drie regressietests in
+  `tests/participantGrace.test.js` (via een geëxporteerde `runMasterHandover()`,
+  zodat de echte 30 seconden niet uitgezeten hoeven te worden).
+- **`[grace]` logde een socket-id in plaats van een naam** — `[disconnect]`
+  toont al wie wegging, maar bij het verlopen van een stoel tien minuten later
+  stond er alleen `eOw2bITUb4GNNe67AACw verwijderd uit room …`, wat betekende
+  terugscrollen naar de bijbehorende `[connect]` om te zien wie dat was.
+
+- **Presenter-scherm knipperde bij elke room-state** — gereproduceerd in een
+  echte browser: `renderResults()` gooide de resultaatkaarten weg en bouwde ze
+  opnieuw op bij *elke* `room-state`, en een nieuwe `.result-card` begint zijn
+  `flipIn` op `opacity: 0`. Een rename, een join, een telefoon die
+  terugverbindt — gebeurtenissen die niets aan de stemmen veranderen — lieten
+  de hele grid dus uitdoven en terugklappen, gemeten 0,00 opacity gedurende
+  twee frames en daarna een halve seconde animatie. Hoe meer mensen in de room,
+  hoe meer van die room-states, vandaar dat het bij vier man opvalt. Drie dingen
+  aangepast: de kaarten en de deelnemerslijst worden nu op hun id bijgewerkt in
+  plaats van herbouwd, de flip hangt aan een klasse die de grid alleen bij een
+  *verse* reveal krijgt (het reveal-theater zelf blijft dus, ook in ronde twee),
+  en `watch-room` broadcast niet meer naar de hele room — een scherm bezit geen
+  state, dus er viel niets te melden. Datzelfde herbouwen zat ook op het
+  kaartdek van de deelnemers: elke stem van een teamgenoot verving je kaarten
+  terwijl je ernaar reikte.
+- **Deelnemerslijst verloor zijn eigen state** — door hetzelfde herbouwen
+  verdween de kick-knop onder een hoverende muis (hij staat op `:hover`) en
+  klapte een uitgeklapte chip op een telefoon dicht zodra iemand stemde.
+- **Animaties op een groot scherm** — de drie drijvende, 80px geblurde orbs
+  staan stil op het presenter-scherm: elke `.glass`-panel erboven heeft een
+  `backdrop-filter`, en een bewegende achtergrond moet per frame voor elk
+  paneel opnieuw geblurd worden. Verder respecteert de app nu
+  `prefers-reduced-motion` voor alles wat oneindig doorloopt.
+- **Stagger van de resultaatkaarten liep na tien kaarten dood** — tien
+  handgeschreven `nth-child`-regels; kaart elf en verder klapten zonder
+  vertraging in. De index gaat nu als custom property mee, afgetopt op 600ms.
+- **Toeschouwer-voorkeur was globaal** — één `scrum_is_spectator` in
+  localStorage volgde je naar de volgende room, en omdat de reconnect die waarde
+  terugstuurt kon een blijven-hangen `true` de stem wissen die de grace-periode
+  net had teruggegeven. Nu per room, net als het sessietoken.
 
 - **Socket-hardening** — safe dispatch, null-prototype store, `normalizeRoomId()` (PR #5).
 - **Dependency-updates** — express 5, supertest 7 (PR #6).

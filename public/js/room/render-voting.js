@@ -12,7 +12,23 @@ import { t } from '../utils/i18n.js';
  * @param {Function}                         onVote  Called with the chosen value.
  */
 export function renderCardDeck(cardDeck, deck, myVote, revealed, socket, currentRoom, onVote) {
+  // Only rebuild when the deck itself changed. This runs on every
+  // `room-state`, so it used to throw your cards away and build new ones each
+  // time anyone else voted — a tap that landed in the same frame hit a node
+  // that was already detached, and the row visibly reflowed under your thumb
+  // mid-round. The deck only ever changes when the host changes it.
+  const signature = JSON.stringify(deck);
+  if (cardDeck.dataset.deck === signature && cardDeck.children.length === deck.length) {
+    selectVoteCard(cardDeck, revealed ? null : myVote);
+    for (const btn of cardDeck.children) {
+      btn.classList.toggle('disabled', revealed);
+      btn.disabled = revealed;
+    }
+    return;
+  }
+
   cardDeck.innerHTML = '';
+  cardDeck.dataset.deck = signature;
 
   for (const val of deck) {
     const btn = document.createElement('button');

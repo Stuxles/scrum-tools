@@ -97,6 +97,41 @@ describe('Presenter screens (displays are not participants)', () => {
     assert.ok(rooms[roomId].displays.has(screen.id), 'screen is tracked as a display');
   });
 
+  test('attaching a screen re-renders nobody: no room-state goes out', async () => {
+    const creator = createClient();
+    await waitForConnect(creator);
+    const roomId = await makeRoom(creator);
+
+    const alice = createClient();
+    await waitForConnect(alice);
+    alice.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(alice, 'room-joined');
+
+    // A display owns no state, so nothing about the room changes when one
+    // attaches. The broadcast that used to follow `room-watched` pushed a
+    // full re-render at every phone in the room — and a second one at the
+    // screen that had just been handed the same state — on every attach,
+    // which on a flaky connection means every reconnect.
+    const aliceStates = [];
+    const screenStates = [];
+    alice.on('room-state', (p) => aliceStates.push(p));
+
+    const screen = createClient();
+    await waitForConnect(screen);
+    screen.on('room-state', (p) => screenStates.push(p));
+    screen.emit('watch-room', { roomId });
+    await onceEvent(screen, 'room-watched');
+    await new Promise((r) => setTimeout(r, 150));
+
+    assert.deepStrictEqual(aliceStates, [], 'a participant is not re-rendered by a screen attaching');
+    assert.deepStrictEqual(screenStates, [], 'room-watched already carried the state; no second copy');
+
+    // Still wired up: the next real change does reach the screen.
+    const voted = waitForRoomState(screen, (r) => r.participants.some((p) => p.hasVoted));
+    alice.emit('vote', { roomId, vote: '5' });
+    await voted;
+  });
+
   test('watch-room on a room that does not exist reports an error', async () => {
     const screen = createClient();
     await waitForConnect(screen);

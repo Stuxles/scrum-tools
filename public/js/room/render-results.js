@@ -5,12 +5,28 @@ import { computeVoteStats, eligibleVoters } from '../utils/stats.js';
 /**
  * Results phase renderer — cards grid and statistics panel.
  *
+ * Two things here exist because of the presenter screen.
+ *
+ * The cards are updated in place, keyed by participant id, instead of being
+ * rebuilt. `room-state` arrives on every join, rename, reconnect and grace
+ * expiry — all of which happen *while* a round sits revealed — and a rebuilt
+ * `.result-card` restarts its `flipIn` animation from `opacity: 0`. On a wall
+ * screen that read as the results blinking out and flipping back in, several
+ * times a round, for events that changed nothing about the votes.
+ *
+ * Which is also why the flip is opt-in per render: it belongs to the reveal
+ * itself. `resultsPhase` carries `hidden` for as long as the room is not
+ * revealed (both callers set it on reset), so its state on entry is exactly
+ * "is this the first render of this reveal" — no extra bookkeeping needed.
+ *
  * @param {object} ctx  Elements: votingPhase, resultsPhase, resultsSubtitle,
  *                      resultsCardsGrid, resultsStats
  * @param {object} room
  */
 export function renderResults(ctx, room) {
   const { votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats } = ctx;
+
+  const isNewReveal = resultsPhase.classList.contains('hidden');
 
   votingPhase.classList.add('hidden');
   resultsPhase.classList.remove('hidden');
@@ -25,28 +41,80 @@ export function renderResults(ctx, room) {
   resultsSubtitle.textContent = t('progress-text', { voted: voters.length, total: eligible.length });
 
   // ── Cards grid ────────────────────────────────────────────────────────────
-  resultsCardsGrid.innerHTML = '';
-  for (const p of eligible) {
-    const div  = document.createElement('div');
-    div.className = 'result-card';
-    div.setAttribute('role', 'listitem');
-
-    const face = document.createElement('div');
-    face.className   = p.hasVoted ? 'result-card-face' : 'result-card-face no-vote';
-    face.textContent = p.hasVoted ? (p.vote || '—') : '—';
-
-    const nameEl = document.createElement('div');
-    nameEl.className   = 'result-card-name';
-    nameEl.textContent = p.name;
-    nameEl.title       = p.name;
-
-    div.appendChild(face);
-    div.appendChild(nameEl);
-    resultsCardsGrid.appendChild(div);
-  }
+  // The stagger used to be ten hand-written `nth-child` rules, so an eleventh
+  // voter's card flipped in with no delay at all. The index travels as a
+  // custom property instead, which the CSS turns into a delay for any count.
+  renderCards(resultsCardsGrid, eligible, isNewReveal);
 
   // ── Statistics ────────────────────────────────────────────────────────────
   renderStats(resultsStats, room);
+}
+
+/**
+ * @param {HTMLElement}   grid
+ * @param {Array<object>} eligible
+ * @param {boolean}       animate
+ */
+function renderCards(grid, eligible, animate) {
+  /** @type {Map<string, HTMLElement>} */
+  const existing = new Map();
+  for (const card of grid.children) existing.set(card.dataset.id, card);
+
+  let previous = null;
+  let index    = 0;
+
+  for (const p of eligible) {
+    let card = existing.get(p.id);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'result-card';
+      card.setAttribute('role', 'listitem');
+
+      const face = document.createElement('div');
+      face.className = 'result-card-face';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'result-card-name';
+
+      card.append(face, nameEl);
+    }
+    existing.delete(p.id);
+
+    card.dataset.id = p.id;
+    card.style.setProperty('--card-index', String(index));
+
+    const face = card.children[0];
+    const want = p.hasVoted ? 'result-card-face' : 'result-card-face no-vote';
+    if (face.className !== want) face.className = want;
+    const faceText = p.hasVoted ? (p.vote || '—') : '—';
+    if (face.textContent !== faceText) face.textContent = faceText;
+
+    const nameEl = card.children[1];
+    if (nameEl.textContent !== p.name) {
+      nameEl.textContent = p.name;
+      nameEl.title       = p.name;
+    }
+
+    const shouldFollow = previous ? previous.nextSibling : grid.firstChild;
+    if (card !== shouldFollow) grid.insertBefore(card, shouldFollow);
+    previous = card;
+    index++;
+  }
+
+  for (const card of existing.values()) card.remove();
+
+  // One class on the grid drives every card's flip. Because the cards now
+  // survive between rounds, a second reveal has to re-trigger the animation
+  // explicitly: drop the class, flush the style so the browser sees it gone,
+  // then put it back. Left on afterwards, it is inert — a finished `backwards`
+  // animation holds no state, and the keyframe's end matches the card's
+  // resting style — and the one case it still catches is the right one: a
+  // card that appears mid-reveal flips in like the others did.
+  if (animate) {
+    grid.classList.remove('is-flipping-in');
+    void grid.offsetWidth;
+    grid.classList.add('is-flipping-in');
+  }
 }
 
 function renderStats(container, room) {
@@ -107,5 +175,8 @@ function renderStats(container, room) {
     `;
   }
 
-  container.innerHTML = html;
+  // Rewriting identical markup would drop the `width` transition on the
+  // distribution bars every time an unrelated room-state came in, so the
+  // bars restarted from their current width on each one.
+  if (container.innerHTML !== html) container.innerHTML = html;
 }

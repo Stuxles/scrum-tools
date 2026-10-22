@@ -108,6 +108,33 @@ body {
   to   { transform: translate(40px,30px) scale(1.1); }
 }
 
+/* The orbs hold still on the presenter screen.
+   Every `.glass` panel sits on top of them with a `backdrop-filter`, and a
+   backdrop that moves has to be re-blurred for each panel on every single
+   frame. That is a bill the other pages barely notice and a presenter screen
+   cannot pay: full-viewport, often a 1080p or 4K TV on a laptop's integrated
+   GPU, and the panel count grows with the room (participants, progress,
+   results). It showed up as the whole screen shimmering once a few people
+   had joined. The gradient and the orbs still do all the visual work — they
+   are 80px-blurred shapes behind frosted glass, and nobody across the room
+   was tracking their 20-second drift. */
+body:has(.presenter-page) .bg-orb { animation: none; }
+
+/* Same reasoning, taken from the viewer: a loop that never ends is decoration,
+   and someone who asked their system to calm motion down did not ask for an
+   exception. The reveal flip goes too — a card rotating in 3D is exactly the
+   motion this setting is about, and the cards still arrive, just without the
+   spin. Short state transitions (a hover, a progress bar) stay; they are what
+   makes the UI legible. The confetti burst already checks this itself. */
+@media (prefers-reduced-motion: reduce) {
+  .bg-orb,
+  .online-dot,
+  .hero-logo,
+  .reveal-btn,
+  .spinner,
+  .results-cards-grid.is-flipping-in .result-card { animation: none !important; }
+}
+
 /* ── Glass Panel ─────────────────────────────────────────────── */
 .glass {
   background: var(--glass);
@@ -1032,18 +1059,21 @@ html.australia-mode body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  animation: flipIn 0.5s ease backwards;
 }
-.result-card:nth-child(1) { animation-delay: 0.05s; }
-.result-card:nth-child(2) { animation-delay: 0.10s; }
-.result-card:nth-child(3) { animation-delay: 0.15s; }
-.result-card:nth-child(4) { animation-delay: 0.20s; }
-.result-card:nth-child(5) { animation-delay: 0.25s; }
-.result-card:nth-child(6) { animation-delay: 0.30s; }
-.result-card:nth-child(7) { animation-delay: 0.35s; }
-.result-card:nth-child(8) { animation-delay: 0.40s; }
-.result-card:nth-child(9)  { animation-delay: 0.45s; }
-.result-card:nth-child(10) { animation-delay: 0.50s; }
+
+/* The flip belongs to the reveal, not to every render of a revealed round —
+   see render-results.js. Gating it on a class the grid only gets on a fresh
+   reveal is what stopped the results blinking out whenever an unrelated
+   `room-state` arrived (a join, a rename, a phone reconnecting).
+
+   `--card-index` comes from JS, so the stagger covers any number of voters.
+   Ten hand-written `nth-child` rules used to leave an eleventh card with no
+   delay at all. Capped at 600ms: past that the last card is still blank while
+   the room has moved on. */
+.results-cards-grid.is-flipping-in .result-card {
+  animation: flipIn 0.5s ease backwards;
+  animation-delay: min(calc((var(--card-index, 0) + 1) * 50ms), 600ms);
+}
 
 @keyframes flipIn {
   from { opacity:0; transform: rotateY(90deg) scale(0.8); }
