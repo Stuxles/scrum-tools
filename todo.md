@@ -1,12 +1,13 @@
 # 📋 TODO / Ideeënlijst
 
 Backlog van ideeën en verbeterpunten uit de codebase-reviews.
-**Gesorteerd op prioriteit:** functionaliteit op waarde, daarna technisch
-onderhoud. Afgeronde items staan onderaan.
+**Gesorteerd op prioriteit:** eerst functionaliteit op waarde, daarna
+technisch onderhoud, en binnen elk blok het zwaarste bovenaan. Elk item zegt
+zelf wat die prioriteit is en waarom. Afgeronde items staan onderaan.
 
-> De vier bugs uit de review van 3 september 2026 zijn opgelost en staan
-> onderaan bij **Afgerond**, elk met een regressietest in
-> `tests/bugfixes.test.js`.
+> De zeven punten uit de audit van 22 oktober 2026 zijn opgelost en staan
+> onderaan bij **Afgerond**. De vier bugs uit de review van 3 september 2026
+> daarvóór ook, elk met een regressietest in `tests/bugfixes.test.js`.
 
 ---
 
@@ -58,7 +59,31 @@ onderhoud. Afgeronde items staan onderaan.
 
 ## 🔧 Technisch
 
-### 5. Testdekking voor het stemmen zelf
+### 5. Geen plafond op rooms en deelnemers
+**Prioriteit: hangt af van blootstelling.** Op een LAN met het eigen team
+onschuldig; achter de nginx-opstelling uit de README, op een publiek domein, is
+dit het enige dat de server nog plat kan krijgen.
+
+- `create-room` vraagt niets: geen naam, geen login, geen bestaande room. Sinds
+  de audit leeft een room die niemand joint nog 30 minuten in plaats van 24 uur,
+  maar een stroom berichten kan nog altijd een vol grace-venster aan rooms
+  vasthouden. Het `shortcut:`-commentaar bij `scheduleEmptyRoomCleanup()` in
+  `src/utils/broadcast.js` benoemt precies dit.
+- Ook geen plafond op het aantal deelnemers per room. Minder dringend: daarvoor
+  is de room-code nodig, en die is 32^6.
+- Als dit opgepakt wordt: tellen per IP, niet één globaal maximum — een globaal
+  maximum laat één bezoeker iedereen buitensluiten. De socket-limiter (35/s)
+  helpt hier niet, want die telt per socket en een client opent er gewoon meer.
+- `CORS_ORIGIN` staat standaard op `*`, dus elke willekeurige webpagina kan dit
+  ook vanuit de browser van een teamlid doen.
+
+### 6. State overleeft geen herstart
+**Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
+
+- Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
+- **Bewuste trade-off:** de README verkoopt "geen database nodig" als feature. Alleen oppakken als dit in de praktijk stoort.
+
+### 7. Testdekking voor het stemmen zelf
 **Prioriteit: laag** — het gat dat de kaartdek-bug liet ontstaan is gedicht
 (`tests/bugfixes.test.js` dekt nu elk dektype, aangepaste dekken, een onbekend
 dektype en de ondergrens van 2 kaarten). Wat er nog niet los getest is:
@@ -70,34 +95,7 @@ dektype en de ondergrens van 2 kaarten). Wat er nog niet los getest is:
 - Deze paden gaan via `applyAutoReveal()` en delen dus het predicaat dat bij
   bug 2 is rechtgezet; ze zijn nu alleen indirect gedekt.
 
-### 6. State overleeft geen herstart
-**Waarde: afhankelijk van gebruik.** Alles staat in-memory, dus elke Docker-redeploy wist actieve sessies.
-
-- Optie: periodieke JSON-snapshot naar disk, inlezen bij opstarten.
-- **Bewuste trade-off:** de README verkoopt "geen database nodig" als feature. Alleen oppakken als dit in de praktijk stoort.
-
-### 7. Dode i18n-keys en CSS opruimen
-**Prioriteit: laag.** Puur onderhoud, geen zichtbaar effect.
-
-- Ongebruikte i18n-keys (in beide talen aanwezig, nergens aangeroepen):
-  `footer-text`, `voting-phase-waiting`, `btn-switch-to-spectator`,
-  `toast-room-not-found-generic`, `toast-rate-limit`, `toast-server-full`,
-  `toast-generic-error`, `story-btn-edit`, `claim-sm-btn`, `transfer-sm-btn`,
-  `toast-sm-claimed`, `toast-sm-transferred`, `options-theme-btn`.
-- Ongebruikte CSS-klassen: `badge`, `badge-amber`, `badge-green`, `badge-purple`,
-  `field-row`, `my-name-btn`, `spinner`, `sr-only`, `waiting-overlay`.
-- Positief punt uit dezelfde controle: `nl` en `en` hebben allebei exact 169
-  keys en lopen niet uit de pas, en elke `getElementById` in de frontend heeft
-  een bestaand element. Geen dubbele id's op enige pagina.
-
-### 8. Presenter-scherm: reveal-theater en grote-schermtest
-**Prioriteit: laag.** Twee dingen die overbleven na de code review van het presenter-scherm, geen van beide een bug.
-
-- **Geen omgekeerde kaarten tijdens het stemmen.** `presenter.html` toont nu alleen een voortgangsbalk zolang er niet onthuld is. Klassieke planning-poker-schermen laten per deelnemer een omgekeerde kaart zien die bij reveal omdraait — dat maakt het moment zelf theatraler. Zou in `presenter-page.js` + `render-voting.js`-achtige component moeten, met een flip-animatie op `#results-cards-grid` zoals `render-results.js` al deels heeft (`flipIn`, aangezet via de klasse `is-flipping-in` die de grid bij een verse reveal krijgt).
-- **Nooit getest op een echt 1920×1080-scherm.** Alleen 1100×800, 1500×850 en 1600×900 in de browser-pane geverifieerd. De resultaatkaarten hebben een `clamp()`-bovengrens van 132px breed (`public/style.css`, `.presenter-page .result-card-face`) — op een grotere/verdere TV kunnen ze relatief klein ogen. Bovengrens optrekken of schalen op `vw` in plaats van een vast plafond, ná een echte test op zo'n scherm.
-- **Lege kolom bij een lege room.** De deelnemerskolom krijgt `hidden` zolang er niemand is, maar houdt zijn baan in het grid bezet. Bewust: zo verspringt er niets zodra de eerste deelnemer binnenkomt. Alleen aanpakken als die lege strook echt stoort.
-
-### 9. Kleine inconsistenties uit de flikker-review
+### 8. Kleine inconsistenties uit de flikker-review
 **Prioriteit: laag.** Niets hiervan is zichtbaar voor een gebruiker vandaag,
 maar het zijn wel plekken waar twee stukken code het niet met elkaar eens zijn.
 
@@ -113,9 +111,76 @@ maar het zijn wel plekken waar twee stukken code het niet met elkaar eens zijn.
   optiesmenu maar hield zijn naam, wat bij het zoeken naar de knop (en bij het
   schrijven van een test) de verkeerde kant op wijst.
 
+### 9. Dode i18n-keys en CSS opruimen
+**Prioriteit: laag.** Puur onderhoud, geen zichtbaar effect.
+
+- Ongebruikte i18n-keys (in beide talen aanwezig, nergens aangeroepen):
+  `footer-text`, `voting-phase-waiting`, `btn-switch-to-spectator`,
+  `toast-room-not-found-generic`, `toast-rate-limit`, `toast-server-full`,
+  `toast-generic-error`, `story-btn-edit`, `claim-sm-btn`, `transfer-sm-btn`,
+  `toast-sm-claimed`, `toast-sm-transferred`, `options-theme-btn`.
+- Ongebruikte CSS-klassen: `badge`, `badge-amber`, `badge-green`, `badge-purple`,
+  `field-row`, `my-name-btn`, `spinner`, `sr-only`, `waiting-overlay`.
+- Positief punt uit dezelfde controle: `nl` en `en` hebben allebei exact 169
+  keys en lopen niet uit de pas, en elke `getElementById` in de frontend heeft
+  een bestaand element. Geen dubbele id's op enige pagina.
+
+### 10. Presenter-scherm: reveal-theater en grote-schermtest
+**Prioriteit: laag.** Twee dingen die overbleven na de code review van het presenter-scherm, geen van beide een bug.
+
+- **Geen omgekeerde kaarten tijdens het stemmen.** `presenter.html` toont nu alleen een voortgangsbalk zolang er niet onthuld is. Klassieke planning-poker-schermen laten per deelnemer een omgekeerde kaart zien die bij reveal omdraait — dat maakt het moment zelf theatraler. Zou in `presenter-page.js` + `render-voting.js`-achtige component moeten, met een flip-animatie op `#results-cards-grid` zoals `render-results.js` al deels heeft (`flipIn`, aangezet via de klasse `is-flipping-in` die de grid bij een verse reveal krijgt).
+- **Nooit getest op een echt 1920×1080-scherm.** Alleen 1100×800, 1500×850 en 1600×900 in de browser-pane geverifieerd. De resultaatkaarten hebben een `clamp()`-bovengrens van 132px breed (`public/style.css`, `.presenter-page .result-card-face`) — op een grotere/verdere TV kunnen ze relatief klein ogen. Bovengrens optrekken of schalen op `vw` in plaats van een vast plafond, ná een echte test op zo'n scherm.
+- **Lege kolom bij een lege room.** De deelnemerskolom krijgt `hidden` zolang er niemand is, maar houdt zijn baan in het grid bezet. Bewust: zo verspringt er niets zodra de eerste deelnemer binnenkomt. Alleen aanpakken als die lege strook echt stoort.
+
 ---
 
 ## ✅ Afgerond
+
+### De zeven punten uit de audit van 22 oktober 2026
+
+Audit van de hele repo (PR #30). Vier bugs, daarna de duplicatie die er twee
+van had laten passeren. De vier bugs zijn eerst tegen echte sockets
+gereproduceerd en daarna opnieuw gedraaid; zes nieuwe tests, 143 → 149.
+
+- ✅ **Een verlaten room bleef 24 uur in het geheugen staan.** De
+  30-minutentimer bestond al, maar werd alleen bij een disconnect opgezet — en
+  een room die niemand joint heeft niemand die hem verlaat. Een aangemaakte en
+  daarna in de steek gelaten room viel dus door naar de 24-uursopruiming.
+  `create-room` vraagt geen enkele vorm van authenticatie, dus dat was een dag
+  geheugen per bericht. De timer en zijn `isRoomUnattended()` staan nu in
+  `utils/broadcast.js`, naast de twee andere room-timers, en `handleCreateRoom`
+  zet hem op; joinen of er een scherm op richten wist hem al. Het restrisico
+  staat als `shortcut:` in de code en als #5 hierboven.
+- ✅ **De room openen in een tweede tabblad zei tegen het eerste dat het
+  gekickt was.** Het reconnect-token staat in localStorage, en dat delen alle
+  tabbladen van één browser. Het pad voor een token-botsing wordt daardoor veel
+  vaker bereikt door een tweede tabblad dan door de haperende reconnect waar het
+  voor geschreven is. Dat de stoel meeverhuist klopt; het rode "je bent uit de
+  room verwijderd" niet. Dat pad stuurt nu `reason: 'superseded'` en de client
+  toont een neutrale melding. Een echte kick stuurt nog steeds geen reason en
+  leest precies als voorheen.
+- ✅ **Een eigen kaart met de naam `toString` sloopte de hele
+  verdelingsgrafiek.** Kaartwaarden zijn sleutels in de telling, en op een gewone
+  `{}` vindt `dist['toString'] || 0` de geërfde functie in plaats van 0. De telling
+  wordt een string, `Math.max` over de waarden wordt `NaN`, en dat bepaalde de
+  breedte van *élke* balk, niet alleen die ene. Een kaart `__proto__` verdween
+  juist helemaal uit de grafiek. Beide tellingen zijn nu `Object.create(null)`,
+  net als `src/store/rooms.js` al was.
+- ✅ **`update-name` struikelde over een naam die geen tekst was.**
+  `(name || '').trim()` dwingt niets af, dus `{ name: 42 }` gooide een
+  `TypeError` die de safe dispatch tot "er ging iets mis" maakte. `cleanText()`
+  is nu geëxporteerd en wordt door `update-name` én `update-story-title`
+  gebruikt: drie schrijfwijzen van één regel teruggebracht tot één.
+- ✅ **De regel voor wie een ronde tegenhoudt stond twee keer**, één keer per
+  kant, allebei met een commentaar dat de twee het eens moesten blijven. Precies
+  zo kwam de offline-check indertijd in maar één van de twee terecht. De
+  serverkopie is weg: `autoReveal.js` importeert `eligibleVoters()` uit
+  `public/js/utils/stats.js`, zoals `config.js` al uit `public/` importeerde.
+- ✅ **Disconnect liep de roomlijst twee keer af**, één keer voor schermen en
+  één keer voor stoelen. Nu één keer, waarbij `Set.delete` meteen de test is of
+  de socket überhaupt een scherm was. Met een test voor het enige geval dat
+  daardoor stuk kon: een socket die zowel scherm als stoel is.
+- ✅ **Ongebruikte import** (`releaseWakeLock` in `room-page.js`) verwijderd.
 
 ### De vier bugs uit de review van 3 september 2026
 
