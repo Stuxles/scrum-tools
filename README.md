@@ -80,6 +80,46 @@ docker-compose up -d --build
 | `PARTICIPANT_GRACE_MINUTES` | `10` | How long a disconnected participant's seat (vote, role, spectator state) is kept before being fully removed from a room. Covers brief network drops — e.g. a phone locking its screen — so reconnecting within this window restores everything instead of starting over. Identity is proven by a per-session reconnect token stored in the browser, not by the display name. |
 | `NODE_ENV` | *(unset)* | Standard Node/Express environment flag. Set to `production` in Docker (see `Dockerfile`/`docker-compose.yml`); not required for local development. |
 
+### Behind nginx
+
+This is a WebSocket app, so the proxy needs the upgrade headers. Without them
+the handshake fails and Socket.IO silently falls back to HTTP long-polling —
+it still works, but it is chattier and drops more easily:
+
+```nginx
+location / {
+    proxy_pass         http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+
+    # Required for WebSockets. Without these, Socket.IO falls back to polling.
+    proxy_set_header   Upgrade    $http_upgrade;
+    proxy_set_header   Connection "upgrade";
+
+    proxy_set_header   Host              $host;
+    proxy_set_header   X-Real-IP         $remote_addr;
+    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+
+    # Socket.IO pings every 25s, so nginx's 60s default is enough — but a
+    # round sitting idle on a presenter screen should not be cut off either.
+    proxy_read_timeout 1h;
+    proxy_send_timeout 1h;
+}
+```
+
+With that in place, set `TRUST_PROXY=true` (see the table above) so the REST
+rate limiter sees real client IPs instead of collapsing your whole office into
+one bucket.
+
+**Restarting the proxy drops every connection in the room at once** — all the
+phones and the presenter screen, inside the same second. The rooms themselves
+survive, because they live in the Node process and that one is untouched;
+everyone's client reconnects on its own and picks up its seat, vote and role
+from the reconnect token. Prefer `nginx -s reload` for a config change, which
+is gentler on long-lived connections than a service restart or a package
+upgrade. Restarting **the app** is the one that costs you: all room state is
+in memory and a redeploy wipes every active session.
+
 ---
 
 ## 🧪 Automated Testing (`npm test`)
