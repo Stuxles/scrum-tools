@@ -5,7 +5,7 @@ import { Server } from 'socket.io';
 import { io as ioc } from 'socket.io-client';
 import { initBroadcast } from '../src/utils/broadcast.js';
 import { initSocketHandlers } from '../src/socket/index.js';
-import { expireParticipantGrace } from '../src/socket/handlers/connectionHandlers.js';
+import { expireParticipantGrace, runMasterHandover } from '../src/socket/handlers/connectionHandlers.js';
 import { rooms, deleteRoom } from '../src/store/rooms.js';
 
 describe('Personal reconnect grace (disconnected participants keep their seat)', () => {
@@ -255,6 +255,115 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     const newBobId = voter.id;
     expireParticipantGrace(roomId, newBobId);
     assert.ok(rooms[roomId].participants[newBobId], 'connected participant must survive an expiry call');
+  });
+
+  test('a room-wide outage does not hand the host role to whoever reconnects first', async () => {
+    // Straight from a production log: one blip took out every phone and the
+    // presenter screen inside the same second, and the room was down for 61
+    // seconds. The 30s claim window fired mid-outage with nobody connected to
+    // promote, gave up, and from then on the role went to the first phone
+    // back — overwriting masterToken, so the real host, returning three
+    // seconds later with that token, was demoted for good. Twice in one
+    // session. The claim now stays open while there is nobody to hand it to.
+    const hessel = createClient();
+    const bas    = createClient();
+    await waitForConnect(hessel);
+    await waitForConnect(bas);
+
+    hessel.emit('create-room', { name: 'globe', deckType: 'standard' });
+    const { roomId } = await onceEvent(hessel, 'room-created');
+    hessel.emit('join-room', { roomId, name: 'Hessel' });
+    const hesselJoined = await onceEvent(hessel, 'room-joined');
+    bas.emit('join-room', { roomId, name: 'Bas' });
+    const basJoined = await onceEvent(bas, 'room-joined');
+
+    assert.strictEqual(hesselJoined.isMaster, true, 'first joiner is host');
+    const hesselSeat = hessel.id;
+
+    // The outage: Hessel first (so a claim is opened), Bas right behind him.
+    hessel.disconnect();
+    await new Promise(r => setTimeout(r, 80));
+    bas.disconnect();
+    await new Promise(r => setTimeout(r, 120));
+    assert.ok(rooms[roomId].masterGraceTimer, 'a claim is open on the host seat');
+
+    // The window closes with nobody around — fired directly rather than
+    // waiting out the real 30 seconds.
+    runMasterHandover(ioServer, roomId, hesselSeat);
+    assert.ok(rooms[roomId].masterGraceTimer, 'the claim is held open, not dropped');
+    assert.strictEqual(rooms[roomId].masterId, hesselSeat, 'the seat is still the host\'s');
+
+    // Bas is back first. He must not inherit the room.
+    const basBack = createClient();
+    await waitForConnect(basBack);
+    basBack.emit('join-room', { roomId, name: 'Bas', sessionToken: basJoined.sessionToken });
+    const basResult = await onceEvent(basBack, 'room-joined');
+    assert.strictEqual(basResult.isMaster, false, 'reconnecting first does not make you the host');
+
+    // Hessel follows, holding the master token.
+    const hesselBack = createClient();
+    await waitForConnect(hesselBack);
+    hesselBack.emit('join-room', { roomId, name: 'Hessel', sessionToken: hesselJoined.sessionToken });
+    const hesselResult = await onceEvent(hesselBack, 'room-joined');
+    assert.strictEqual(hesselResult.isMaster, true, 'the token holder gets their room back');
+    assert.strictEqual(rooms[roomId].masterId, hesselBack.id);
+    assert.strictEqual(rooms[roomId].masterGraceTimer, null, 'the claim is settled');
+  });
+
+  test('the claim window still promotes someone who is actually present', async () => {
+    const master = createClient();
+    const voter  = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    const masterSeat = master.id;
+    const promoted = onceEvent(voter, 'became-master');
+    master.disconnect();
+    await new Promise(r => setTimeout(r, 120));
+
+    runMasterHandover(ioServer, roomId, masterSeat);
+    await promoted;
+    assert.strictEqual(rooms[roomId].masterId, voter.id, 'the one who is there takes over');
+    assert.strictEqual(rooms[roomId].masterGraceTimer, null, 'and the claim is closed');
+  });
+
+  test('an expiring host seat hands the role on instead of leaving the room hostless', async () => {
+    // The claim outliving the 30s window makes this the moment it finally
+    // ends, so it is also the moment the role has to move. Same rule as a
+    // kick: straight to the first connected survivor.
+    const master = createClient();
+    const voter  = createClient();
+    await waitForConnect(master);
+    await waitForConnect(voter);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+    voter.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(voter, 'room-joined');
+
+    const masterSeat = master.id;
+    const promoted = onceEvent(voter, 'became-master');
+
+    rooms[roomId].participants[masterSeat].connected = false;
+    expireParticipantGrace(roomId, masterSeat);
+    await promoted;
+
+    assert.strictEqual(rooms[roomId].participants[masterSeat], undefined, 'the seat is gone');
+    assert.strictEqual(rooms[roomId].masterId, voter.id, 'the role went to the survivor');
+    assert.strictEqual(
+      rooms[roomId].masterToken,
+      rooms[roomId].participants[voter.id].sessionToken,
+      'and the token moved with it, so the new host keeps it across a reconnect',
+    );
   });
 
   test('the Scrum Master can kick an away participant immediately, bypassing the grace window', async () => {

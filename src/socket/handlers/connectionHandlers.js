@@ -1,5 +1,5 @@
 import { rooms, canControlRoom } from '../../store/rooms.js';
-import { broadcastRoomState, closeRoom } from '../../utils/broadcast.js';
+import { broadcastRoomState, closeRoom, emitToSocket } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
 import { applyAutoReveal }    from '../../utils/autoReveal.js';
 import { RECONNECT_GRACE_PERIOD_MS, PARTICIPANT_GRACE_MS, MASTER_GRACE_MS } from '../../config.js';
@@ -100,11 +100,102 @@ export function expireParticipantGrace(roomId, socketId) {
   const p = room.participants[socketId];
   if (!p || p.connected !== false) return; // already reconnected or already gone
 
+  const name      = p.name || socketId;
+  const wasMaster = room.masterId === socketId;
+
   delete room.participants[socketId];
   if (room.participantGraceTimers) delete room.participantGraceTimers[socketId];
+
+  // This is where an absent host's claim finally runs out, so it is also
+  // where the role has to move on. `handleJoinRoom` no longer hands the seat
+  // to whoever reconnects first while the host is merely away — their claim
+  // outlives the 30s promotion timer now — which leaves this expiry as the
+  // moment the room would otherwise be left hostless with nobody joining to
+  // notice. Same rule as a kick: straight to the first connected survivor.
+  if (wasMaster) {
+    if (room.masterGraceTimer) {
+      clearTimeout(room.masterGraceTimer);
+      room.masterGraceTimer = null;
+    }
+    const heir = Object.values(room.participants).find(q => q.connected !== false);
+    room.masterId    = heir ? heir.id : null;
+    room.masterName  = heir ? heir.name : '';
+    room.masterToken = heir ? (heir.sessionToken || null) : null;
+    if (heir) {
+      emitToSocket(heir.id, 'became-master');
+      info('grace', `SM ${name} verlopen in ${roomId}; rol naar ${heir.name}`);
+    }
+  }
+
   applyAutoReveal(room);
   broadcastRoomState(roomId);
-  info('grace', `${socketId} verwijderd uit room ${roomId} na ${PARTICIPANT_GRACE_MS / 60000}m zonder reconnect.`);
+  info('grace', `${name} verwijderd uit room ${roomId} na ${PARTICIPANT_GRACE_MS / 60000}m zonder reconnect.`);
+}
+
+/**
+ * Hold the departed host's claim on the role, and hand it on once there is
+ * somebody present to hand it to.
+ *
+ * `room.masterGraceTimer` is what `handleJoinRoom` reads as "the host's claim
+ * is still open", so the timer has to stay armed for as long as that is true.
+ * It used to give up on the one firing that found nobody connected — which is
+ * the normal state during an outage that took out the whole room, phones and
+ * screen together. The claim then evaporated 30 seconds in, and the role went
+ * to whichever phone reconnected first; the real host, back moments later with
+ * the master token, had already been written out of it. Re-arming instead
+ * means a reconnect race no longer decides who runs the session.
+ *
+ * It does not reserve the seat forever: the claim ends when the host's own
+ * participant grace window runs out (`expireParticipantGrace` hands the role
+ * on from there), when the room is deleted (`deleteRoom` clears this timer),
+ * or on this firing, as soon as anyone is actually around to take over.
+ *
+ * @param {import('socket.io').Server} io
+ * @param {string} roomId
+ * @param {string} masterSocketId  The seat the claim belongs to.
+ */
+function scheduleMasterHandover(io, roomId, masterSocketId) {
+  const room = rooms[roomId];
+  if (!room) return;
+  if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);
+  room.masterGraceTimer = setTimeout(() => runMasterHandover(io, roomId, masterSocketId), MASTER_GRACE_MS);
+}
+
+/**
+ * The claim window closing: hand the role to someone present, or hold it open
+ * for another window if there is nobody. Exported for direct unit testing
+ * (avoids waiting out the real 30s timer), same as `expireParticipantGrace`.
+ *
+ * @param {import('socket.io').Server} io
+ * @param {string} roomId
+ * @param {string} masterSocketId
+ */
+export function runMasterHandover(io, roomId, masterSocketId) {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  // Clear the handle first, on every path. A fired-but-still-set timer
+  // reads as truthy forever, which permanently armed the reclaim branch
+  // in handleJoinRoom and permanently disabled its auto-master fallback.
+  room.masterGraceTimer = null;
+
+  if (room.masterId !== masterSocketId) return;
+
+  const rem = Object.entries(room.participants).filter(([, p]) => p.connected !== false);
+  if (rem.length === 0) {
+    // Nobody to hand it to. Keep the claim open rather than dropping it: an
+    // empty room is nobody's to run, and the host may still be mid-blip.
+    scheduleMasterHandover(io, roomId, masterSocketId);
+    return;
+  }
+
+  const [newMasterId, newMaster] = rem[0];
+  room.masterId    = newMasterId;
+  room.masterName  = newMaster.name;
+  room.masterToken = newMaster.sessionToken || null;
+  io.to(newMasterId).emit('became-master', {});
+  broadcastRoomState(roomId);
+  info('master-grace', `Assigned new Scrum Master (${newMasterId}) after ${MASTER_GRACE_MS / 1000}s timeout in room ${roomId}`);
 }
 
 /**
@@ -163,31 +254,7 @@ export function handleDisconnect(io, socket) {
     // A pending voter leaving may complete the round
     applyAutoReveal(room);
 
-    if (wasMaster) {
-      if (room.masterGraceTimer) clearTimeout(room.masterGraceTimer);
-      room.masterGraceTimer = setTimeout(() => {
-        const r = rooms[roomId];
-        if (!r) return;
-
-        // Clear the handle first, on every path. A fired-but-still-set timer
-        // reads as truthy forever, which permanently armed the reclaim branch
-        // in handleJoinRoom and permanently disabled its auto-master fallback.
-        r.masterGraceTimer = null;
-
-        if (r.masterId !== socket.id) return;
-
-        const rem = Object.entries(r.participants).filter(([, p]) => p.connected !== false);
-        if (rem.length === 0) return; // nobody to hand it to; next joiner takes it
-
-        const [newMasterId, newMaster] = rem[0];
-        r.masterId    = newMasterId;
-        r.masterName  = newMaster.name;
-        r.masterToken = newMaster.sessionToken || null;
-        io.to(newMasterId).emit('became-master', {});
-        broadcastRoomState(roomId);
-        info('master-grace', `Assigned new Scrum Master (${newMasterId}) after ${MASTER_GRACE_MS / 1000}s timeout in room ${roomId}`);
-      }, MASTER_GRACE_MS);
-    }
+    if (wasMaster) scheduleMasterHandover(io, roomId, socket.id);
 
     broadcastRoomState(roomId);
   }

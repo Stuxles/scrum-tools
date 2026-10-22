@@ -153,6 +153,26 @@ regressietests in `tests/bugfixes.test.js`.
 
 ### Eerder
 
+- **De host verloor zijn rol aan wie het eerst terugverbond** — uit een echte
+  log van 21 oktober: één blip haalde binnen dezelfde seconde alle telefoons
+  én het presenter-scherm weg, en de room lag 61 seconden stil. Het
+  30-seconden claim-venster (`masterGraceTimer`) ging af terwijl er niemand
+  online was, vond niemand om de rol aan te geven en gaf hem op. Vanaf dat
+  moment pakte de eerste telefoon die terugkwam de rol — en omdat dat ook
+  `masterToken` overschrijft, was de echte host, drie seconden later terug mét
+  die token, definitief gedegradeerd. Twee keer in één sessie. Het venster
+  wordt nu opnieuw opgezet zolang er niemand is om aan over te dragen, zodat
+  een reconnect-race niet meer bepaalt wie de sessie leidt. Het gat dat dat
+  achterlaat is ook gedicht: loopt de stoel van een afwezige host alsnog af,
+  dan gaat de rol direct naar de eerste verbonden achterblijver, net als bij
+  een kick. Gereproduceerd, daarna opgelost, met drie regressietests in
+  `tests/participantGrace.test.js` (via een geëxporteerde `runMasterHandover()`,
+  zodat de echte 30 seconden niet uitgezeten hoeven te worden).
+- **`[grace]` logde een socket-id in plaats van een naam** — `[disconnect]`
+  toont al wie wegging, maar bij het verlopen van een stoel tien minuten later
+  stond er alleen `eOw2bITUb4GNNe67AACw verwijderd uit room …`, wat betekende
+  terugscrollen naar de bijbehorende `[connect]` om te zien wie dat was.
+
 - **Presenter-scherm knipperde bij elke room-state** — gereproduceerd in een
   echte browser: `renderResults()` gooide de resultaatkaarten weg en bouwde ze
   opnieuw op bij *elke* `room-state`, en een nieuwe `.result-card` begint zijn

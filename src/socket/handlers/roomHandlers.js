@@ -198,21 +198,37 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
     info('reconnect', `${name} zit weer in room ${roomId} (stem/rol hersteld)`);
   }
 
-  // Assign master, or hand the role back to the departed SM within the 30s
-  // grace window — token match only.
+  // Assign master, or hand the role back to the departed SM while their claim
+  // on it is still open — `room.masterGraceTimer` is what says so, and it now
+  // stays armed for as long as that holds (see `scheduleMasterHandover`). It
+  // used to be dropped on the first firing that found nobody connected, which
+  // is the normal state during an outage that takes out the whole room at
+  // once. The claim then vanished 30 seconds in and the role fell to whichever
+  // phone reconnected first — and since taking it overwrites `masterToken`,
+  // the real host, back three seconds later with the token in hand, was
+  // demoted for good. Twice in one session, on a 61-second outage.
+  //
+  // The reclaim itself no longer insists on the timer: a token that matches
+  // `masterToken` while the seat is empty is proof enough, and that cannot be
+  // someone else's seat — a handover rewrites `masterToken` with it.
   const reclaimsMaster = Boolean(token) && room.masterToken === token;
   const masterEntry    = room.masterId ? room.participants[room.masterId] : null;
   // No reachable SM: either the seat is gone entirely (grace expired, kicked)
-  // or its owner is away with no grace timer left to bring them back.
+  // or its owner is away, with or without a claim still running.
   const masterAbsent   = !masterEntry || masterEntry.connected === false;
 
-  if (room.masterGraceTimer && reclaimsMaster) {
-    clearTimeout(room.masterGraceTimer);
-    room.masterGraceTimer = null;
+  if (reclaimsMaster && masterAbsent) {
+    if (room.masterGraceTimer) {
+      clearTimeout(room.masterGraceTimer);
+      room.masterGraceTimer = null;
+    }
     room.masterId   = socket.id;
     room.masterName = name;
     info('master-grace', `${name} reclaimed SM by session token in room ${roomId}`);
   } else if (!room.masterId || (masterAbsent && !room.masterGraceTimer)) {
+    // Nobody is holding the role open: the room never had a host, or the one
+    // it had left no claim behind (they were alone when they went, so the
+    // room was simply abandoned) or has since lost it.
     room.masterId    = socket.id;
     room.masterName  = name;
     room.masterToken = token; // finalised below once the token is minted

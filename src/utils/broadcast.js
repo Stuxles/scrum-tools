@@ -45,6 +45,19 @@ export function broadcastRoomState(roomId) {
 }
 
 /**
+ * Send one event to one socket, for callers that hold no `io` reference of
+ * their own — a grace timer firing minutes after the handler that armed it,
+ * for instance. A socket that is already gone is simply skipped.
+ *
+ * @param {string} socketId
+ * @param {string} event
+ * @param {object} [payload]
+ */
+export function emitToSocket(socketId, event, payload = {}) {
+  _io?.sockets.sockets.get(socketId)?.emit(event, payload);
+}
+
+/**
  * Tell any presenter screens still watching that the room is gone, then
  * delete it. Participants need no such signal — a room is only ever removed
  * once they have all disconnected — but a display can still be attached when
