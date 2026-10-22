@@ -15,6 +15,19 @@ Examples:
 - `fix(reconnect): close race where a flaky reconnect creates a duplicate row`
 - `chore(deps): bump express to 5.2.1`
 
+### Language: English
+
+Commit messages and pull requests — titles and bodies both — are written in
+**English**. That is the repo's history and the part a stranger reads first.
+
+The app itself stays as it is: the UI is bilingual through
+`public/js/utils/i18n.js` (NL/EN, 169 keys each), `todo.md` is Dutch, and the
+server log messages are a mix. None of that changes; this rule is about
+`git log` and the PR list only.
+
+`.github/pull_request_template.md` is the layout to fill in — what changed and
+why, how it was verified, what is left open.
+
 ### Why this actually matters here (not just tidiness)
 
 The `version-bump` job in `.github/workflows/docker-build.yml` reads commit messages on every merge to `main` and auto-bumps `package.json`'s version:
