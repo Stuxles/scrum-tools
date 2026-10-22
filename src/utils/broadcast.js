@@ -5,7 +5,7 @@
 
 import { rooms, sanitizeRoom, deleteRoom } from '../store/rooms.js';
 import { info } from './logger.js';
-import { ROOM_CLEANUP_INTERVAL_MS } from '../config.js';
+import { ROOM_CLEANUP_INTERVAL_MS, RECONNECT_GRACE_PERIOD_MS } from '../config.js';
 
 /** @type {import('socket.io').Server} */
 let _io;
@@ -99,4 +99,48 @@ export function scheduleRoomCleanup(roomId) {
     closeRoom(roomId);
     info('cleanup', `Room ${roomId} verwijderd na 24u inactiviteit.`);
   }, ROOM_CLEANUP_INTERVAL_MS);
+}
+
+/**
+ * Nobody is looking at this room — no connected participant and no presenter
+ * screen. Both have to be gone: a team at lunch with the screen still up has
+ * not abandoned the room.
+ *
+ * @param {import('../store/rooms.js').Room} room
+ * @returns {boolean}
+ */
+export function isRoomUnattended(room) {
+  if (room.displays?.size) return false;
+  return Object.values(room.participants).every(p => p.connected === false);
+}
+
+/**
+ * Arm the empty-room timer. Re-checks on firing rather than trusting the
+ * state at scheduling time, because anyone — participant or screen — may
+ * have come back in the meantime.
+ *
+ * Armed from two places, and the second one is the point: a brand new room is
+ * unattended by definition, since creating a room no longer seats anyone (the
+ * creator usually lands on the presenter screen, which attaches over a *new*
+ * connection). Without this, a room nobody ever joined fell through to the
+ * 24h cleanup alone and sat in memory for a full day. `create-room` needs no
+ * authentication, so that was a day of memory per message.
+ *
+ * shortcut: a flood can still hold one grace window's worth of rooms (~30
+ * minutes). Add a per-IP room cap if this is ever exposed to untrusted
+ * traffic rather than a team LAN or an authenticated reverse proxy.
+ *
+ * @param {string} roomId
+ */
+export function scheduleEmptyRoomCleanup(roomId) {
+  const room = rooms[roomId];
+  if (!room) return;
+  if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
+
+  room.disconnectTimer = setTimeout(() => {
+    const r = rooms[roomId];
+    if (!r || !isRoomUnattended(r)) return;
+    closeRoom(roomId);
+    info('cleanup', `Room ${roomId} deleted after ${RECONNECT_GRACE_PERIOD_MS / 60000}m inactivity.`);
+  }, RECONNECT_GRACE_PERIOD_MS);
 }

@@ -550,6 +550,64 @@ describe('Socket.IO Real-time End-to-End Tests', () => {
     assert.ok(!DECKS.fibonacci.includes('999'), 'the shared preset stays untouched');
   });
 
+  test('a room nobody joins is put on the 30m empty-room timer, not left to the 24h one', async () => {
+    // create-room needs no authentication, so a room that is created and then
+    // abandoned used to sit in memory for a full day: the empty-room timer was
+    // only ever armed on disconnect, and nobody had ever been there to leave.
+    const client = createClient();
+    await waitForConnect(client);
+
+    client.emit('create-room', { deckType: 'standard', roomName: 'Abandoned' });
+    const { roomId } = await onceEvent(client, 'room-created');
+
+    assert.ok(rooms[roomId].disconnectTimer, 'empty-room timer armed at creation');
+    assert.ok(rooms[roomId].cleanupTimer, '24h cleanup still armed too');
+
+    // Joining is what says the room is in use — it clears the timer again.
+    client.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(client, 'room-joined');
+    assert.strictEqual(rooms[roomId].disconnectTimer, undefined, 'joining cancels the countdown');
+  });
+
+  test('a presenter screen attaching also cancels the empty-room countdown', async () => {
+    const client = createClient();
+    await waitForConnect(client);
+
+    client.emit('create-room', { deckType: 'standard', roomName: 'Projected' });
+    const { roomId } = await onceEvent(client, 'room-created');
+    assert.ok(rooms[roomId].disconnectTimer, 'armed at creation');
+
+    const screen = createClient();
+    await waitForConnect(screen);
+    screen.emit('watch-room', { roomId });
+    await onceEvent(screen, 'room-watched');
+
+    assert.strictEqual(rooms[roomId].disconnectTimer, undefined, 'a watching screen keeps the room');
+  });
+
+  test('update-name survives a payload where the name is not a string', async () => {
+    // `(name || '').trim()` threw a TypeError on a number — caught by the safe
+    // dispatch, so the client only saw the generic "something went wrong".
+    const client = createClient();
+    await waitForConnect(client);
+
+    client.emit('create-room', { deckType: 'standard', roomName: 'Names' });
+    const { roomId } = await onceEvent(client, 'room-created');
+    client.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(client, 'room-joined');
+
+    const errored = onceEvent(client, 'error');
+    const renamed = onceEvent(client, 'room-state');
+    client.emit('update-name', { roomId, name: 42 });
+
+    const outcome = await Promise.race([
+      errored.then(() => 'error'),
+      renamed.then(() => 'renamed'),
+    ]);
+    assert.strictEqual(outcome, 'renamed', 'coerced instead of throwing');
+    assert.strictEqual(rooms[roomId].participants[client.id].name, '42');
+  });
+
   test('a whitespace-only name falls back to Anoniem instead of an empty label', async () => {
     const client = createClient();
     await waitForConnect(client);

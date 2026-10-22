@@ -11,9 +11,12 @@
  * Everyone who is part of the current round — the denominator behind every
  * "x / y gestemd" on screen, and the population the consensus check runs over.
  *
- * Mirrors `eligibleVoters()` in src/utils/autoReveal.js, which decides when a
- * round auto-reveals. The two must agree: if the server reveals at 3/3 while
- * the bar still reads 3/4, the screen contradicts itself.
+ * The server imports this too (src/utils/autoReveal.js), which is the point:
+ * it decides when a round auto-reveals while this draws the progress bar, and
+ * if the server revealed at 3/3 while the bar still read 3/4 the screen would
+ * contradict itself. It used to be a hand-kept copy on each side, and they
+ * drifted — the offline-voter check was added to one of them only. Keep this
+ * function free of browser APIs so it can stay shared.
  *
  * Spectators opted out. Someone offline who never voted drops out too — their
  * seat is held for the grace window, but a round cannot wait on someone who
@@ -52,7 +55,13 @@ export function computeVoteStats(participants) {
         : sorted[Math.floor(sorted.length / 2)])
     : null;
 
-  const dist = {};
+  // Null-prototype, for the same reason the rooms store is (src/store/rooms.js):
+  // the key here is a card value, and a custom deck allows any label up to ten
+  // characters. On a plain `{}`, `dist['toString'] || 0` finds the inherited
+  // function instead of 0, the count becomes a string, and `Math.max` over the
+  // values turns into NaN — which sized *every* bar in the chart, not just that
+  // card's. A card called `__proto__` vanished from the chart instead.
+  const dist = Object.create(null);
   for (const v of votes) dist[v] = (dist[v] || 0) + 1;
   const maxCount = Math.max(...Object.values(dist), 1);
 

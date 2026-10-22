@@ -4,6 +4,7 @@ import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
   broadcastRoomState,
   scheduleRoomCleanup,
+  scheduleEmptyRoomCleanup,
 } from '../../utils/broadcast.js';
 import { applyAutoReveal }     from '../../utils/autoReveal.js';
 import { generateSessionToken, normalizeSessionToken } from '../../utils/sessionToken.js';
@@ -14,12 +15,18 @@ import { info }                from '../../utils/logger.js';
  * picks the whitespace string *before* trimming it and yields '', leaving a
  * participant with a blank display name.
  *
+ * `String(raw ?? '')` before anything else is what makes this safe on a
+ * payload field that is not text. `update-name` hand-rolled its own version
+ * without it and threw a TypeError on `{ name: 42 }` — caught by the safe
+ * dispatch, so the client just got "something went wrong". Exported so every
+ * handler that cleans a user-supplied string shares one rule.
+ *
  * @param {unknown} raw
  * @param {number}  maxLength
  * @param {string}  fallback
  * @returns {string}
  */
-function cleanText(raw, maxLength, fallback) {
+export function cleanText(raw, maxLength, fallback) {
   return String(raw ?? '').trim().slice(0, maxLength) || fallback;
 }
 
@@ -79,6 +86,10 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   };
 
   scheduleRoomCleanup(roomId);
+  // A new room is unattended until someone joins or points a screen at it,
+  // and both of those clear this timer. Without it an abandoned room waited
+  // out the 24h cleanup instead of the 30m one. See scheduleEmptyRoomCleanup.
+  scheduleEmptyRoomCleanup(roomId);
   socket.emit('room-created', { roomId });
   info('room', `${roomId} aangemaakt (${rooms[roomId].name})`);
 }
@@ -182,9 +193,15 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
     if (oldParticipant.connected !== false) {
       // Old socket hasn't been marked away yet — evict it so it can't
       // coexist with the new connection holding the same token.
+      //
+      // `superseded` is what separates this from a real kick. The token lives
+      // in localStorage, which every tab of one browser shares, so the most
+      // common way to land here is not a flaky reconnect at all: it is opening
+      // the room in a second tab. The seat moving is right; telling the first
+      // tab it was removed from the room by the host is not.
       const oldSocket = io.sockets.sockets.get(oldId);
       if (oldSocket) {
-        oldSocket.emit('kicked', {});
+        oldSocket.emit('kicked', { reason: 'superseded' });
         oldSocket.disconnect(true);
       }
     }

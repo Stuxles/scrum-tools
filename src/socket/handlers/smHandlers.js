@@ -3,6 +3,7 @@ import { DECKS, DECK_MIN_CARDS, parseCustomDeck } from '../../config.js';
 import { broadcastRoomState } from '../../utils/broadcast.js';
 import { normalizeRoomId }  from '../../utils/roomId.js';
 import { applyAutoReveal, countVoters } from '../../utils/autoReveal.js';
+import { cleanText }      from './roomHandlers.js';
 import { info }             from '../../utils/logger.js';
 
 /** @param {import('socket.io').Socket} socket */
@@ -67,7 +68,7 @@ export function handleUpdateName(socket, { roomId, name }) {
   const room = rooms[roomId];
   if (!room || !room.participants[socket.id]) return;
 
-  name = (name || '').trim().slice(0, 40);
+  name = cleanText(name, 40, '');
   if (!name) return;
 
   // Keep masterName in sync when the SM renames themselves
@@ -99,6 +100,6 @@ export function handleUpdateStoryTitle(socket, { roomId, storyTitle }) {
   const room = rooms[roomId];
   if (!room || !canControlRoom(room, socket.id)) return;
 
-  room.storyTitle = String(storyTitle || '').trim().slice(0, 200);
+  room.storyTitle = cleanText(storyTitle, 200, '');
   broadcastRoomState(roomId);
 }

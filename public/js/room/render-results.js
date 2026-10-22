@@ -138,7 +138,7 @@ function renderStats(container, room) {
   }
 
   if (nonNum.length > 0) {
-    const counts  = {};
+    const counts  = Object.create(null); // card labels as keys — see computeVoteStats
     for (const v of nonNum) counts[v] = (counts[v] || 0) + 1;
     const display = Object.entries(counts).map(([v, c]) => `${escHtml(v)}×${c}`).join(' ');
     html += `

@@ -229,6 +229,45 @@ describe('Personal reconnect grace (disconnected participants keep their seat)',
     assert.strictEqual(rooms[roomId].participants[oldBobId], undefined, 'old entry cleaned up');
   });
 
+  test('the evicted connection is told its seat moved, not that it was kicked', async () => {
+    // The reconnect token lives in localStorage, which every tab of one
+    // browser shares — so the common way to hit this path is opening the room
+    // in a second tab, not a flaky reconnect. The first tab has to say so
+    // rather than claim the host removed it.
+    const master = createClient();
+    const tabA   = createClient();
+    await waitForConnect(master);
+    await waitForConnect(tabA);
+
+    master.emit('create-room', { name: 'SM', deckType: 'standard' });
+    const { roomId } = await onceEvent(master, 'room-created');
+    master.emit('join-room', { roomId, name: 'SM' });
+    await onceEvent(master, 'room-joined');
+
+    tabA.emit('join-room', { roomId, name: 'Sam' });
+    const { sessionToken } = await onceEvent(tabA, 'room-joined');
+
+    const kickedPromise = onceEvent(tabA, 'kicked');
+    const tabB = createClient();
+    await waitForConnect(tabB);
+    tabB.emit('join-room', { roomId, name: 'Sam', sessionToken });
+    await onceEvent(tabB, 'room-joined');
+
+    const payload = await kickedPromise;
+    assert.strictEqual(payload?.reason, 'superseded', 'the first tab is told its seat moved');
+
+    // A real kick stays a real kick: no reason, so the client keeps the
+    // "you were removed" wording.
+    const victim = createClient();
+    await waitForConnect(victim);
+    victim.emit('join-room', { roomId, name: 'Bob' });
+    await onceEvent(victim, 'room-joined');
+
+    const realKick = onceEvent(victim, 'kicked');
+    master.emit('kick-user', { roomId, targetId: victim.id });
+    assert.strictEqual((await realKick)?.reason, undefined, 'a host kick carries no reason');
+  });
+
   test('expireParticipantGrace removes a still-away participant but leaves a reconnected one alone', async () => {
     const master = createClient();
     const voter = createClient();

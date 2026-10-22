@@ -345,4 +345,33 @@ describe('Presenter screens (displays are not participants)', () => {
     assert.strictEqual(rooms[roomId].masterId, alice.id, 'still the host');
     assert.strictEqual(rooms[roomId].participants[alice.id].vote, '5', 'vote intact');
   });
+
+  test('a connection that is both a screen and a seat is detached from both on disconnect', async () => {
+    // Nothing in the UI does this — joining and watching are separate pages —
+    // but one socket can emit both, and disconnect cleanup now finds screens
+    // and seats in a single pass over the rooms instead of two. This is the
+    // case that pass has to keep handling.
+    const creator = createClient();
+    await waitForConnect(creator);
+    const roomId = await makeRoom(creator);
+
+    const both = createClient();
+    await waitForConnect(both);
+    both.emit('join-room', { roomId, name: 'Alice' });
+    await onceEvent(both, 'room-joined');
+    both.emit('watch-room', { roomId });
+    await onceEvent(both, 'room-watched');
+
+    // socket.io-client clears `.id` on disconnect, so hold on to it first.
+    const bothId = both.id;
+    assert.ok(rooms[roomId].displays.has(bothId), 'attached as a screen');
+    assert.ok(rooms[roomId].participants[bothId], 'and holds a seat');
+
+    both.disconnect();
+    await new Promise(r => setTimeout(r, 150));
+
+    assert.strictEqual(rooms[roomId].displays.has(bothId), false, 'screen detached');
+    assert.strictEqual(rooms[roomId].participants[bothId].connected, false, 'seat marked away');
+    assert.ok(rooms[roomId].disconnectTimer, 'room is unattended, so the countdown is running');
+  });
 });

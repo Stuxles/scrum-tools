@@ -1,8 +1,8 @@
 import { rooms, canControlRoom } from '../../store/rooms.js';
-import { broadcastRoomState, closeRoom, emitToSocket } from '../../utils/broadcast.js';
+import { broadcastRoomState, emitToSocket, isRoomUnattended, scheduleEmptyRoomCleanup } from '../../utils/broadcast.js';
 import { normalizeRoomId }    from '../../utils/roomId.js';
 import { applyAutoReveal }    from '../../utils/autoReveal.js';
-import { RECONNECT_GRACE_PERIOD_MS, PARTICIPANT_GRACE_MS, MASTER_GRACE_MS } from '../../config.js';
+import { PARTICIPANT_GRACE_MS, MASTER_GRACE_MS } from '../../config.js';
 import { info }                from '../../utils/logger.js';
 
 /**
@@ -53,39 +53,6 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
   // The remaining voters may now all have voted
   applyAutoReveal(room);
   broadcastRoomState(roomId);
-}
-
-/**
- * Nobody is looking at this room any more — no connected participant and no
- * presenter screen. Both have to be gone: a team at lunch with the screen
- * still up has not abandoned the room.
- *
- * @param {import('../../store/rooms.js').Room} room
- * @returns {boolean}
- */
-function isRoomUnattended(room) {
-  if (room.displays?.size) return false;
-  return Object.values(room.participants).every(p => p.connected === false);
-}
-
-/**
- * Arm the empty-room timer. Re-checks on firing rather than trusting the
- * state at scheduling time, because anyone — participant or screen — may
- * have come back in the meantime.
- *
- * @param {string} roomId
- */
-function scheduleEmptyRoomCleanup(roomId) {
-  const room = rooms[roomId];
-  if (!room) return;
-  if (room.disconnectTimer) clearTimeout(room.disconnectTimer);
-
-  room.disconnectTimer = setTimeout(() => {
-    const r = rooms[roomId];
-    if (!r || !isRoomUnattended(r)) return;
-    closeRoom(roomId);
-    info('cleanup', `Room ${roomId} deleted after ${RECONNECT_GRACE_PERIOD_MS / 60000}m inactivity.`);
-  }, RECONNECT_GRACE_PERIOD_MS);
 }
 
 /**
@@ -208,18 +175,19 @@ export function handleDisconnect(io, socket) {
   // joined a room (someone opening a page and leaving again) still log the id.
   let wasInAnyRoom = false;
 
-  // Presenter screens: no seat to keep, nothing to grace. Just detach, and
-  // start the empty-room countdown if that was the last thing watching.
+  // One pass over the rooms, not two. Finding which rooms a socket belongs to
+  // means walking every room either way, and screens and seats were being
+  // looked for in separate sweeps of the same list.
   for (const [roomId, room] of Object.entries(rooms)) {
-    if (!room.displays?.has(socket.id)) continue;
+    // Presenter screens: no seat to keep, nothing to grace. Just detach, and
+    // start the empty-room countdown if that was the last thing watching.
+    // `Set.delete` reports whether it was there, so this is the test too.
+    if (room.displays?.delete(socket.id)) {
+      wasInAnyRoom = true;
+      info('disconnect', `presenter-scherm ← ${roomId} (${room.displays.size} over)`);
+      if (isRoomUnattended(room)) scheduleEmptyRoomCleanup(roomId);
+    }
 
-    wasInAnyRoom = true;
-    room.displays.delete(socket.id);
-    info('disconnect', `presenter-scherm ← ${roomId} (${room.displays.size} over)`);
-    if (isRoomUnattended(room)) scheduleEmptyRoomCleanup(roomId);
-  }
-
-  for (const [roomId, room] of Object.entries(rooms)) {
     const participant = room.participants[socket.id];
     if (!participant) continue;
 
