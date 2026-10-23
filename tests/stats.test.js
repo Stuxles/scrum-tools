@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeVoteStats, isUnanimousConsensus } from '../public/js/utils/stats.js';
+import { computeVoteStats, isUnanimousConsensus, isTotalDisagreement } from '../public/js/utils/stats.js';
 
 describe('computeVoteStats (pure vote-statistics calculation)', () => {
   test('no participants: everything is empty/null', () => {
@@ -133,5 +133,29 @@ describe('isUnanimousConsensus', () => {
 
   test('false when there are no eligible voters', () => {
     assert.strictEqual(isUnanimousConsensus([], 0), false);
+  });
+});
+
+describe('isTotalDisagreement', () => {
+  test('true when three voters all picked a different card', () => {
+    assert.strictEqual(isTotalDisagreement(['1', '3', '8'], 3), true);
+  });
+
+  test('false when two of them agree', () => {
+    assert.strictEqual(isTotalDisagreement(['1', '3', '3'], 3), false);
+  });
+
+  test('false for two voters — disagreeing in a pair is not news', () => {
+    assert.strictEqual(isTotalDisagreement(['1', '8'], 2), false);
+  });
+
+  test('false when not everyone eligible voted yet', () => {
+    assert.strictEqual(isTotalDisagreement(['1', '3', '8'], 4), false);
+  });
+
+  test('never true at the same time as consensus', () => {
+    const votes = ['5', '5', '5'];
+    assert.strictEqual(isUnanimousConsensus(votes, 3), true);
+    assert.strictEqual(isTotalDisagreement(votes, 3), false);
   });
 });

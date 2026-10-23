@@ -7,15 +7,17 @@
  */
 
 import { toast }                    from '../utils/toast.js';
-import { getSavedName, saveName, getSessionToken, setSessionToken, getSpectatorPref, setSpectatorPref, copyToClipboard, requestWakeLock, getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
+import { getSavedName, saveName, getSessionToken, setSessionToken, getSpectatorPref, setSpectatorPref, copyToClipboard, requestWakeLock, getConfettiEnabled, setConfettiEnabled, getChaosEnabled, setChaosEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { onThemeChange }            from '../theme.js';
 import { t }                        from '../utils/i18n.js';
 import { renderVoting, selectVoteCard } from './render-voting.js';
 import { renderResults }            from './render-results.js';
 import { renderParticipants }       from './render-users.js';
 import { initQrModule }             from './qr-module.js';
-import { computeVoteStats, isUnanimousConsensus, eligibleVoters } from '../utils/stats.js';
-import { celebrateConsensus }       from '../utils/confetti.js';
+import { computeVoteStats, isUnanimousConsensus, isTotalDisagreement, eligibleVoters } from '../utils/stats.js';
+import { celebrateConsensus, celebrateChaos } from '../utils/confetti.js';
+import { onKonami }                from '../utils/konami.js';
+import { spinDeck }                from './slot-machine.js';
 
 export function initRoomPage(socket, urlRoomId) {
   if (!urlRoomId) {
@@ -55,6 +57,8 @@ export function initRoomPage(socket, urlRoomId) {
   const optionsVersion   = document.getElementById('options-version');
   const confettiToggle   = document.getElementById('confetti-toggle');
   const confettiLabel    = document.getElementById('confetti-label');
+  const chaosToggle      = document.getElementById('chaos-toggle');
+  const chaosLabel       = document.getElementById('chaos-label');
   const australiaToggle  = document.getElementById('australia-toggle');
   const australiaLabel   = document.getElementById('australia-label');
 
@@ -390,8 +394,13 @@ export function initRoomPage(socket, urlRoomId) {
       if (!hasCelebratedThisReveal) {
         const eligible = eligibleVoters(room.participants);
         const stats    = computeVoteStats(room.participants);
-        if (isUnanimousConsensus(stats.votes, eligible.length) && getConfettiEnabled()) {
-          celebrateConsensus();
+        // Two extremes, two preferences: the confetti is on by default, the
+        // alarm for the opposite extreme is something you switch on yourself.
+        if (isUnanimousConsensus(stats.votes, eligible.length)) {
+          if (getConfettiEnabled()) celebrateConsensus();
+        } else if (isTotalDisagreement(stats.votes, eligible.length) && getChaosEnabled()) {
+          celebrateChaos();
+          toast(t('toast-total-disagreement'));
         }
         hasCelebratedThisReveal = true; // only ever attempt once per reveal, win or lose
       }
@@ -508,6 +517,21 @@ export function initRoomPage(socket, urlRoomId) {
     });
   }
 
+  // ── Disagreement alarm ────────────────────────────────────────────────────
+  function renderChaosToggle() {
+    if (!chaosLabel) return;
+    const enabled = getChaosEnabled();
+    chaosLabel.textContent = enabled ? t('confetti-on') : t('confetti-off');
+    if (chaosToggle) chaosToggle.setAttribute('aria-pressed', String(enabled));
+  }
+  renderChaosToggle();
+  if (chaosToggle) {
+    chaosToggle.addEventListener('click', () => {
+      setChaosEnabled(!getChaosEnabled());
+      renderChaosToggle();
+    });
+  }
+
   // ── Australia mode ("everything upside down") ───────────────────────────────
   function renderAustraliaToggle() {
     if (!australiaLabel) return;
@@ -524,6 +548,14 @@ export function initRoomPage(socket, urlRoomId) {
       renderAustraliaToggle();
     });
   }
+
+  // ── Konami code → slot machine ────────────────────────────
+  // Not gated on the confetti preference: that one covers surprises the app
+  // springs on you, and this one you typed ten keys to get.
+  onKonami(() => {
+    if (!currentRoom || currentRoom.revealed) return;
+    spinDeck(cardDeck, currentRoom.deck, (card) => toast(t('toast-jackpot', { card })));
+  });
 
   // ── Join flow ─────────────────────────────────────────────────────────────
   // `?autojoin=1` comes from creating a room while choosing to play on this
@@ -616,6 +648,7 @@ export function initRoomPage(socket, urlRoomId) {
     if (currentRoom) applyRoomState(currentRoom);
     renderVersion();
     renderConfettiToggle();
+    renderChaosToggle();
     renderAustraliaToggle();
   });
 }

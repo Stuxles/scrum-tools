@@ -34,6 +34,11 @@ a facilitator actually needs: *is there disagreement?*
 - Note: the i18n keys `stat-consensus`, `stat-most-picked` and
   `stat-total-votes` were once meant for this but never used; they have since
   been cleaned up and will have to be added again if this gets built.
+- Partly covered at the extremes already: a round where every voter picked a
+  different card toasts "everybody picked a different card" on reveal
+  (`isTotalDisagreement` in `public/js/utils/stats.js`, behind its own
+  opt-in setting in the options modal). What is still open is the middle ground — a measured
+  spread in the stats panel — and the outlier marks in the grid.
 
 ### 3. Per-round timer
 **Value: medium.** The classic planning-poker feature for keeping discussions
