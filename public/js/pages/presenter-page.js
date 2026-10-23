@@ -14,11 +14,11 @@
 import { toast }              from '../utils/toast.js';
 import { t }                  from '../utils/i18n.js';
 import { onThemeChange }      from '../theme.js';
-import { getConfettiEnabled, setConfettiEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
+import { getConfettiEnabled, setConfettiEnabled, getChaosEnabled, setChaosEnabled, getAustraliaModeEnabled, setAustraliaModeEnabled, applyAustraliaMode } from '../utils/helpers.js';
 import { renderParticipants } from '../room/render-users.js';
 import { renderResults }      from '../room/render-results.js';
-import { computeVoteStats, isUnanimousConsensus, eligibleVoters } from '../utils/stats.js';
-import { celebrateConsensus } from '../utils/confetti.js';
+import { computeVoteStats, isUnanimousConsensus, isTotalDisagreement, eligibleVoters } from '../utils/stats.js';
+import { celebrateConsensus, celebrateChaos } from '../utils/confetti.js';
 
 export function initPresenterPage(socket, urlRoomId) {
   if (!urlRoomId) {
@@ -69,6 +69,8 @@ export function initPresenterPage(socket, urlRoomId) {
   const optionsVersion  = document.getElementById('options-version');
   const confettiToggle  = document.getElementById('confetti-toggle');
   const confettiLabel   = document.getElementById('confetti-label');
+  const chaosToggle     = document.getElementById('chaos-toggle');
+  const chaosLabel      = document.getElementById('chaos-label');
   const australiaToggle = document.getElementById('australia-toggle');
   const australiaLabel  = document.getElementById('australia-label');
 
@@ -253,8 +255,13 @@ export function initPresenterPage(socket, urlRoomId) {
       // the room from seeing it, and vice versa.
       if (!hasCelebratedThisReveal) {
         const stats = computeVoteStats(room.participants);
-        if (isUnanimousConsensus(stats.votes, voters.length) && getConfettiEnabled()) {
-          celebrateConsensus();
+        // Two extremes, two preferences: the confetti is on by default, the
+        // alarm for the opposite extreme is something you switch on yourself.
+        if (isUnanimousConsensus(stats.votes, voters.length)) {
+          if (getConfettiEnabled()) celebrateConsensus();
+        } else if (isTotalDisagreement(stats.votes, voters.length) && getChaosEnabled()) {
+          celebrateChaos();
+          toast(t('toast-total-disagreement'), 'info', 5000);
         }
         hasCelebratedThisReveal = true; // only ever attempt once per reveal
       }
@@ -307,6 +314,15 @@ export function initPresenterPage(socket, urlRoomId) {
     renderConfettiToggle();
   });
 
+  function renderChaosToggle() {
+    chaosLabel.textContent = getChaosEnabled() ? t('confetti-on') : t('confetti-off');
+    chaosToggle.setAttribute('aria-pressed', String(getChaosEnabled()));
+  }
+  chaosToggle.addEventListener('click', () => {
+    setChaosEnabled(!getChaosEnabled());
+    renderChaosToggle();
+  });
+
   function renderAustraliaToggle() {
     australiaLabel.textContent = getAustraliaModeEnabled() ? t('confetti-on') : t('confetti-off');
     australiaToggle.setAttribute('aria-pressed', String(getAustraliaModeEnabled()));
@@ -319,6 +335,7 @@ export function initPresenterPage(socket, urlRoomId) {
   });
 
   renderConfettiToggle();
+  renderChaosToggle();
   renderAustraliaToggle();
 
   let appVersion = null;
@@ -334,6 +351,7 @@ export function initPresenterPage(socket, urlRoomId) {
     if (currentRoom) applyRoomState(currentRoom);
     renderSide();
     renderConfettiToggle();
+    renderChaosToggle();
     renderAustraliaToggle();
     renderVersion();
   });

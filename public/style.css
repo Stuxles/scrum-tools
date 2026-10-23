@@ -405,6 +405,28 @@ label.field-label {
   100% { transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rotate)); opacity: 0; }
 }
 
+/* Emoji particles carry a glyph instead of a colour, so they size themselves. */
+.confetti-particle.is-emoji {
+  width: auto;
+  height: auto;
+  font-size: 1.5rem;
+  line-height: 1;
+  background: none;
+}
+
+/* ── Konami slot machine (room/slot-machine.js) ──────────────── */
+/* While the labels are rattling they are not this card's value, so a tap
+   would vote for something other than what it shows. */
+.card-deck.is-spinning { pointer-events: none; }
+.vote-card.is-jackpot {
+  animation: jackpot-pop 0.7s ease-out 2;
+  border-color: var(--purple-400);
+}
+@keyframes jackpot-pop {
+  0%, 100% { transform: none; }
+  50%      { transform: scale(1.12); }
+}
+
 /* ── Create-room mode picker (where the creator will be voting) ─── */
 .create-mode { display: flex; flex-direction: column; gap: 8px; }
 .create-mode-option {

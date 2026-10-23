@@ -57,6 +57,19 @@ export const getConfettiEnabled = () => localStorage.getItem(LS_CONFETTI) !== 'f
 export const setConfettiEnabled = (enabled) => localStorage.setItem(LS_CONFETTI, enabled ? 'true' : 'false');
 
 /**
+ * localStorage key for the disagreement alarm: the burst and toast when every
+ * voter picked a different card. Opt-in, unlike the confetti, because it fires
+ * on the rounds that are already tense.
+ */
+export const LS_CHAOS = 'scrum_chaos_enabled';
+
+/** @returns {boolean} Defaults to false when never set -- you switch this one on. */
+export const getChaosEnabled = () => localStorage.getItem(LS_CHAOS) === 'true';
+
+/** @param {boolean} enabled */
+export const setChaosEnabled = (enabled) => localStorage.setItem(LS_CHAOS, enabled ? 'true' : 'false');
+
+/**
  * localStorage key for "Australia mode" — a purely cosmetic, personal
  * per-device preference that flips the whole page 180°. The class is set by
  * an early inline <script> in the <head> of every page (matching the theme

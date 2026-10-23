@@ -77,6 +77,9 @@ export const translations = {
     'confetti-btn-title': 'Confetti aan/uit',
     'confetti-on': 'Aan',
     'confetti-off': 'Uit',
+    'options-label-chaos': 'Onenigheid-alarm',
+    'options-sub-chaos': 'Kabaal als niemand het eens is 🔥',
+    'chaos-btn-title': 'Onenigheid-alarm aan/uit',
     'options-label-australia': 'Australië-modus',
     'options-sub-australia': 'Alles ondersteboven 🇦🇺',
     'australia-btn-title': 'Australië-modus aan/uit',
@@ -127,6 +130,8 @@ export const translations = {
 
     // ── Dynamic & Toasts ──
     'toast-new-round': 'Nieuwe ronde gestart 🔄',
+    'toast-total-disagreement': '🔥 Niemand is het eens. Niemand. Succes met de discussie.',
+    'toast-jackpot': '🎰 De automaat zegt: {card}',
     'toast-code-copied': 'Code "{id}" gekopieerd!',
     'toast-min-cards': 'Voer minimaal 2 kaarten in',
     'toast-name-empty': 'Naam mag niet leeg zijn',
@@ -262,6 +267,9 @@ export const translations = {
     'confetti-btn-title': 'Toggle confetti',
     'confetti-on': 'On',
     'confetti-off': 'Off',
+    'options-label-chaos': 'Disagreement Alarm',
+    'options-sub-chaos': 'Noise when nobody agrees 🔥',
+    'chaos-btn-title': 'Toggle the disagreement alarm',
     'options-label-australia': 'Australia Mode',
     'options-sub-australia': 'Everything upside down 🇦🇺',
     'australia-btn-title': 'Toggle Australia mode',
@@ -310,6 +318,8 @@ export const translations = {
 
     // ── Dynamic & Toasts ──
     'toast-new-round': 'New round started 🔄',
+    'toast-total-disagreement': '🔥 Nobody agrees. Nobody. Good luck with that.',
+    'toast-jackpot': '🎰 The machine says: {card}',
     'toast-code-copied': 'Code "{id}" copied!',
     'toast-min-cards': 'Please enter at least 2 cards',
     'toast-name-empty': 'Name cannot be empty',

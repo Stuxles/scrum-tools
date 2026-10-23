@@ -83,3 +83,23 @@ export function isUnanimousConsensus(votes, eligibleCount) {
     && votes.length === eligibleCount
     && new Set(votes).size === 1;
 }
+
+/**
+ * The opposite extreme: every eligible voter voted and no two of them picked
+ * the same card. The mirror image of consensus, so it is mutually exclusive
+ * with it for any count above one.
+ *
+ * Requires at least 3 voters. With two people "all different" is simply
+ * disagreement, which happens constantly and says nothing; from three up,
+ * everyone landing on a different card is the round that actually needs a
+ * conversation.
+ *
+ * @param {string[]} votes         The `votes` array from computeVoteStats.
+ * @param {number}   eligibleCount Total non-spectator participants in the round.
+ * @returns {boolean}
+ */
+export function isTotalDisagreement(votes, eligibleCount) {
+  return eligibleCount >= 3
+    && votes.length === eligibleCount
+    && new Set(votes).size === eligibleCount;
+}

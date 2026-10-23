@@ -1,6 +1,6 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI, getAustraliaModeEnabled, setAustraliaModeEnabled, LS_AUSTRALIA, getSpectatorPref, setSpectatorPref } from '../public/js/utils/helpers.js';
+import { escHtml, getConfettiEnabled, setConfettiEnabled, LS_CONFETTI, getChaosEnabled, setChaosEnabled, LS_CHAOS, getAustraliaModeEnabled, setAustraliaModeEnabled, LS_AUSTRALIA, getSpectatorPref, setSpectatorPref } from '../public/js/utils/helpers.js';
 
 describe('escHtml (XSS-prevention HTML escaping)', () => {
   test('escapes all special characters', () => {
@@ -117,6 +117,53 @@ describe('Australia mode preference (getAustraliaModeEnabled/setAustraliaModeEna
     assert.strictEqual(getAustraliaModeEnabled(), false);
     store.set(LS_AUSTRALIA, 'garbage');
     assert.strictEqual(getAustraliaModeEnabled(), false, 'defensive: fail closed (right-side up) on an unexpected stored value');
+  });
+});
+
+describe('Disagreement alarm preference (getChaosEnabled/setChaosEnabled)', () => {
+  let originalLocalStorage;
+  let store;
+
+  beforeEach(() => {
+    originalLocalStorage = globalThis.localStorage;
+    store = new Map();
+    globalThis.localStorage = {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+    };
+  });
+
+  afterEach(() => {
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  test('defaults to disabled when never set \u2014 the opposite of the confetti', () => {
+    assert.strictEqual(getChaosEnabled(), false);
+    assert.strictEqual(getConfettiEnabled(), true, 'the two extremes do not share a default');
+  });
+
+  test('setChaosEnabled(true) persists and getChaosEnabled reflects it', () => {
+    setChaosEnabled(true);
+    assert.strictEqual(store.get(LS_CHAOS), 'true');
+    assert.strictEqual(getChaosEnabled(), true);
+  });
+
+  test('setChaosEnabled(false) after being on turns it back off', () => {
+    setChaosEnabled(true);
+    setChaosEnabled(false);
+    assert.strictEqual(getChaosEnabled(), false);
+  });
+
+  test('opt-in semantics: only the literal string "true" enables it', () => {
+    store.set(LS_CHAOS, 'garbage');
+    assert.strictEqual(getChaosEnabled(), false, 'defensive: fail closed (quiet) on an unexpected stored value');
+  });
+
+  test('it has a key of its own, so it cannot be flipped by the confetti toggle', () => {
+    assert.notStrictEqual(LS_CHAOS, LS_CONFETTI);
+    setChaosEnabled(true);
+    setConfettiEnabled(false);
+    assert.strictEqual(getChaosEnabled(), true);
   });
 });
 
