@@ -17,6 +17,11 @@
   --glass-border: rgba(255,255,255,0.08);
   --glass-hover:  rgba(255,255,255,0.07);
 
+  /* Accent ramp. --accent-rgb carries the same colour as --purple-500 in
+     channel form, so the rgba() tints scattered through the sheet follow a
+     theme swap instead of staying purple. */
+  --accent-rgb: 124,58,237;
+
   /* Purple palette */
   --purple-900: #2e1065;
   --purple-700: #4c1d95;
@@ -34,8 +39,8 @@
   /* Semantic */
   --accent:       var(--purple-500);
   --accent-light: var(--purple-300);
-  --accent-glow:  rgba(124,58,237,0.25);
-  --accent-glow2: rgba(124,58,237,0.12);
+  --accent-glow:  rgba(var(--accent-rgb),0.25);
+  --accent-glow2: rgba(var(--accent-rgb),0.12);
 
   /* Text */
   --text-100: #f8fafc;
@@ -85,7 +90,7 @@ body {
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(124,58,237,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(var(--accent-rgb),0.18) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 80% 100%, rgba(79,70,229,0.14) 0%, transparent 60%),
     var(--bg-base);
   pointer-events: none;
@@ -261,9 +266,9 @@ label.field-label {
   font-weight: 600;
 }
 .badge-purple {
-  background: rgba(124,58,237,0.2);
+  background: rgba(var(--accent-rgb),0.2);
   color: var(--purple-300);
-  border: 1px solid rgba(124,58,237,0.3);
+  border: 1px solid rgba(var(--accent-rgb),0.3);
 }
 .badge-green {
   background: rgba(52,211,153,0.15);
@@ -300,7 +305,7 @@ label.field-label {
 }
 .toast-error   { background: rgba(248,113,113,0.2); border: 1px solid rgba(248,113,113,0.4); color: #fca5a5; }
 .toast-success { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; }
-.toast-info    { background: rgba(124,58,237,0.2);  border: 1px solid rgba(124,58,237,0.35); color: var(--purple-200); }
+.toast-info    { background: rgba(var(--accent-rgb),0.2);  border: 1px solid rgba(var(--accent-rgb),0.35); color: var(--purple-200); }
 
 @keyframes toastIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(10px); } }
@@ -443,7 +448,7 @@ label.field-label {
 .create-mode-option:hover { background: var(--glass-hover); }
 .create-mode-option:has(input:checked) {
   border-color: var(--purple-400);
-  background: rgba(124,58,237,0.12);
+  background: rgba(var(--accent-rgb),0.12);
 }
 .create-mode-option input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; flex: 0 0 auto; }
 .create-mode-title { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-100); }
@@ -506,7 +511,7 @@ html.australia-mode body {
   justify-content: center;
   font-size: 2.2rem;
   margin-bottom: 20px;
-  box-shadow: 0 8px 32px var(--accent-glow), 0 0 0 1px rgba(124,58,237,0.3);
+  box-shadow: 0 8px 32px var(--accent-glow), 0 0 0 1px rgba(var(--accent-rgb),0.3);
   animation: logoPulse 3s ease-in-out infinite;
 }
 @keyframes logoPulse {
@@ -646,8 +651,8 @@ html.australia-mode body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(124,58,237,0.15);
-  border: 1px solid rgba(124,58,237,0.3);
+  background: rgba(var(--accent-rgb),0.15);
+  border: 1px solid rgba(var(--accent-rgb),0.3);
   border-radius: var(--r-full);
   padding: 3px 10px;
   font-size: 0.8rem;
@@ -658,7 +663,7 @@ html.australia-mode body {
   transition: background 0.2s;
   font-family: 'Courier New', monospace;
 }
-.room-code-pill:hover { background: rgba(124,58,237,0.25); }
+.room-code-pill:hover { background: rgba(var(--accent-rgb),0.25); }
 
 .header-right {
   display: flex;
@@ -799,11 +804,11 @@ html.australia-mode body {
   color: var(--text-700);
 }
 .participant-status.revealed-vote {
-  background: rgba(124,58,237,0.2);
+  background: rgba(var(--accent-rgb),0.2);
   color: var(--purple-300);
   font-weight: 700;
   font-size: 0.72rem;
-  border: 1px solid rgba(124,58,237,0.3);
+  border: 1px solid rgba(var(--accent-rgb),0.3);
 }
 
 .participant-item .kick-btn,
@@ -893,7 +898,7 @@ html.australia-mode body {
 .vote-card:hover:not(.selected):not(.disabled) {
   border-color: var(--purple-400);
   transform: translateY(-6px) scale(1.04);
-  box-shadow: 0 12px 30px rgba(124,58,237,0.3);
+  box-shadow: 0 12px 30px rgba(var(--accent-rgb),0.3);
   color: var(--text-100);
 }
 .vote-card:hover:not(.selected):not(.disabled)::before { opacity: 0.15; }
@@ -902,7 +907,7 @@ html.australia-mode body {
   border-color: var(--purple-400);
   color: var(--text-100);
   transform: translateY(-10px) scale(1.08);
-  box-shadow: 0 16px 40px rgba(124,58,237,0.4), 0 0 0 3px rgba(124,58,237,0.25);
+  box-shadow: 0 16px 40px rgba(var(--accent-rgb),0.4), 0 0 0 3px rgba(var(--accent-rgb),0.25);
 }
 .vote-card.selected::before { opacity: 0.5; }
 
@@ -952,14 +957,14 @@ html.australia-mode body {
   gap: 8px;
   padding: 3px 10px;
   border-radius: var(--r-full);
-  background: rgba(124,58,237,0.12);
-  border: 1px solid rgba(124,58,237,0.25);
+  background: rgba(var(--accent-rgb),0.12);
+  border: 1px solid rgba(var(--accent-rgb),0.25);
   transition: border-color 0.2s ease, background 0.2s ease;
   margin-left: 6px;
 }
 .header-story-banner:focus-within {
   border-color: var(--purple-400);
-  background: rgba(124,58,237,0.18);
+  background: rgba(var(--accent-rgb),0.18);
 }
 .story-banner-label {
   font-size: 0.75rem;
@@ -1037,8 +1042,8 @@ html.australia-mode body {
   gap: 20px;
   padding: 28px 32px;
   border-radius: var(--r-xl);
-  background: rgba(124,58,237,0.08);
-  border: 1px solid rgba(124,58,237,0.25);
+  background: rgba(var(--accent-rgb),0.08);
+  border: 1px solid rgba(var(--accent-rgb),0.25);
   max-width: 520px;
   width: 100%;
 }
@@ -1114,7 +1119,7 @@ html.australia-mode body {
   font-size: 1.4rem;
   font-weight: 800;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(124,58,237,0.35);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb),0.35);
   position: relative;
   overflow: hidden;
 }
@@ -1284,7 +1289,7 @@ html.australia-mode body {
 
 @keyframes revealPulse {
   0%,100% { box-shadow: 0 6px 24px var(--accent-glow); }
-  50%      { box-shadow: 0 6px 36px rgba(124,58,237,0.45); }
+  50%      { box-shadow: 0 6px 36px rgba(var(--accent-rgb),0.45); }
 }
 
 .deck-selector-section { display: flex; flex-direction: column; gap: 8px; }
@@ -1511,7 +1516,7 @@ html.australia-mode body {
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
 
 /* ── Selection ───────────────────────────────────────────────── */
-::selection { background: rgba(124,58,237,0.4); color: #fff; }
+::selection { background: rgba(var(--accent-rgb),0.4); color: #fff; }
 
 /* ════════════════════════════════════════════════════════════════
    LIGHT MODE
@@ -1531,8 +1536,8 @@ html.australia-mode body {
   --text-500: #9ca3af;
   --text-700: #e5e7eb;
 
-  --accent-glow:  rgba(124,58,237,0.12);
-  --accent-glow2: rgba(124,58,237,0.07);
+  --accent-glow:  rgba(var(--accent-rgb),0.12);
+  --accent-glow2: rgba(var(--accent-rgb),0.07);
 
   --shadow-sm:   0 2px 8px rgba(0,0,0,0.08);
   --shadow-md:   0 8px 32px rgba(0,0,0,0.10);
@@ -1562,8 +1567,8 @@ html.australia-mode body {
 }
 [data-theme="light"] .participant-item:hover { background: rgba(0,0,0,0.04); }
 [data-theme="light"] .room-code-pill {
-  background: rgba(124,58,237,0.09);
-  border-color: rgba(124,58,237,0.2);
+  background: rgba(var(--accent-rgb),0.09);
+  border-color: rgba(var(--accent-rgb),0.2);
 }
 [data-theme="light"] .my-name-btn {
   background: rgba(0,0,0,0.05);
@@ -1585,18 +1590,18 @@ html.australia-mode body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 [data-theme="light"] .vote-card:hover:not(.selected):not(.disabled) {
-  box-shadow: 0 12px 30px rgba(124,58,237,0.18);
+  box-shadow: 0 12px 30px rgba(var(--accent-rgb),0.18);
 }
 [data-theme="light"] .result-card-face {
-  box-shadow: 0 8px 24px rgba(124,58,237,0.18);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb),0.18);
 }
 [data-theme="light"] .results-stats {
   background: rgba(255,255,255,0.8);
 }
 [data-theme="light"] .dist-bar-track { background: rgba(0,0,0,0.06); }
 [data-theme="light"] .presenter-banner {
-  background: rgba(124,58,237,0.06);
-  border-color: rgba(124,58,237,0.18);
+  background: rgba(var(--accent-rgb),0.06);
+  border-color: rgba(var(--accent-rgb),0.18);
 }
 [data-theme="light"] .modal-overlay { background: rgba(244,245,251,0.75); }
 [data-theme="light"] .modal-box {
@@ -1638,6 +1643,48 @@ html.australia-mode body {
 [data-theme="light"] .panel-title { color: #9ca3af; }
 [data-theme="light"] .sm-section-title { color: #9ca3af; }
 [data-theme="light"] .phase-subtitle { color: #9ca3af; }
+
+/* ════════════════════════════════════════════════════════════════
+   CORAL MODE
+   Activated by data-theme="coral" on <html>
+
+   A dark theme like the default, so it only moves the hue: warm slate
+   instead of near-black, coral instead of purple. --accent-glow and
+   friends are left alone on purpose — they are declared on :root as
+   rgba(var(--accent-rgb),…), so redefining --accent-rgb here is enough
+   to carry every tint in the sheet across.
+════════════════════════════════════════════════════════════════ */
+[data-theme="coral"] {
+  --bg-base:    #23272e;
+  --bg-surface: #2b3037;
+  --bg-raised:  #333840;
+
+  --accent-rgb: 234,81,92;
+
+  --purple-900: #4a1118;
+  --purple-700: #7f2630;
+  --purple-600: #a3333f;
+  --purple-500: #ea515c;
+  --purple-400: #ef6f78;
+  --purple-300: #f4939a;
+  --purple-200: #f8b9bd;
+  --purple-100: #fde9ea;
+
+  --indigo-500: #d13a63;
+  --indigo-400: #e05c7f;
+
+  --text-100: #f5f6f8;
+  --text-300: #b2b7be;
+  --text-500: #7c838d;
+  --text-700: #4a5058;
+}
+
+[data-theme="coral"] .bg-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%,  rgba(234,81,92,0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(209,58,99,0.12) 0%, transparent 60%),
+    var(--bg-base);
+}
 
 /* ── Theme & Language toggle buttons ─────────────────────────── */
 .theme-toggle, .lang-toggle {

@@ -200,6 +200,14 @@ screen, neither of them a bug.
 
 ## ✅ Done
 
+### A third theme
+
+- **Coral theme next to dark and light** — the accent was hardcoded as
+  `rgba(124,58,237,…)` in 31 places that no token could reach, so light mode
+  only ever got away with a swap because it keeps the purple. `--accent-rgb`
+  carries the accent in channel form now and every one of those tints follows
+  a theme. The toggle cycles dark → light → coral instead of flipping.
+
 ### The seven points from the audit of 22 October 2026
 
 Audit of the whole repo (PR #30). Four bugs, then the duplication that had let

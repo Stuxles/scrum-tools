@@ -7,7 +7,7 @@ export const translations = {
   nl: {
     // ── Header / General ──
     'lang-toggle': 'NL',
-    'theme-toggle-title': 'Wissel thema (light/dark)',
+    'theme-toggle-title': 'Wissel thema',
     'qr-btn-title': 'QR-code tonen / link delen',
     'deck-btn-title': 'Kaartdek wijzigen',
     'name-btn-title': 'Naam aanpassen',
@@ -189,6 +189,8 @@ export const translations = {
     'theme-light': 'Licht',
     'theme-mode-dark': 'Donkere modus',
     'theme-mode-light': 'Lichte modus',
+    'theme-coral': 'Koraal',
+    'theme-mode-coral': 'Koraalmodus',
     'prompt-copy-manual': 'Kopieer handmatig:',
     'participant-vote-title': 'Stem: {vote}',
     'participant-voted-title': 'Gestemd',
@@ -197,7 +199,7 @@ export const translations = {
   en: {
     // ── Header / General ──
     'lang-toggle': 'EN',
-    'theme-toggle-title': 'Toggle theme (light/dark)',
+    'theme-toggle-title': 'Toggle theme',
     'qr-btn-title': 'Show QR code / share link',
     'deck-btn-title': 'Change card deck',
     'name-btn-title': 'Change name',
@@ -377,6 +379,8 @@ export const translations = {
     'theme-light': 'Light',
     'theme-mode-dark': 'Dark mode',
     'theme-mode-light': 'Light mode',
+    'theme-coral': 'Coral',
+    'theme-mode-coral': 'Coral mode',
     'prompt-copy-manual': 'Copy manually:',
     'participant-vote-title': 'Vote: {vote}',
     'participant-voted-title': 'Voted',
