@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/style.css" />
   <script>
     (function () {
-      var t = localStorage.getItem('scrumpoker_theme') || localStorage.getItem('stuxpoker_theme') || 'dark';
+      var t = localStorage.getItem('scrumpoker_theme') || localStorage.getItem('stuxpoker_theme') || 'coral';
       document.documentElement.setAttribute('data-theme', t);
       if (localStorage.getItem('scrum_australia_mode') === 'true') {
         document.documentElement.classList.add('australia-mode');
@@ -193,10 +193,7 @@
             <div class="option-row-title" data-i18n="options-label-theme">Thema</div>
             <div class="option-row-sub" id="options-sub-theme" data-i18n="options-sub-theme">Donkere of lichte modus</div>
           </div>
-          <button class="btn btn-secondary btn-sm theme-toggle" id="theme-toggle" title="Wissel thema">
-            <span id="theme-icon" style="font-size:1rem; margin-right:4px;">☀️</span>
-            <span id="theme-label">Licht</span>
-          </button>
+          <select class="input theme-select" id="theme-select" data-i18n-title="theme-toggle-title" aria-label="Thema" title="Kies thema"></select>
         </div>
 
         <!-- 6. Confetti bij unanieme stem ("no fun mode" toggle) -->

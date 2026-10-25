@@ -1687,7 +1687,7 @@ html.australia-mode body {
 }
 
 /* ── Theme & Language toggle buttons ─────────────────────────── */
-.theme-toggle, .lang-toggle {
+.lang-toggle {
   width: 36px;
   height: 36px;
   border-radius: var(--r-full);
@@ -1702,16 +1702,34 @@ html.australia-mode body {
   transition: all 0.2s;
   flex-shrink: 0;
 }
-.theme-toggle:hover, .lang-toggle:hover { background: var(--glass-hover); color: var(--text-100); }
+.lang-toggle:hover { background: var(--glass-hover); color: var(--text-100); }
 .lang-toggle {
   font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.03em;
 }
 
+/* The theme picker is a plain <select>, so the native dropdown does the work
+   and only the sizing is ours: `.input` is full-width by default, which is
+   wrong both in the page corner and in an options row. */
+.theme-select {
+  width: auto;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+}
+
+/* The corner controls are fixed, and the picker is wider than the icon button
+   it replaced, so on a phone the row reaches the centred hero logo. Give the
+   hero the height of the row to start below. */
+@media (max-width: 560px) {
+  .index-page .hero { margin-top: 52px; }
+}
+
 /* ── Options Modal Uniform Buttons ───────────────────────────── */
 .options-list .btn,
-.options-list .theme-toggle,
 .options-list .lang-toggle {
   width: auto !important;
   height: 36px !important;

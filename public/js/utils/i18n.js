@@ -7,7 +7,7 @@ export const translations = {
   nl: {
     // ── Header / General ──
     'lang-toggle': 'NL',
-    'theme-toggle-title': 'Wissel thema',
+    'theme-toggle-title': 'Kies thema',
     'qr-btn-title': 'QR-code tonen / link delen',
     'deck-btn-title': 'Kaartdek wijzigen',
     'name-btn-title': 'Naam aanpassen',
@@ -70,7 +70,7 @@ export const translations = {
     'claim-sm-btn-text': 'Overnemen',
     'options-label-lang': 'Taal / Language',
     'options-label-theme': 'Thema',
-    'options-sub-theme': 'Donkere of lichte modus',
+    'options-sub-theme': 'Donkere, lichte of koraalmodus',
     'options-theme-btn': 'Licht',
     'options-label-confetti': 'Confetti',
     'options-sub-confetti': 'Feestje bij unanieme stem',
@@ -201,7 +201,7 @@ export const translations = {
   en: {
     // ── Header / General ──
     'lang-toggle': 'EN',
-    'theme-toggle-title': 'Toggle theme',
+    'theme-toggle-title': 'Choose theme',
     'qr-btn-title': 'Show QR code / share link',
     'deck-btn-title': 'Change card deck',
     'name-btn-title': 'Change name',
@@ -264,7 +264,7 @@ export const translations = {
     'claim-sm-btn-text': 'Take over',
     'options-label-lang': 'Language / Taal',
     'options-label-theme': 'Theme',
-    'options-sub-theme': 'Dark or light mode',
+    'options-sub-theme': 'Dark, light or coral mode',
     'options-theme-btn': 'Light',
     'options-label-confetti': 'Confetti',
     'options-sub-confetti': 'Celebration on unanimous vote',

@@ -24,7 +24,7 @@ export function initQrModule(els, _socket, roomId) {
   async function loadQR() {
     try {
       const baseUrl = encodeURIComponent(window.location.origin);
-      const theme   = document.documentElement.getAttribute('data-theme') || 'dark';
+      const theme   = document.documentElement.getAttribute('data-theme') || 'coral';
       const res     = await fetch(`/api/rooms/${roomId}/qr?baseUrl=${baseUrl}&theme=${theme}`);
       const data    = await res.json();
       qrUrl = data.url;

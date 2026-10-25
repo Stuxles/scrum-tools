@@ -5,7 +5,7 @@
  * Also initialises the shared theme toggle.
  */
 
-import { initThemeToggle }  from './theme.js';
+import { initThemePicker }  from './theme.js';
 import { initI18n }         from './utils/i18n.js';
 import { initIndexPage }    from './pages/index-page.js';
 import { initPresenterPage } from './pages/presenter-page.js';
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const socket = io({ transports: ['websocket', 'polling'], autoConnect: isRoomPage || isPresenterPage });
 
   initI18n();
-  initThemeToggle();
+  initThemePicker();
 
   if (isPresenterPage) {
     initPresenterPage(socket, urlRoomId);
