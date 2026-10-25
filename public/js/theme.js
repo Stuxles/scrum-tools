@@ -1,12 +1,12 @@
 /**
- * Theme cycle.
+ * Theme picker.
  * Reads initial state from <html data-theme>, persists choice to localStorage.
  * Exposes a callback hook so QR code can reload when theme changes.
  */
 
 import { t } from './utils/i18n.js';
 
-/** Cycle order. The button advertises the theme it would switch *to*.
+/** The themes, in the order the picker lists them.
     First entry is the default: it is what `normalizeTheme` falls back to and
     what the inline bootstrap in each page head applies when nothing is
     stored. Changing the order changes the default — keep the two in step. */
@@ -23,11 +23,6 @@ export function normalizeTheme(mode) {
   return ORDER.includes(mode) ? mode : ORDER[0];
 }
 
-/** Next theme in the cycle, wrapping at the end. */
-export function nextTheme(mode) {
-  return ORDER[(ORDER.indexOf(normalizeTheme(mode)) + 1) % ORDER.length];
-}
-
 function current() {
   return normalizeTheme(document.documentElement.getAttribute('data-theme'));
 }
@@ -40,30 +35,36 @@ export function onThemeChange(cb) {
   _onThemeChange = cb;
 }
 
-export function initThemeToggle() {
-  const btn  = document.getElementById('theme-toggle');
-  const icon = document.getElementById('theme-icon');
-  if (!btn || !icon) return;
+export function initThemePicker() {
+  const select = document.getElementById('theme-select');
+  if (!select) return;
 
-  const update = (mode) => {
-    const next = THEMES[nextTheme(mode)];
-    icon.textContent = next.icon;
-    const label = document.getElementById('theme-label');
-    if (label) label.textContent = t(next.label);
+  // Options are built here rather than written out in all three pages: the
+  // list, the icons and the labels then have one source, and the labels have
+  // to be re-rendered on a language switch anyway.
+  const render = () => {
+    const mode = current();
+    select.replaceChildren(...ORDER.map((name) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = `${THEMES[name].icon} ${t(THEMES[name].label)}`;
+      return opt;
+    }));
+    select.value = mode;
     const subTheme = document.getElementById('options-sub-theme');
     if (subTheme) subTheme.textContent = t(THEMES[mode].sub);
   };
-  update(current());
+  render();
 
-  btn.addEventListener('click', () => {
-    const mode = nextTheme(current());
+  select.addEventListener('change', () => {
+    // Through normalizeTheme, so a value that is not one of ours cannot reach
+    // the attribute or localStorage.
+    const mode = normalizeTheme(select.value);
     document.documentElement.setAttribute('data-theme', mode);
     localStorage.setItem('scrumpoker_theme', mode);
-    update(mode);
+    render();
     _onThemeChange?.(mode);
   });
 
-  window.addEventListener('lang-changed', () => {
-    update(current());
-  });
+  window.addEventListener('lang-changed', render);
 }

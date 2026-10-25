@@ -32,10 +32,13 @@
 
   <!-- Toast -->
   <div id="toast-container" role="alert" aria-live="polite"></div>
-  <button class="lang-toggle" id="lang-toggle" title="Taal: Nederlands (Klik voor Engels)" aria-label="Wissel taal" style="position:fixed;top:16px;right:60px;z-index:100;">NL</button>
-  <button class="theme-toggle" id="theme-toggle" title="Wissel thema" data-i18n-title="theme-toggle-title" aria-label="Wissel thema" style="position:fixed;top:16px;right:16px;z-index:100;">
-    <span id="theme-icon">☀️</span>
-  </button>
+  <!-- One row rather than two fixed corners: the theme picker is a select now,
+       and its width moves with the language, which a hardcoded right: offset
+       on the language button cannot follow. -->
+  <div class="corner-controls" style="position:fixed;top:16px;right:16px;z-index:100;display:flex;gap:8px;align-items:center;">
+    <button class="lang-toggle" id="lang-toggle" title="Taal: Nederlands (Klik voor Engels)" aria-label="Wissel taal">NL</button>
+    <select class="input theme-select" id="theme-select" data-i18n-title="theme-toggle-title" aria-label="Thema" title="Kies thema"></select>
+  </div>
 
   <!-- Hero -->
   <header class="hero">
