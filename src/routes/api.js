@@ -105,10 +105,13 @@ router.get('/rooms/:id/qr', roomLimiter, async (req, res) => {
   if (!room) return res.status(404).json({ error: 'Room not found' });
 
   const url   = `${resolveQrOrigin(req).replace(/\/$/, '')}/room.html?id=${room.id}`;
-  const theme = req.query.theme === 'light' ? 'light' : 'dark';
-  const color = theme === 'light'
-    ? { dark: '#0f172a', light: '#ffffff' }
-    : { dark: '#a78bfa', light: '#0d0d1a' };
+  // Coral is the default theme, so its QR is the common case: without an arm
+  // of its own it fell through to the dark palette and put a purple code in a
+  // coral UI. Anything unrecognised still lands on dark.
+  const theme = ['light', 'coral'].includes(req.query.theme) ? req.query.theme : 'dark';
+  const color = { light: { dark: '#0f172a', light: '#ffffff' },
+                  coral: { dark: '#ea515c', light: '#23272e' },
+                  dark:  { dark: '#a78bfa', light: '#0d0d1a' } }[theme];
 
   try {
     const qr = await QRCode.toDataURL(url, { width: QR_CODE_SIZE_PX, margin: QR_CODE_MARGIN, color });

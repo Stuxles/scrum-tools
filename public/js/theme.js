@@ -6,8 +6,11 @@
 
 import { t } from './utils/i18n.js';
 
-/** Cycle order. The button advertises the theme it would switch *to*. */
-const ORDER = ['dark', 'light', 'coral'];
+/** Cycle order. The button advertises the theme it would switch *to*.
+    First entry is the default: it is what `normalizeTheme` falls back to and
+    what the inline bootstrap in each page head applies when nothing is
+    stored. Changing the order changes the default — keep the two in step. */
+const ORDER = ['coral', 'dark', 'light'];
 const THEMES = {
   dark:  { icon: '🌙', label: 'theme-dark',  sub: 'theme-mode-dark'  },
   light: { icon: '☀️', label: 'theme-light', sub: 'theme-mode-light' },
