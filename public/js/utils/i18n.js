@@ -155,6 +155,8 @@ export const translations = {
     'toast-server-offline': 'De server reageert niet of is offline.',
     'toast-rate-limit': 'Te veel acties achter elkaar. Wacht een seconde.',
     'toast-server-full': 'Kon geen unieke room-code genereren. Server zit vol.',
+    'toast-rooms-limit': 'De server zit aan zijn maximum aantal rooms. Probeer het later opnieuw.',
+    'toast-room-full': 'Deze room is vol.',
     'toast-generic-error': 'Er ging iets mis. Probeer het opnieuw.',
 
     // ── Stats & Dynamic texts ──
@@ -345,6 +347,8 @@ export const translations = {
     'toast-server-offline': 'Server is not responding or offline.',
     'toast-rate-limit': 'Too many actions. Please wait a second.',
     'toast-server-full': 'Could not generate unique room code. Server is full.',
+    'toast-rooms-limit': 'The server has reached its room limit. Try again later.',
+    'toast-room-full': 'This room is full.',
     'toast-generic-error': 'Something went wrong. Please try again.',
 
     // ── Stats & Dynamic texts ──
@@ -431,6 +435,8 @@ export function translateServerMsg(msg) {
   if (msg.includes('Too many actions')) return t('toast-rate-limit');
   if (msg.includes('Enter at least 2 cards')) return t('toast-min-cards');
   if (msg.includes('Could not generate')) return t('toast-server-full');
+  if (msg.includes('room limit')) return t('toast-rooms-limit');
+  if (msg.includes('is full (max')) return t('toast-room-full');
   if (msg.includes('does not exist')) return t('toast-room-not-found-generic');
   if (msg.includes('Something went wrong')) return t('toast-generic-error');
   return msg;

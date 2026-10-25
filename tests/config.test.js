@@ -7,6 +7,7 @@ import {
   REST_RATE_LIMIT_GLOBAL_MAX, REST_RATE_LIMIT_GLOBAL_WINDOW_MS,
   REST_RATE_LIMIT_ROOM_MAX, REST_RATE_LIMIT_ROOM_WINDOW_MS,
   MASTER_GRACE_MS, ROOM_CLEANUP_INTERVAL_MS,
+  MAX_ROOMS, MAX_PARTICIPANTS_PER_ROOM, parseLimit,
   parseCustomDeck, DECK_CARD_MAX_LENGTH, DECK_MAX_CARDS, DECK_MIN_CARDS,
   QR_CODE_SIZE_PX, QR_CODE_MARGIN,
 } from '../src/config.js';
@@ -65,6 +66,20 @@ describe('Config & i18n Dictionary verification', () => {
     assert.strictEqual(parseParticipantGraceMinutes('not-a-number'), 10);
     assert.strictEqual(parseParticipantGraceMinutes('5'), 5, 'valid override is honored');
     assert.strictEqual(parseParticipantGraceMinutes('30'), 30);
+  });
+
+  test('parseLimit: capacity ceilings default on, and only a whole count overrides', () => {
+    assert.strictEqual(MAX_ROOMS, 100, 'rooms are capped by default');
+    assert.strictEqual(MAX_PARTICIPANTS_PER_ROOM, 50, 'participants per room are capped by default');
+
+    assert.strictEqual(parseLimit(undefined, 100), 100, 'unset -> default');
+    assert.strictEqual(parseLimit('', 100), 100, 'an empty env var is unset, not "no limit"');
+    assert.strictEqual(parseLimit('  ', 100), 100);
+    assert.strictEqual(parseLimit('0', 100), 0, 'an explicit 0 disables the cap');
+    assert.strictEqual(parseLimit('250', 100), 250);
+    assert.strictEqual(parseLimit('-5', 100), 100, 'negative is not valid');
+    assert.strictEqual(parseLimit('1.5', 100), 100, 'a fraction is not a count');
+    assert.strictEqual(parseLimit('lots', 100), 100);
   });
 
   test('parseTrustProxy: safe default and Express-recognized value forms', () => {

@@ -200,6 +200,17 @@ screen, neither of them a bug.
 
 ## ✅ Done
 
+### Capacity ceilings
+
+- **`MAX_ROOMS` (100) and `MAX_PARTICIPANTS_PER_ROOM` (50)** — the rate
+  limiters cap events per second, nothing capped totals, so a loop of
+  `create-room` calls (or sockets piling into one room) could grow the
+  in-memory store until the process died. Both are env-overridable and `0`
+  removes the cap. The join guard sits after `staleEntry` is worked out, so a
+  full room still lets the people already in it reconnect — their own seat is
+  one of the ones being counted. Tests in `tests/bugfixes.test.js`
+  ("a room at its participant ceiling") and `tests/serverMessages.test.js`.
+
 ### A third theme
 
 - **Coral theme next to dark and light** — the accent was hardcoded as
