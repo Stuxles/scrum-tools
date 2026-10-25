@@ -6,6 +6,7 @@ import { io as ioc } from 'socket.io-client';
 import { initBroadcast } from '../src/utils/broadcast.js';
 import { initSocketHandlers } from '../src/socket/index.js';
 import { rooms, deleteRoom } from '../src/store/rooms.js';
+import { MAX_ROOMS, MAX_PARTICIPANTS_PER_ROOM } from '../src/config.js';
 import { translateServerMsg, translations } from '../public/js/utils/i18n.js';
 
 /**
@@ -128,6 +129,33 @@ describe('Server error messages reach the UI translated', () => {
     client.emit('change-deck', { roomId, deckType: 'custom', customCards: ['1'] });
     const err = await onceEvent(client, 'error');
     assertTranslated(err.message, 'toast-min-cards');
+  });
+
+  test('"server at its room limit" from create-room', async () => {
+    const client = createClient();
+    await waitForConnect(client);
+    // Fill the store directly: MAX_ROOMS real create-room calls would trip the
+    // per-socket rate limiter long before they reached the ceiling.
+    for (let i = 0; i < MAX_ROOMS; i++) rooms[`FULL${i}`] = { id: `FULL${i}`, participants: {}, displays: new Set() };
+
+    client.emit('create-room', { deckType: 'standard', roomName: 'One too many' });
+    const err = await onceEvent(client, 'error');
+    assertTranslated(err.message, 'toast-rooms-limit');
+  });
+
+  test('"room is full" from join-room', async () => {
+    const client = createClient();
+    await waitForConnect(client);
+    client.emit('create-room', { deckType: 'standard', roomName: 'Packed' });
+    const { roomId } = await onceEvent(client, 'room-created');
+    const room = rooms[roomId];
+    for (let i = 0; i < MAX_PARTICIPANTS_PER_ROOM; i++) {
+      room.participants[`seat${i}`] = { id: `seat${i}`, name: `P${i}`, vote: null, hasVoted: false, connected: true };
+    }
+
+    client.emit('join-room', { roomId, name: 'Zoe' });
+    const err = await onceEvent(client, 'error');
+    assertTranslated(err.message, 'toast-room-full');
   });
 
   test('"too many actions" from the per-socket rate limiter', async () => {

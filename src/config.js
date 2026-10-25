@@ -62,6 +62,27 @@ export function parseTrustProxy(raw) {
 }
 export const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY);
 
+// ─── Capacity Ceilings ───────────────────────────────────────────────────────
+/**
+ * Hard caps on how much state one open server will hold. The rate limiters
+ * cap events per second; nothing capped the totals, so a script that keeps
+ * creating rooms (or sockets joining one room) could grow the in-memory
+ * store until the process died.
+ *
+ * Override via MAX_ROOMS / MAX_PARTICIPANTS_PER_ROOM. `0` disables the cap,
+ * which is the right setting for a trusted LAN and the wrong one for a box
+ * on the open internet.
+ */
+export function parseLimit(raw, fallback) {
+  // An empty value is an unset variable, not "no limit" — `MAX_ROOMS=` in a
+  // compose file would otherwise silently uncap the server. Number('') is 0.
+  if (raw === undefined || raw === null || String(raw).trim() === '') return fallback;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+}
+export const MAX_ROOMS                 = parseLimit(process.env.MAX_ROOMS, 100);
+export const MAX_PARTICIPANTS_PER_ROOM = parseLimit(process.env.MAX_PARTICIPANTS_PER_ROOM, 50);
+
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 /** Per-socket event limiter (src/socket/index.js). */
 export const SOCKET_RATE_LIMIT_MAX       = 35;

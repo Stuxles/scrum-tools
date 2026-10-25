@@ -13,7 +13,7 @@ import { io as ioc } from 'socket.io-client';
 import { initBroadcast } from '../src/utils/broadcast.js';
 import { initSocketHandlers } from '../src/socket/index.js';
 import { rooms, deleteRoom } from '../src/store/rooms.js';
-import { DECKS } from '../src/config.js';
+import { DECKS, MAX_PARTICIPANTS_PER_ROOM } from '../src/config.js';
 
 describe('Regressions from the codebase review', () => {
   let httpServer;
@@ -308,6 +308,55 @@ describe('Regressions from the codebase review', () => {
 
       assert.equal(back.isMaster, false, 'the role stays with Bob');
       assert.equal(rooms[roomId].participants[rooms[roomId].masterId].name, 'Bob');
+    });
+  });
+  // ── Capacity ceilings ──────────────────────────────────────────────────────
+  describe('a room at its participant ceiling', () => {
+    /** Occupy every remaining seat with a plain entry — 50 real sockets is not
+     *  worth the wall-clock time, and the guard only counts the map. */
+    function fillSeats(roomId, from) {
+      const room = rooms[roomId];
+      for (let i = Object.keys(room.participants).length; i < MAX_PARTICIPANTS_PER_ROOM; i++) {
+        room.participants[`${from}${i}`] = {
+          id: `${from}${i}`, name: `P${i}`, vote: null, hasVoted: false, connected: true,
+        };
+      }
+    }
+
+    test('turns a new arrival away', async () => {
+      const host    = createClient();
+      const latecomer = createClient();
+      await Promise.all([waitForConnect(host), waitForConnect(latecomer)]);
+
+      host.emit('create-room', { roomName: 'Packed' });
+      const { roomId } = await onceEvent(host, 'room-created');
+      await joinedRoom(host, roomId, 'Alice');
+      fillSeats(roomId, 'seat');
+
+      const errored = onceEvent(latecomer, 'error');
+      latecomer.emit('join-room', { roomId, name: 'Zoe' });
+      const err = await errored;
+
+      assert.match(err.message, /is full/);
+      assert.equal(Object.keys(rooms[roomId].participants).length, MAX_PARTICIPANTS_PER_ROOM);
+    });
+
+    test('still lets someone already seated reconnect', async () => {
+      // The seat being counted is the reconnector's own, so a full room must
+      // not strand the people in it on a flaky connection.
+      const host = createClient();
+      await waitForConnect(host);
+      host.emit('create-room', { roomName: 'Packed but mine' });
+      const { roomId } = await onceEvent(host, 'room-created');
+      const first = await joinedRoom(host, roomId, 'Alice');
+      fillSeats(roomId, 'seat');
+
+      const rejoin = createClient();
+      await waitForConnect(rejoin);
+      const back = await joinedRoom(rejoin, roomId, 'Alice', { sessionToken: first.sessionToken });
+      assert.equal(back.isMaster, true, 'she comes back in, with her role intact');
+      assert.equal(Object.keys(rooms[roomId].participants).length, MAX_PARTICIPANTS_PER_ROOM,
+        'her old seat moved rather than a new one being added');
     });
   });
 });

@@ -1,5 +1,8 @@
 import { rooms, sanitizeRoom } from '../../store/rooms.js';
-import { DECKS, DECK_MIN_CARDS, parseCustomDeck } from '../../config.js';
+import {
+  DECKS, DECK_MIN_CARDS, parseCustomDeck,
+  MAX_ROOMS, MAX_PARTICIPANTS_PER_ROOM,
+} from '../../config.js';
 import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
   broadcastRoomState,
@@ -39,6 +42,14 @@ export function cleanText(raw, maxLength, fallback) {
  * @param {import('socket.io').Socket} socket
  */
 export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
+  // Before anything is allocated: an open server hands out rooms to anyone who
+  // can open a socket, so without a ceiling a loop of create-room calls grows
+  // the store until the process dies. See MAX_ROOMS in config.js.
+  if (MAX_ROOMS && Object.keys(rooms).length >= MAX_ROOMS) {
+    socket.emit('error', { message: 'The server is at its room limit. Try again later.' });
+    return;
+  }
+
   // Test for 'custom' BEFORE falling back on the presets, exactly as
   // handleChangeDeck does. There is no DECKS.custom — it is a marker for
   // "use the cards in this payload" — so a `DECKS[deckType] ? ... : 'standard'`
@@ -187,6 +198,17 @@ export function handleJoinRoom(io, socket, { roomId, name, isSpectator, sessionT
         ([id, p]) => id !== socket.id && p.sessionToken === token,
       )
     : undefined;
+
+  // Capacity check goes here and not earlier: `staleEntry` is what tells a
+  // reconnect apart from a new arrival, and the people already seated must not
+  // be locked out of a full room by their own flaky connection — their seat is
+  // one of the ones being counted. Nothing has been mutated yet, so bailing
+  // out is clean.
+  if (MAX_PARTICIPANTS_PER_ROOM && !staleEntry && !room.participants[socket.id]
+      && Object.keys(room.participants).length >= MAX_PARTICIPANTS_PER_ROOM) {
+    socket.emit('error', { message: `Room "${roomId}" is full (max ${MAX_PARTICIPANTS_PER_ROOM} participants).` });
+    return;
+  }
 
   if (staleEntry) {
     const [oldId, oldParticipant] = staleEntry;
