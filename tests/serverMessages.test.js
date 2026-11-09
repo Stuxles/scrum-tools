@@ -6,7 +6,7 @@ import { io as ioc } from 'socket.io-client';
 import { initBroadcast } from '../src/utils/broadcast.js';
 import { initSocketHandlers } from '../src/socket/index.js';
 import { rooms, deleteRoom } from '../src/store/rooms.js';
-import { MAX_ROOMS, MAX_PARTICIPANTS_PER_ROOM } from '../src/config.js';
+import { MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_PARTICIPANTS_PER_ROOM } from '../src/config.js';
 import { translateServerMsg, translations } from '../public/js/utils/i18n.js';
 
 /**
@@ -141,6 +141,25 @@ describe('Server error messages reach the UI translated', () => {
     client.emit('create-room', { deckType: 'standard', roomName: 'One too many' });
     const err = await onceEvent(client, 'error');
     assertTranslated(err.message, 'toast-rooms-limit');
+  });
+
+  test('"network at its room limit" from create-room', async () => {
+    const client = createClient();
+    await waitForConnect(client);
+    for (const id of Object.keys(rooms)) delete rooms[id];
+    client.emit('create-room', { deckType: 'standard', roomName: 'Mine' });
+    const { roomId } = await onceEvent(client, 'room-created');
+    // Clone the real room so the address is whatever the server recorded.
+    for (let i = 1; i < MAX_ROOMS_PER_IP; i++) rooms[`MINE${i}`] = { ...rooms[roomId], id: `MINE${i}` };
+
+    client.emit('create-room', { deckType: 'standard', roomName: 'One too many' });
+    const err = await onceEvent(client, 'error');
+    assertTranslated(err.message, 'toast-rooms-limit');
+
+    // Someone else's rooms do not count against this address.
+    for (let i = 1; i < MAX_ROOMS_PER_IP; i++) rooms[`MINE${i}`].creatorIp = 'elsewhere';
+    client.emit('create-room', { deckType: 'standard', roomName: 'Room for one more' });
+    await onceEvent(client, 'room-created');
   });
 
   test('"room is full" from join-room', async () => {

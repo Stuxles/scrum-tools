@@ -82,6 +82,13 @@ export function parseLimit(raw, fallback) {
 }
 export const MAX_ROOMS                 = parseLimit(process.env.MAX_ROOMS, 100);
 export const MAX_PARTICIPANTS_PER_ROOM = parseLimit(process.env.MAX_PARTICIPANTS_PER_ROOM, 50);
+/**
+ * Rooms one client address may have open at once. MAX_ROOMS alone lets a
+ * single visitor fill the whole server and lock everyone else out; this keeps
+ * one address to a share of it. Behind a reverse proxy it needs TRUST_PROXY,
+ * or every client counts as the proxy.
+ */
+export const MAX_ROOMS_PER_IP          = parseLimit(process.env.MAX_ROOMS_PER_IP, 20);
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 /** Per-socket event limiter (src/socket/index.js). */
