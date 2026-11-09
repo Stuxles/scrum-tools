@@ -235,6 +235,29 @@ describe('Regressions from the codebase review', () => {
 
   // ── Bug 3 ──────────────────────────────────────────────────────────────────
   describe('kicking the host', () => {
+    test('a host cannot kick someone sitting in another room', async () => {
+      const alice = createClient();
+      const bob   = createClient();
+      await Promise.all([waitForConnect(alice), waitForConnect(bob)]);
+
+      alice.emit('create-room', { roomName: 'Hers' });
+      const { roomId: hers } = await onceEvent(alice, 'room-created');
+      await joinedRoom(alice, hers, 'Alice');
+      bob.emit('create-room', { roomName: 'His' });
+      const { roomId: his } = await onceEvent(bob, 'room-created');
+      await joinedRoom(bob, his, 'Bob');
+
+      let kicked = false;
+      bob.once('kicked', () => { kicked = true; });
+      alice.emit('kick-user', { roomId: hers, targetId: bob.id });
+      // Round-trip a second event so the kick has certainly been handled.
+      alice.emit('update-name', { roomId: hers, name: 'Alice2' });
+      await onceEvent(alice, 'room-state');
+
+      assert.equal(kicked, false, 'no kicked event crosses rooms');
+      assert.ok(rooms[his].participants[bob.id], 'Bob keeps his seat');
+    });
+
     test('hands the role straight to someone still connected', async () => {
       const alice  = createClient();
       const bob    = createClient();

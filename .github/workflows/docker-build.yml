@@ -151,6 +151,15 @@ jobs:
         if: github.event_name != 'push'
         uses: actions/checkout@v7
 
+      # The version tag comes from package.json, not `type=semver`: that only
+      # fires on a tag-push event, and this workflow runs on branch pushes
+      # (the bump's own tag is pushed with GITHUB_TOKEN, which triggers
+      # nothing), so no image was ever published under its version number.
+      - name: Read version from package.json
+        id: pkg
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       # Only the push path publishes, so only it needs arm64 - and arm64 is
       # the slow leg, emulated, whenever a package.json change misses the
       # cache. A PR build exists to prove the Dockerfile still builds.
@@ -177,7 +186,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || github.ref == format('refs/heads/{0}', 'master') }}
             type=ref,event=branch
-            type=semver,pattern={{version}}
+            type=raw,value=${{ steps.pkg.outputs.version }},enable=${{ github.ref == format('refs/heads/{0}', 'main') || github.ref == format('refs/heads/{0}', 'master') }}
             type=sha,format=short
 
       - name: Build and push Docker image

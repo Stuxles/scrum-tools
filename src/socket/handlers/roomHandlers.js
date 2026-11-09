@@ -1,7 +1,7 @@
 import { rooms, sanitizeRoom } from '../../store/rooms.js';
 import {
   DECKS, DECK_MIN_CARDS, parseCustomDeck,
-  MAX_ROOMS, MAX_PARTICIPANTS_PER_ROOM,
+  MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_PARTICIPANTS_PER_ROOM, TRUST_PROXY,
 } from '../../config.js';
 import { generateRoomId, normalizeRoomId } from '../../utils/roomId.js';
 import {
@@ -34,6 +34,23 @@ export function cleanText(raw, maxLength, fallback) {
 }
 
 /**
+ * The address a socket connected from, for the per-IP room cap.
+ * X-Forwarded-For is only read when TRUST_PROXY is set — otherwise a client
+ * could name its own address and dodge the cap.
+ *
+ * shortcut: takes the last X-Forwarded-For entry, which is right for exactly
+ * one trusted proxy; honour the TRUST_PROXY hop count if a proxy chain is ever
+ * deployed.
+ *
+ * @param {import('socket.io').Socket} socket
+ * @returns {string}
+ */
+function clientIp(socket) {
+  const forwarded = TRUST_PROXY ? socket.handshake.headers['x-forwarded-for'] : '';
+  return String(forwarded || '').split(',').pop().trim() || socket.handshake.address;
+}
+
+/**
  * Create a room. Deliberately takes no display name: creating a room is
  * setting up the presenter screen, and a screen is not a person. The first
  * client to actually join becomes host — see `handleJoinRoom`, which claims
@@ -47,6 +64,15 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
   // the store until the process dies. See MAX_ROOMS in config.js.
   if (MAX_ROOMS && Object.keys(rooms).length >= MAX_ROOMS) {
     socket.emit('error', { message: 'The server is at its room limit. Try again later.' });
+    return;
+  }
+
+  // The global ceiling alone lets one visitor take every room and lock the
+  // rest out, so each address also gets only a share of it.
+  const creatorIp = clientIp(socket);
+  if (MAX_ROOMS_PER_IP
+      && Object.values(rooms).filter(r => r.creatorIp === creatorIp).length >= MAX_ROOMS_PER_IP) {
+    socket.emit('error', { message: 'Your network is at its room limit. Try again later.' });
     return;
   }
 
@@ -94,6 +120,7 @@ export function handleCreateRoom(socket, { deckType, customCards, roomName }) {
     participants: {},
     displays:     new Set(),
     createdAt:    Date.now(),
+    creatorIp,            // per-IP room cap only; never sent to a client
   };
 
   scheduleRoomCleanup(roomId);

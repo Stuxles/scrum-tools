@@ -334,7 +334,16 @@ label.field-label {
   max-width: 440px;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.25s ease;
+  /* A modal taller than a phone screen scrolls inside itself; the overlay is
+     fixed, so without this the bottom buttons were simply out of reach. */
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
+
+/* iOS Safari reads two quick taps (pick a card, unpick it) as double-tap zoom.
+   `manipulation` drops that gesture and keeps scrolling and pinch-zoom. */
+html, button, .vote-card { touch-action: manipulation; }
 
 @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
 @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }

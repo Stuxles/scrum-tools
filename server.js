@@ -38,7 +38,6 @@ const server    = http.createServer(app);
 if (TRUST_PROXY) app.set('trust proxy', TRUST_PROXY);
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
 app.use('/api', apiRouter);
 
 // Health check (delegates to apiRouter)
@@ -59,6 +58,11 @@ const io = new Server(server, {
 
 initBroadcast(io);
 initSocketHandlers(io);
+
+// Node is PID 1 in the container, where an unhandled SIGTERM is ignored: every
+// `docker stop` waited out its 10s and then killed. State is in memory only,
+// so there is nothing to flush.
+for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => process.exit(0));
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {

@@ -13,6 +13,9 @@ export function handleKickUser(io, socket, { roomId, targetId }) {
   roomId = normalizeRoomId(roomId);
   const room = rooms[roomId];
   if (!room || !canControlRoom(room, socket.id) || targetId === socket.id) return;
+  // The target must hold a seat in *this* room: without the check, `kicked`
+  // went to any socket id on the server, whichever room it was sitting in.
+  if (!room.participants[targetId]) return;
 
   const target = io.sockets.sockets.get(targetId);
   if (target) {

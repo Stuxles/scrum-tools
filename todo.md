@@ -97,24 +97,16 @@ the LAN route.
 
 ## 🔧 Technical
 
-### 5. No ceiling on rooms or participants
-**Priority: depends on exposure.** Harmless on a LAN with your own team; behind
-the nginx setup from the README, on a public domain, this is the only thing
-left that can take the server down.
+### 5. Open-server hardening: what is left
+**Priority: depends on exposure.** Rooms, rooms per address and participants
+per room are all capped now (see **Done**). Still open on a public domain:
 
-- `create-room` asks for nothing: no name, no login, no existing room. Since
-  the audit, a room nobody joins lives 30 minutes instead of 24 hours, but a
-  stream of messages can still hold a full grace window's worth of rooms. The
-  `shortcut:` comment on `scheduleEmptyRoomCleanup()` in
-  `src/utils/broadcast.js` names exactly this.
-- There is no ceiling on participants per room either. Less urgent: that needs
-  the room code, and the code space is 32^6.
-- If this gets picked up: count per IP, not one global maximum — a global
-  maximum lets a single visitor lock everyone else out. The socket limiter
-  (35/s) does not help here, because it counts per socket and a client simply
-  opens more of them.
-- `CORS_ORIGIN` defaults to `*`, so any web page at all can do this from a team
-  member's browser too.
+- Presenter screens (`watch-room`) are not counted or capped, and a screen
+  keeps its room alive.
+- `MAX_ROOMS_PER_IP` reads only the last `X-Forwarded-For` entry — right for
+  one trusted proxy, not for a chain (`shortcut:` in `roomHandlers.js`).
+- `CORS_ORIGIN` defaults to `*`, so any web page can create rooms from a team
+  member's browser, counted against that member's address.
 
 ### 6. State does not survive a restart
 **Value: depends on use.** Everything is in memory, so every Docker redeploy
@@ -199,6 +191,18 @@ screen, neither of them a bug.
 ---
 
 ## ✅ Done
+
+### Review follow-ups (November 2026)
+
+- **`MAX_ROOMS_PER_IP` (20)** — the global ceiling alone let one visitor take
+  every room and lock the rest out.
+- **`kick-user` checks the target sits in that room** — it used to send
+  `kicked` to any socket id on the server.
+- **Docker images are published under their version number** — `type=semver`
+  never fired on a branch push; the tag is read from `package.json` now.
+- **`docker stop` is immediate** — Node as PID 1 ignored SIGTERM.
+- **Escape closes modals**; a modal taller than a phone screen scrolls inside
+  itself; two quick taps on a card no longer zoom on iOS.
 
 ### Capacity ceilings
 

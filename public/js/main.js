@@ -37,6 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initI18n();
   initThemePicker();
 
+  // Escape closes any open modal. Not the join modal: there is no room behind
+  // it to go back to until a name has been entered.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.modal-overlay:not(.hidden):not(#join-modal)')
+      .forEach(modal => modal.classList.add('hidden'));
+  });
+
   if (isPresenterPage) {
     initPresenterPage(socket, urlRoomId);
   } else if (isRoomPage) {
