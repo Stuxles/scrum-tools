@@ -44,8 +44,11 @@ export function eligibleVoters(participants) {
  */
 export function computeVoteStats(participants) {
   const votes   = participants.filter(p => p.hasVoted).map(p => p.vote);
-  const numeric = votes.map(v => parseFloat(v)).filter(v => !isNaN(v));
-  const nonNum  = votes.filter(v => isNaN(parseFloat(v)));
+  // The whole label has to be a number. parseFloat reads the leading digits
+  // and stops, so custom cards "1 day" and "2 weeks" averaged to 1.5.
+  const isNumber = (v) => /^-?\d+(\.\d+)?$/.test(String(v).trim());
+  const numeric  = votes.filter(isNumber).map(Number);
+  const nonNum   = votes.filter(v => !isNumber(v));
 
   const avg    = numeric.length ? numeric.reduce((a, b) => a + b, 0) / numeric.length : null;
   const sorted = [...numeric].sort((a, b) => a - b);

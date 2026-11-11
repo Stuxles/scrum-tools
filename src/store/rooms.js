@@ -88,6 +88,8 @@ export function sanitizeRoom(room, viewerSocketId = null) {
     revealed:   room.revealed,
     autoReveal: Boolean(room.autoReveal),
     storyTitle: room.storyTitle || '',
+    // Who voted what at the moment of the reveal; see revealRoom().
+    results:    room.revealed ? (room.results ?? null) : null,
     participants: Object.values(room.participants).map(p => ({
       id:          p.id,
       name:        p.name,

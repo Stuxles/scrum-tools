@@ -27,6 +27,18 @@ describe('computeVoteStats (pure vote-statistics calculation)', () => {
     assert.strictEqual(stats.avg, 4);
   });
 
+  test('a card that only starts with a number is a label, not a number', () => {
+    const stats = computeVoteStats([
+      { hasVoted: true, vote: '1 day' },
+      { hasVoted: true, vote: '2 weeks' },
+      { hasVoted: true, vote: '0.5' },
+      { hasVoted: true, vote: '8' },
+    ]);
+    assert.deepStrictEqual(stats.numeric, [0.5, 8]);
+    assert.deepStrictEqual(stats.nonNum, ['1 day', '2 weeks']);
+    assert.strictEqual(stats.avg, 4.25);
+  });
+
   test('average and median for an odd number of numeric votes', () => {
     const stats = computeVoteStats([
       { isMaster: false, hasVoted: true, vote: '1' },

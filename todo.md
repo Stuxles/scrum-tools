@@ -204,6 +204,18 @@ screen, neither of them a bug.
 - **Escape closes modals**; a modal taller than a phone screen scrolls inside
   itself; two quick taps on a card no longer zoom on iOS.
 
+### Results and deck form (November 2026)
+
+- **The revealed results are a snapshot** (`revealRoom()` in
+  `src/utils/autoReveal.js`, sent as `room.results`). A voter switching to
+  spectator, or timing out of the grace window, used to change the outcome on
+  screen mid-discussion. Round history (#1) can build on the same snapshot.
+- **A room update no longer resets the deck form.** Any vote put the dropdown
+  back on the current deck while the host was choosing another, so Apply could
+  set the wrong deck and wipe every vote.
+- **Only whole-number labels are averaged.** `parseFloat` read "1 day" and
+  "2 weeks" as 1 and 2 and reported an average of 1.5.
+
 ### Capacity ceilings
 
 - **`MAX_ROOMS` (100) and `MAX_PARTICIPANTS_PER_ROOM` (50)** — the rate
