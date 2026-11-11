@@ -74,7 +74,12 @@ export function expireParticipantGrace(roomId, socketId) {
   const wasMaster = room.masterId === socketId;
 
   delete room.participants[socketId];
-  if (room.participantGraceTimers) delete room.participantGraceTimers[socketId];
+  if (room.participantGraceTimers) {
+    // Normally this *is* the timer firing; cleared for a direct call, which
+    // would otherwise leave it pending for the rest of the window.
+    clearTimeout(room.participantGraceTimers[socketId]);
+    delete room.participantGraceTimers[socketId];
+  }
 
   // This is where an absent host's claim finally runs out, so it is also
   // where the role has to move on. `handleJoinRoom` no longer hands the seat

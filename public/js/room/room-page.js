@@ -349,7 +349,6 @@ export function initRoomPage(socket, urlRoomId) {
     if (isMaster) {
       showSMControls();
       smCurrentDeck.textContent = getDeckLabel(room.deckType);
-      deckModalType.value       = room.deckType;
       if (smAutoRevealChk) smAutoRevealChk.checked = Boolean(room.autoReveal);
     } else {
       hideSMControls();
@@ -389,11 +388,13 @@ export function initRoomPage(socket, urlRoomId) {
     };
 
     if (room.revealed) {
-      renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
+      // The round as it stood at the reveal, not the live seats.
+      const round = room.results ? { ...room, participants: room.results } : room;
+      renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, round);
 
       if (!hasCelebratedThisReveal) {
-        const eligible = eligibleVoters(room.participants);
-        const stats    = computeVoteStats(room.participants);
+        const eligible = eligibleVoters(round.participants);
+        const stats    = computeVoteStats(round.participants);
         // Two extremes, two preferences: the confetti is on by default, the
         // alarm for the opposite extreme is something you switch on yourself.
         if (isUnanimousConsensus(stats.votes, eligible.length)) {

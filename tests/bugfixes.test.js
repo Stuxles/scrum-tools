@@ -13,6 +13,7 @@ import { io as ioc } from 'socket.io-client';
 import { initBroadcast } from '../src/utils/broadcast.js';
 import { initSocketHandlers } from '../src/socket/index.js';
 import { rooms, deleteRoom } from '../src/store/rooms.js';
+import { expireParticipantGrace } from '../src/socket/handlers/connectionHandlers.js';
 import { DECKS, MAX_PARTICIPANTS_PER_ROOM } from '../src/config.js';
 
 describe('Regressions from the codebase review', () => {
@@ -334,6 +335,54 @@ describe('Regressions from the codebase review', () => {
     });
   });
   // ── Capacity ceilings ──────────────────────────────────────────────────────
+  describe('the revealed results are a snapshot', () => {
+    test('a voter turning spectator or timing out does not change them', async () => {
+      const alice = createClient();
+      const bob   = createClient();
+      await Promise.all([waitForConnect(alice), waitForConnect(bob)]);
+
+      alice.emit('create-room', { roomName: 'Frozen' });
+      const { roomId } = await onceEvent(alice, 'room-created');
+      await joinedRoom(alice, roomId, 'Alice');
+      await joinedRoom(bob, roomId, 'Bob');
+
+      // Wait for the state that satisfies `ready`, whatever arrives before it.
+      // A standing listener, not `once` in a loop: two states can land in one
+      // tick, and the second would slip past before `once` is re-armed.
+      const stateWhere = (ready) => new Promise((resolve) => {
+        const onState = ({ room }) => {
+          if (!ready(room)) return;
+          alice.off('room-state', onState);
+          resolve(room);
+        };
+        alice.on('room-state', onState);
+      });
+      const votesIn = (room) => room.results.map(p => p.vote).sort();
+
+      alice.emit('vote', { roomId, vote: '3' });
+      bob.emit('vote', { roomId, vote: '8' });
+      await stateWhere(room => room.participants.every(p => p.hasVoted));
+      alice.emit('reveal', { roomId });
+      let room = await stateWhere(r => r.revealed);
+      assert.deepEqual(votesIn(room), ['3', '8']);
+
+      bob.emit('toggle-spectator', { roomId, isSpectator: true });
+      room = await stateWhere(r => r.participants.some(p => p.isSpectator));
+      assert.deepEqual(votesIn(room), ['3', '8'], 'spectator switch after the reveal');
+
+      const bobId = bob.id;
+      bob.disconnect();
+      await stateWhere(r => r.participants.some(p => !p.connected));
+      expireParticipantGrace(roomId, bobId);
+      room = await stateWhere(r => r.participants.length === 1);
+      assert.deepEqual(votesIn(room), ['3', '8'], 'seat expiry after the reveal');
+
+      alice.emit('reset', { roomId });
+      room = await stateWhere(r => !r.revealed);
+      assert.equal(room.results, null, 'a new round starts clean');
+    });
+  });
+
   describe('a room at its participant ceiling', () => {
     /** Occupy every remaining seat with a plain entry — 50 real sockets is not
      *  worth the wall-clock time, and the guard only counts the map. */

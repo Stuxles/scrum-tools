@@ -30,6 +30,21 @@ export function countVoters(room) {
 }
 
 /**
+ * Reveal the room and freeze who voted what. The results are drawn from this
+ * snapshot, not from the live seats: a voter switching to spectator or timing
+ * out of their grace window during the discussion used to change the outcome
+ * on screen.
+ *
+ * @param {object} room
+ */
+export function revealRoom(room) {
+  room.revealed = true;
+  room.results  = votersIn(room).map(p => ({
+    id: p.id, name: p.name, vote: p.vote, hasVoted: p.hasVoted, isSpectator: false, connected: true,
+  }));
+}
+
+/**
  * Determine whether the room should flip to revealed right now.
  *
  * @param {object} room
@@ -55,7 +70,7 @@ export function shouldAutoReveal(room) {
  */
 export function applyAutoReveal(room) {
   if (!shouldAutoReveal(room)) return false;
-  room.revealed = true;
+  revealRoom(room);
   const { total } = countVoters(room);
   info('auto-reveal', `${room.id || '?'}: ${total} voters, everyone has voted`);
   return true;

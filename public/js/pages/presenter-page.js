@@ -222,7 +222,6 @@ export function initPresenterPage(socket, urlRoomId) {
     renderStoryVisibility();
 
     currentDeck.textContent = deckLabel(room.deckType);
-    deckModalType.value     = room.deckType;
     renderAutoReveal();
 
     const hasPeople = room.participants.length > 0;
@@ -246,20 +245,23 @@ export function initPresenterPage(socket, urlRoomId) {
     if (room.revealed) {
       // Bigger teams get smaller cards, so a reveal never needs scrolling on a
       // screen nobody can reach. The CSS reads this back as --card-w.
-      resultsCardsGrid.dataset.size = voters.length <= 8 ? 'lg' : voters.length <= 16 ? 'md' : 'sm';
-      renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, room);
+      // The round as it stood at the reveal, not the live seats.
+      const round       = room.results ? { ...room, participants: room.results } : room;
+      const roundVoters = eligibleVoters(round.participants);
+      resultsCardsGrid.dataset.size = roundVoters.length <= 8 ? 'lg' : roundVoters.length <= 16 ? 'md' : 'sm';
+      renderResults({ votingPhase, resultsPhase, resultsSubtitle, resultsCardsGrid, resultsStats }, round);
 
       // The screen is where everyone is already looking, so this is the place
       // to celebrate a unanimous round. The on/off preference is per device,
       // which here means the screen's own — a phone opting out does not stop
       // the room from seeing it, and vice versa.
       if (!hasCelebratedThisReveal) {
-        const stats = computeVoteStats(room.participants);
+        const stats = computeVoteStats(round.participants);
         // Two extremes, two preferences: the confetti is on by default, the
         // alarm for the opposite extreme is something you switch on yourself.
-        if (isUnanimousConsensus(stats.votes, voters.length)) {
+        if (isUnanimousConsensus(stats.votes, roundVoters.length)) {
           if (getConfettiEnabled()) celebrateConsensus();
-        } else if (isTotalDisagreement(stats.votes, voters.length) && getChaosEnabled()) {
+        } else if (isTotalDisagreement(stats.votes, roundVoters.length) && getChaosEnabled()) {
           celebrateChaos();
           toast(t('toast-total-disagreement'), 'info', 5000);
         }
